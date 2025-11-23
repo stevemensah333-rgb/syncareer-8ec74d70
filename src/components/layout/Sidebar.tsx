@@ -2,7 +2,7 @@
 import React from 'react';
 import { 
   Home, Users, Briefcase, GraduationCap, Trophy, 
-  BarChart, Brain, Settings, ChevronRight, ChevronLeft
+  BarChart, Brain, Settings, ChevronRight, ChevronLeft, Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -69,6 +69,11 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       title: 'Settings',
       icon: Settings,
       href: '/settings',
+    },
+    {
+      title: 'SkillBridge AI',
+      icon: Sparkles,
+      href: '/ai-coach',
     }
   ];
 
