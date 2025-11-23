@@ -75,7 +75,6 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
           </div>
           
           <div className="relative hidden md:flex items-center h-9 rounded-md px-3 text-muted-foreground focus-within:text-foreground bg-muted/50">
-            <img src={skillbridgeLogo} alt="SkillBridge" className="h-5 w-5 object-contain mr-2" />
             <Search className="h-4 w-4 mr-2" />
             <Input 
               type="search" 
