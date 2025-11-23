@@ -1,136 +1,271 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
-import { useStockData, mockStocks } from '@/utils/stocksApi';
-import { PieChart, Cell, Pie, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Upload, Star, MessageSquare, ThumbsUp, ExternalLink } from 'lucide-react';
 
 const Portfolio = () => {
-  const stocks = useStockData(mockStocks);
-  
-  // Mock portfolio data
-  const portfolio = [
-    { symbol: 'AAPL', shares: 15, costBasis: 150.75 },
-    { symbol: 'MSFT', shares: 8, costBasis: 380.25 },
-    { symbol: 'NVDA', shares: 5, costBasis: 820.50 },
-    { symbol: 'GOOGL', shares: 10, costBasis: 145.30 },
+  const [selectedProject, setSelectedProject] = useState<number | null>(null);
+
+  // User's portfolio projects
+  const projects = [
+    {
+      id: 1,
+      title: 'E-Commerce Platform',
+      description: 'Full-stack shopping platform with payment integration',
+      tags: ['React', 'Node.js', 'MongoDB'],
+      rating: 4.8,
+      endorsements: 24,
+      comments: 8,
+      image: '🛒',
+      verified: true,
+    },
+    {
+      id: 2,
+      title: 'Weather Dashboard',
+      description: 'Real-time weather app with beautiful UI',
+      tags: ['React', 'API Integration', 'CSS'],
+      rating: 4.6,
+      endorsements: 18,
+      comments: 5,
+      image: '🌤️',
+      verified: true,
+    },
+    {
+      id: 3,
+      title: 'Task Manager App',
+      description: 'Productivity app with team collaboration features',
+      tags: ['TypeScript', 'Firebase', 'React'],
+      rating: 4.9,
+      endorsements: 31,
+      comments: 12,
+      image: '✅',
+      verified: true,
+    },
+    {
+      id: 4,
+      title: 'Portfolio Website',
+      description: 'Personal portfolio with animations and dark mode',
+      tags: ['Next.js', 'Tailwind', 'Framer Motion'],
+      rating: 4.7,
+      endorsements: 22,
+      comments: 7,
+      image: '💼',
+      verified: false,
+    },
   ];
-  
-  // Calculate portfolio values
-  const portfolioItems = portfolio.map(item => {
-    const stock = stocks.find(s => s.symbol === item.symbol);
-    if (!stock) return null;
-    
-    const currentValue = stock.price * item.shares;
-    const costBasis = item.costBasis * item.shares;
-    const gain = currentValue - costBasis;
-    const gainPercent = (gain / costBasis) * 100;
-    
-    return {
-      ...item,
-      name: stock.name,
-      currentPrice: stock.price,
-      currentValue,
-      costBasis,
-      gain,
-      gainPercent
-    };
-  }).filter(Boolean);
-  
-  const totalValue = portfolioItems.reduce((sum, item) => sum + item.currentValue, 0);
-  const totalCost = portfolioItems.reduce((sum, item) => sum + item.costBasis, 0);
-  const totalGain = totalValue - totalCost;
-  const totalGainPercent = (totalGain / totalCost) * 100;
-  
-  // Data for pie chart
-  const pieData = portfolioItems.map(item => ({
-    name: item.symbol,
-    value: item.currentValue
-  }));
-  
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
-  
+
+  // Peer reviews
+  const reviews = [
+    {
+      reviewer: 'Sarah Johnson',
+      project: 'E-Commerce Platform',
+      rating: 5,
+      comment: 'Excellent work! Clean code and great UX.',
+      date: '2 days ago',
+    },
+    {
+      reviewer: 'Mike Chen',
+      project: 'Task Manager App',
+      rating: 5,
+      comment: 'Impressive feature set and performance.',
+      date: '1 week ago',
+    },
+    {
+      reviewer: 'Emma Wilson',
+      project: 'Weather Dashboard',
+      rating: 4,
+      comment: 'Nice design! Could improve mobile responsiveness.',
+      date: '2 weeks ago',
+    },
+  ];
+
   return (
     <PageLayout title="Portfolio">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <div className="bg-card rounded-lg p-6 shadow">
-            <h2 className="text-xl font-semibold mb-4">Portfolio Summary</h2>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Value</p>
-                <p className="text-2xl font-bold">${totalValue.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Gain/Loss</p>
-                <div className="flex items-center">
-                  <p className={`text-xl font-bold ${totalGain >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    ${totalGain.toFixed(2)}
-                  </p>
-                  <p className={`ml-2 ${totalGain >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    ({totalGain >= 0 ? '+' : ''}{totalGainPercent.toFixed(2)}%)
+        {/* Main Portfolio Area */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Upload Section */}
+          <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <Upload className="h-12 w-12 text-primary" />
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold">Showcase Your Work</h3>
+                  <p className="text-muted-foreground">
+                    Upload projects to get peer ratings and boost your SkillScore
                   </p>
                 </div>
+                <Button>Upload Project</Button>
               </div>
-            </div>
-            
-            <div className="mt-6 h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            </CardContent>
+          </Card>
+
+          {/* Projects Grid */}
+          <div className="grid md:grid-cols-2 gap-4">
+            {projects.map((project) => (
+              <Card
+                key={project.id}
+                className={`cursor-pointer transition-all hover:border-primary/50 ${
+                  selectedProject === project.id ? 'border-primary' : ''
+                }`}
+                onClick={() => setSelectedProject(project.id)}
+              >
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="text-5xl mb-3">{project.image}</div>
+                    {project.verified && (
+                      <Badge className="bg-primary">
+                        ✓ AI Verified
+                      </Badge>
+                    )}
+                  </div>
+                  <CardTitle className="text-lg">{project.title}</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {project.description}
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {project.tags.map((tag) => (
+                      <Badge key={tag} variant="secondary">
+                        {tag}
+                      </Badge>
                     ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Value']} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                        {project.rating}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <ThumbsUp className="h-4 w-4" />
+                        {project.endorsements}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MessageSquare className="h-4 w-4" />
+                        {project.comments}
+                      </span>
+                    </div>
+                    <Button size="sm" variant="outline">
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
+
+          {/* Recent Reviews */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Peer Reviews</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {reviews.map((review, idx) => (
+                <div key={idx} className="border-b last:border-0 pb-4 last:pb-0">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-semibold">{review.reviewer}</p>
+                      <p className="text-sm text-muted-foreground">
+                        reviewed {review.project}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: review.rating }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className="h-4 w-4 fill-yellow-500 text-yellow-500"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-sm mb-1">{review.comment}</p>
+                  <p className="text-xs text-muted-foreground">{review.date}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
-        
-        <div className="lg:col-span-2">
-          <div className="bg-card rounded-lg p-6 shadow">
-            <h2 className="text-xl font-semibold mb-4">Holdings</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 px-4">Symbol</th>
-                    <th className="text-left py-2 px-4">Name</th>
-                    <th className="text-right py-2 px-4">Shares</th>
-                    <th className="text-right py-2 px-4">Price</th>
-                    <th className="text-right py-2 px-4">Value</th>
-                    <th className="text-right py-2 px-4">Gain/Loss</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {portfolioItems.map((item) => (
-                    <tr key={item.symbol} className="border-b">
-                      <td className="py-3 px-4 font-medium">{item.symbol}</td>
-                      <td className="py-3 px-4">{item.name}</td>
-                      <td className="py-3 px-4 text-right">{item.shares}</td>
-                      <td className="py-3 px-4 text-right">${item.currentPrice.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-right">${item.currentValue.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-right">
-                        <div className={item.gain >= 0 ? 'text-green-500' : 'text-red-500'}>
-                          ${item.gain.toFixed(2)} ({item.gain >= 0 ? '+' : ''}{item.gainPercent.toFixed(2)}%)
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Portfolio Stats */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Portfolio Stats</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total Projects</span>
+                <span className="font-bold">{projects.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Avg Rating</span>
+                <span className="font-bold">4.75 ⭐</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total Endorsements</span>
+                <span className="font-bold">95</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Profile Views</span>
+                <span className="font-bold">342</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Skill Breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Skills in Portfolio</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[
+                { skill: 'React', projects: 3 },
+                { skill: 'TypeScript', projects: 2 },
+                { skill: 'Node.js', projects: 2 },
+                { skill: 'CSS/Design', projects: 3 },
+              ].map((item) => (
+                <div key={item.skill} className="flex justify-between items-center">
+                  <span className="text-sm">{item.skill}</span>
+                  <Badge variant="secondary">{item.projects} projects</Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Badges Earned */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Badges Earned</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-3">
+                {['🏆', '⭐', '🔥', '💎', '🎯', '⚡'].map((badge, idx) => (
+                  <div
+                    key={idx}
+                    className="aspect-square flex items-center justify-center text-3xl bg-muted rounded-lg"
+                  >
+                    {badge}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Call to Action */}
+          <Card className="bg-primary text-primary-foreground">
+            <CardContent className="pt-6 text-center">
+              <h3 className="font-bold mb-2">Share Your Portfolio</h3>
+              <p className="text-sm mb-4 opacity-90">
+                Let employers see your amazing work!
+              </p>
+              <Button variant="secondary">Copy Link</Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </PageLayout>
