@@ -33,22 +33,17 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
     {
       title: 'My Skills',
       icon: Trophy,
-      href: '/stocks',
-    },
-    {
-      title: 'Opportunities',
-      icon: Briefcase,
-      href: '/markets',
+      href: '/skills',
     },
     {
       title: 'Learn',
       icon: GraduationCap,
-      href: '/currencies',
+      href: '/learn',
     },
     {
-      title: 'Network',
-      icon: Users,
-      href: '/global',
+      title: 'Opportunities',
+      icon: Briefcase,
+      href: '/opportunities',
     },
     {
       title: 'Portfolio',
@@ -56,14 +51,19 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       href: '/portfolio',
     },
     {
-      title: 'SkillScore',
+      title: 'Performance',
       icon: BarChart,
       href: '/performance',
     },
     {
-      title: 'AI Coach',
+      title: 'Analysis',
       icon: Brain,
       href: '/analysis',
+    },
+    {
+      title: 'Global',
+      icon: Users,
+      href: '/global',
     },
     {
       title: 'Settings',

@@ -28,13 +28,13 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Feed />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/stocks" element={<Stocks />} />
-          <Route path="/markets" element={<Markets />} />
-          <Route path="/currencies" element={<Currencies />} />
-          <Route path="/global" element={<Global />} />
+          <Route path="/skills" element={<Stocks />} />
+          <Route path="/learn" element={<Currencies />} />
+          <Route path="/opportunities" element={<Markets />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/performance" element={<Performance />} />
           <Route path="/analysis" element={<Analysis />} />
+          <Route path="/global" element={<Global />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
