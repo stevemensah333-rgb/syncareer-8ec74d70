@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, Briefcase, Users, LogOut } from 'lucide-react';
+import { Search, Bell, User, Briefcase, Users, LogOut, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 
@@ -62,18 +64,54 @@ export function Navbar({ className }: NavbarProps) {
             />
           </div>
 
-          <Tabs value={userType} onValueChange={(v) => setUserType(v as 'seeker' | 'employer')} className="hidden lg:block">
-            <TabsList className="bg-muted/50">
-              <TabsTrigger value="seeker" className="text-sm">
-                <Users className="h-4 w-4 mr-1" />
-                For Job Seekers
-              </TabsTrigger>
-              <TabsTrigger value="employer" className="text-sm">
-                <Briefcase className="h-4 w-4 mr-1" />
-                For Employers
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="hidden lg:flex items-center gap-2">
+            <Button
+              variant="ghost"
+              className="text-sm"
+              onClick={() => setUserType('seeker')}
+            >
+              <Users className="h-4 w-4 mr-1" />
+              For Job Seekers
+            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-sm">
+                  <Briefcase className="h-4 w-4 mr-1" />
+                  For Employers
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-64">
+                <DropdownMenuLabel>Employer Services</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer flex-col items-start py-3">
+                  <div className="font-medium">Hire with SkillBridge</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Find and recruit top talent for your company
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer flex-col items-start py-3">
+                  <div className="font-medium">Advertise on SkillBridge</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Promote your brand to skilled professionals
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer flex-col items-start py-3">
+                  <div className="font-medium">Sell on SkillBridge</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Offer products or services to our community
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer flex-col items-start py-3">
+                  <div className="font-medium">Post a Job</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Create and publish job openings quickly
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         
         <div className="flex items-center gap-4">
