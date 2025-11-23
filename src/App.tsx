@@ -16,6 +16,7 @@ import Performance from "./pages/Performance";
 import Analysis from "./pages/Analysis";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
+import AICoach from "./pages/AICoach";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/analysis" element={<Analysis />} />
           <Route path="/global" element={<Global />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/ai-coach" element={<AICoach />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
