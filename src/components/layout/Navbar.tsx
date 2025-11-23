@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Bell, User, Briefcase, Users, LogOut, ChevronDown, UserPlus, Megaphone, ShoppingCart, FileText, Menu } from 'lucide-react';
+import skillbridgeLogo from '@/assets/skillbridge-logo.png';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -68,9 +69,13 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
             </Button>
           )}
           
-          <h1 className="text-lg font-semibold tracking-tight lg:text-xl">SkillBridge</h1>
+          <div className="flex items-center gap-2">
+            <img src={skillbridgeLogo} alt="SkillBridge" className="h-8 w-8 object-contain" />
+            <h1 className="text-lg font-semibold tracking-tight lg:text-xl">SkillBridge</h1>
+          </div>
           
           <div className="relative hidden md:flex items-center h-9 rounded-md px-3 text-muted-foreground focus-within:text-foreground bg-muted/50">
+            <img src={skillbridgeLogo} alt="SkillBridge" className="h-5 w-5 object-contain mr-2" />
             <Search className="h-4 w-4 mr-2" />
             <Input 
               type="search" 
