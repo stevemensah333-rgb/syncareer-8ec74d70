@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, Briefcase, Users, LogOut, ChevronDown } from 'lucide-react';
+import { Search, Bell, User, Briefcase, Users, LogOut, ChevronDown, UserPlus, Megaphone, ShoppingCart, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -85,28 +85,40 @@ export function Navbar({ className }: NavbarProps) {
               <DropdownMenuContent align="start" className="w-64">
                 <DropdownMenuLabel>Employer Services</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer flex-col items-start py-3">
-                  <div className="font-medium">Hire with SkillBridge</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Find and recruit top talent for your company
+                <DropdownMenuItem className="cursor-pointer py-3">
+                  <UserPlus className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
+                  <div className="flex flex-col">
+                    <div className="font-medium">Hire with SkillBridge</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Find and recruit top talent for your company
+                    </div>
                   </div>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer flex-col items-start py-3">
-                  <div className="font-medium">Advertise on SkillBridge</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Promote your brand to skilled professionals
+                <DropdownMenuItem className="cursor-pointer py-3">
+                  <Megaphone className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
+                  <div className="flex flex-col">
+                    <div className="font-medium">Advertise on SkillBridge</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Promote your brand to skilled professionals
+                    </div>
                   </div>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer flex-col items-start py-3">
-                  <div className="font-medium">Sell on SkillBridge</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Offer products or services to our community
+                <DropdownMenuItem className="cursor-pointer py-3">
+                  <ShoppingCart className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
+                  <div className="flex flex-col">
+                    <div className="font-medium">Sell on SkillBridge</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Offer products or services to our community
+                    </div>
                   </div>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer flex-col items-start py-3">
-                  <div className="font-medium">Post a Job</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Create and publish job openings quickly
+                <DropdownMenuItem className="cursor-pointer py-3">
+                  <FileText className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
+                  <div className="flex flex-col">
+                    <div className="font-medium">Post a Job</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Create and publish job openings quickly
+                    </div>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
