@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, Briefcase, Users, LogOut, ChevronDown, UserPlus, Megaphone, ShoppingCart, FileText } from 'lucide-react';
+import { Search, Bell, User, Briefcase, Users, LogOut, ChevronDown, UserPlus, Megaphone, ShoppingCart, FileText, Menu } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -20,12 +21,14 @@ import { toast } from 'sonner';
 
 interface NavbarProps {
   className?: string;
+  onMobileMenuClick?: () => void;
 }
 
-export function Navbar({ className }: NavbarProps) {
+export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
   const [userType, setUserType] = useState<'seeker' | 'employer'>('seeker');
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -53,6 +56,18 @@ export function Navbar({ className }: NavbarProps) {
     <header className={cn("bg-background/95 backdrop-blur-sm sticky top-0 z-30 border-b", className)}>
       <div className="container flex items-center justify-between h-16 px-4">
         <div className="flex items-center gap-2 lg:gap-6">
+          {/* Mobile Menu Button */}
+          {isMobile && onMobileMenuClick && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onMobileMenuClick}
+              className="md:hidden h-9 w-9"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
+          
           <h1 className="text-lg font-semibold tracking-tight lg:text-xl">SkillBridge</h1>
           
           <div className="relative hidden md:flex items-center h-9 rounded-md px-3 text-muted-foreground focus-within:text-foreground bg-muted/50">
