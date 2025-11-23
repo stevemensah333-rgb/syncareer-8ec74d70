@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { 
-  BarChart, PieChart, BarChart3, Wallet, LineChart, Globe, 
-  DollarSign, Settings, ChevronRight, ChevronLeft, Home
+  Home, Users, Briefcase, GraduationCap, Trophy, 
+  BarChart, Brain, Settings, ChevronRight, ChevronLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -26,43 +26,43 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
   
   const navItems = [
     {
-      title: 'Dashboard',
+      title: 'Feed',
       icon: Home,
       href: '/',
     },
     {
-      title: 'Stocks',
-      icon: BarChart,
+      title: 'My Skills',
+      icon: Trophy,
       href: '/stocks',
     },
     {
-      title: 'Markets',
-      icon: BarChart3,
+      title: 'Opportunities',
+      icon: Briefcase,
       href: '/markets',
     },
     {
-      title: 'Currencies',
-      icon: DollarSign,
+      title: 'Learn',
+      icon: GraduationCap,
       href: '/currencies',
     },
     {
-      title: 'Global',
-      icon: Globe,
+      title: 'Network',
+      icon: Users,
       href: '/global',
     },
     {
       title: 'Portfolio',
-      icon: Wallet,
+      icon: BarChart,
       href: '/portfolio',
     },
     {
-      title: 'Performance',
-      icon: LineChart,
+      title: 'SkillScore',
+      icon: BarChart,
       href: '/performance',
     },
     {
-      title: 'Analysis',
-      icon: PieChart,
+      title: 'AI Coach',
+      icon: Brain,
       href: '/analysis',
     },
     {
@@ -83,7 +83,7 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
           "font-semibold tracking-tight transition-opacity duration-200",
           isCollapsed ? "opacity-0" : "opacity-100"
         )}>
-          MarketPulse
+          SkillBridge
         </h2>
         
         <Button
@@ -131,9 +131,9 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
           "transition-opacity duration-200 rounded-md bg-sidebar-accent/50 p-2 text-xs text-sidebar-accent-foreground",
           isCollapsed ? "opacity-0" : "opacity-100"
         )}>
-          <p className="font-medium">Market Status</p>
-          <p>Markets are open</p>
-          <p className="text-[10px]">Closes in 3h 45m</p>
+          <p className="font-medium">Your Progress</p>
+          <p>5-day streak 🔥</p>
+          <p className="text-[10px]">Keep learning!</p>
         </div>
       </div>
     </aside>
