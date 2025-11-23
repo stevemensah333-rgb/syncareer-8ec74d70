@@ -78,8 +78,10 @@ const Analysis = () => {
     const { root, depth, x, y, width, height, index, name, changePercent, value } = props;
     
     // Color based on change percent (green for positive, red for negative)
-    const color = changePercent >= 0 ? "#4ade80" : "#f87171";
-    const cellValue = changePercent >= 0 ? `+${changePercent.toFixed(2)}%` : `${changePercent.toFixed(2)}%`;
+    const color = changePercent != null && changePercent >= 0 ? "#4ade80" : "#f87171";
+    const cellValue = changePercent != null 
+      ? (changePercent >= 0 ? `+${changePercent.toFixed(2)}%` : `${changePercent.toFixed(2)}%`)
+      : 'N/A';
 
     return (
       <g>
