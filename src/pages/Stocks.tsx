@@ -1,12 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Upload, Sparkles, TrendingUp, Award, Code, Palette, Database } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 const MySkills = () => {
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
+  const { toast } = useToast();
+  const cvInputRef = useRef<HTMLInputElement>(null);
+  const portfolioInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      toast({
+        title: "CV Uploaded Successfully",
+        description: `${file.name} is being analyzed by AI...`,
+      });
+    }
+  };
+
+  const handlePortfolioAnalyze = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      toast({
+        title: "Portfolio Uploaded Successfully",
+        description: `${file.name} is being analyzed by AI...`,
+      });
+    }
+  };
 
   // Mock user skills with proficiency levels
   const userSkills = [
@@ -44,11 +68,33 @@ const MySkills = () => {
                 Upload your CV or portfolio to get instant AI analysis of your skills, gaps, and personalized recommendations.
               </p>
               <div className="flex gap-3">
-                <Button variant="default" className="flex-1">
+                <input
+                  ref={cvInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={handleCVUpload}
+                  className="hidden"
+                />
+                <Button 
+                  variant="default" 
+                  className="flex-1"
+                  onClick={() => cvInputRef.current?.click()}
+                >
                   <Upload className="h-4 w-4 mr-2" />
                   Upload CV
                 </Button>
-                <Button variant="outline" className="flex-1">
+                <input
+                  ref={portfolioInputRef}
+                  type="file"
+                  accept=".pdf,.zip,.url"
+                  onChange={handlePortfolioAnalyze}
+                  className="hidden"
+                />
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => portfolioInputRef.current?.click()}
+                >
                   <Sparkles className="h-4 w-4 mr-2" />
                   Analyze Portfolio
                 </Button>
