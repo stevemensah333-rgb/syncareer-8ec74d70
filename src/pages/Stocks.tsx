@@ -5,30 +5,90 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Upload, Sparkles, TrendingUp, Award, Code, Palette, Database } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { AnalysisDialog } from '@/components/skillbridge/AnalysisDialog';
 
 const MySkills = () => {
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const { toast } = useToast();
   const cvInputRef = useRef<HTMLInputElement>(null);
   const portfolioInputRef = useRef<HTMLInputElement>(null);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [analysis, setAnalysis] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handleCVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      toast({
-        title: "CV Uploaded Successfully",
-        description: `${file.name} is being analyzed by AI...`,
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  };
+
+  const analyzeFiles = async (cvFile?: File, portfolioFile?: File) => {
+    setIsAnalyzing(true);
+    setAnalysisOpen(true);
+    setAnalysis('');
+
+    try {
+      let cvContent = '';
+      let portfolioContent = '';
+
+      if (cvFile) {
+        cvContent = await readFileAsText(cvFile);
+      }
+      if (portfolioFile) {
+        portfolioContent = await readFileAsText(portfolioFile);
+      }
+
+      const { data, error } = await supabase.functions.invoke('analyze-portfolio', {
+        body: {
+          cvContent,
+          portfolioContent,
+          fileName: cvFile?.name || portfolioFile?.name || 'document',
+        },
       });
+
+      if (error) throw error;
+
+      setAnalysis(data.analysis);
+      toast({
+        title: "Analysis Complete",
+        description: "Your portfolio and CV have been analyzed by AI.",
+      });
+    } catch (error) {
+      console.error('Error analyzing files:', error);
+      toast({
+        title: "Analysis Failed",
+        description: error instanceof Error ? error.message : "Failed to analyze files",
+        variant: "destructive",
+      });
+      setAnalysisOpen(false);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
-  const handlePortfolioAnalyze = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       toast({
-        title: "Portfolio Uploaded Successfully",
-        description: `${file.name} is being analyzed by AI...`,
+        title: "CV Uploaded",
+        description: `${file.name} is being analyzed...`,
       });
+      await analyzeFiles(file);
+    }
+  };
+
+  const handlePortfolioAnalyze = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      toast({
+        title: "Portfolio Uploaded",
+        description: `${file.name} is being analyzed...`,
+      });
+      await analyzeFiles(undefined, file);
     }
   };
 
@@ -52,6 +112,12 @@ const MySkills = () => {
 
   return (
     <PageLayout title="My Skills">
+      <AnalysisDialog 
+        open={analysisOpen}
+        onOpenChange={setAnalysisOpen}
+        analysis={analysis}
+        isLoading={isAnalyzing}
+      />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Skills Display */}
         <div className="lg:col-span-2 space-y-6">
@@ -71,7 +137,7 @@ const MySkills = () => {
                 <input
                   ref={cvInputRef}
                   type="file"
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf,.doc,.docx,.txt"
                   onChange={handleCVUpload}
                   className="hidden"
                 />
@@ -86,7 +152,7 @@ const MySkills = () => {
                 <input
                   ref={portfolioInputRef}
                   type="file"
-                  accept=".pdf,.zip,.url"
+                  accept=".pdf,.txt,.doc,.docx"
                   onChange={handlePortfolioAnalyze}
                   className="hidden"
                 />
