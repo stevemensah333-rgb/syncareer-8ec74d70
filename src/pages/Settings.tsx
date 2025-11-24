@@ -1,14 +1,17 @@
-
 import React, { useState, useEffect } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Bell, Globe, Lock, User, Settings as SettingsIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
+import { countries } from '@/utils/countries';
+import { languages } from '@/utils/languages';
 
 type SettingsSection = 'account' | 'notifications' | 'security' | 'regional' | 'preferences';
 
 const Settings = () => {
   const { toast } = useToast();
+  const { t, i18n } = useTranslation();
   const [activeSection, setActiveSection] = useState<SettingsSection>('account');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
@@ -18,6 +21,8 @@ const Settings = () => {
     const saved = localStorage.getItem('compactView');
     return saved === 'true';
   });
+  const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
+  const [selectedCountry, setSelectedCountry] = useState(() => localStorage.getItem('country') || 'ZA');
 
   useEffect(() => {
     const root = document.documentElement;
@@ -32,7 +37,6 @@ const Settings = () => {
 
   useEffect(() => {
     localStorage.setItem('compactView', isCompactView.toString());
-    // Apply compact view class to body or root element
     if (isCompactView) {
       document.body.classList.add('compact-view');
     } else {
@@ -41,17 +45,27 @@ const Settings = () => {
   }, [isCompactView]);
 
   const handleSave = () => {
+    // Save language change
+    if (selectedLanguage !== i18n.language) {
+      i18n.changeLanguage(selectedLanguage);
+      localStorage.setItem('i18nextLng', selectedLanguage);
+    }
+    
+    // Save country
+    localStorage.setItem('country', selectedCountry);
+    
     toast({
-      title: "Settings saved",
-      description: "Your preferences have been updated successfully.",
+      title: t('settings.settingsSaved'),
+      description: t('settings.settingsSavedDesc'),
     });
   };
+
   return (
-    <PageLayout title="Settings">
+    <PageLayout title={t('settings.title')}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
           <div className="bg-card rounded-lg p-6 shadow">
-            <h2 className="text-xl font-semibold mb-4">Settings</h2>
+            <h2 className="text-xl font-semibold mb-4">{t('settings.title')}</h2>
             <nav className="space-y-2">
               <Button 
                 variant={activeSection === 'account' ? 'secondary' : 'ghost'} 
@@ -60,7 +74,7 @@ const Settings = () => {
                 onClick={() => setActiveSection('account')}
               >
                 <User className="mr-2 h-5 w-5" />
-                Account
+                {t('settings.account')}
               </Button>
               <Button 
                 variant={activeSection === 'notifications' ? 'secondary' : 'ghost'} 
@@ -69,7 +83,7 @@ const Settings = () => {
                 onClick={() => setActiveSection('notifications')}
               >
                 <Bell className="mr-2 h-5 w-5" />
-                Notifications
+                {t('settings.notifications')}
               </Button>
               <Button 
                 variant={activeSection === 'security' ? 'secondary' : 'ghost'} 
@@ -78,7 +92,7 @@ const Settings = () => {
                 onClick={() => setActiveSection('security')}
               >
                 <Lock className="mr-2 h-5 w-5" />
-                Security
+                {t('settings.security')}
               </Button>
               <Button 
                 variant={activeSection === 'regional' ? 'secondary' : 'ghost'} 
@@ -87,7 +101,7 @@ const Settings = () => {
                 onClick={() => setActiveSection('regional')}
               >
                 <Globe className="mr-2 h-5 w-5" />
-                Regional Settings
+                {t('settings.regional')}
               </Button>
               <Button 
                 variant={activeSection === 'preferences' ? 'secondary' : 'ghost'} 
@@ -96,7 +110,7 @@ const Settings = () => {
                 onClick={() => setActiveSection('preferences')}
               >
                 <SettingsIcon className="mr-2 h-5 w-5" />
-                Preferences
+                {t('settings.preferences')}
               </Button>
             </nav>
           </div>
@@ -106,13 +120,13 @@ const Settings = () => {
           <div className="bg-card rounded-lg p-6 shadow">
             {activeSection === 'account' && (
               <>
-                <h2 className="text-xl font-semibold mb-6">Account Settings</h2>
+                <h2 className="text-xl font-semibold mb-6">{t('settings.accountSettings')}</h2>
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-medium mb-4">Personal Information</h3>
+                    <h3 className="text-lg font-medium mb-4">{t('settings.personalInfo')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium mb-1">First Name</label>
+                        <label className="block text-sm font-medium mb-1">{t('settings.firstName')}</label>
                         <input 
                           type="text" 
                           defaultValue="John"
@@ -120,7 +134,7 @@ const Settings = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Last Name</label>
+                        <label className="block text-sm font-medium mb-1">{t('settings.lastName')}</label>
                         <input 
                           type="text" 
                           defaultValue="Smith"
@@ -128,7 +142,7 @@ const Settings = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Email</label>
+                        <label className="block text-sm font-medium mb-1">{t('settings.email')}</label>
                         <input 
                           type="email" 
                           defaultValue="john.smith@example.com"
@@ -136,7 +150,7 @@ const Settings = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Phone</label>
+                        <label className="block text-sm font-medium mb-1">{t('settings.phone')}</label>
                         <input 
                           type="text" 
                           defaultValue="+1 (555) 123-4567"
@@ -146,8 +160,8 @@ const Settings = () => {
                     </div>
                   </div>
                   <div className="pt-4 border-t">
-                    <Button onClick={handleSave}>Save Changes</Button>
-                    <Button variant="outline" className="ml-2">Cancel</Button>
+                    <Button onClick={handleSave}>{t('settings.saveChanges')}</Button>
+                    <Button variant="outline" className="ml-2">{t('settings.cancel')}</Button>
                   </div>
                 </div>
               </>
@@ -155,41 +169,41 @@ const Settings = () => {
 
             {activeSection === 'notifications' && (
               <>
-                <h2 className="text-xl font-semibold mb-6">Notification Settings</h2>
+                <h2 className="text-xl font-semibold mb-6">{t('settings.notificationSettings')}</h2>
                 <div className="space-y-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between py-3 border-b">
                       <div>
-                        <p className="font-medium">Email Notifications</p>
-                        <p className="text-sm text-muted-foreground">Receive updates via email</p>
+                        <p className="font-medium">{t('settings.emailNotifications')}</p>
+                        <p className="text-sm text-muted-foreground">{t('settings.emailNotificationsDesc')}</p>
                       </div>
                       <input type="checkbox" defaultChecked className="h-4 w-4" />
                     </div>
                     <div className="flex items-center justify-between py-3 border-b">
                       <div>
-                        <p className="font-medium">Push Notifications</p>
-                        <p className="text-sm text-muted-foreground">Receive browser notifications</p>
+                        <p className="font-medium">{t('settings.pushNotifications')}</p>
+                        <p className="text-sm text-muted-foreground">{t('settings.pushNotificationsDesc')}</p>
                       </div>
                       <input type="checkbox" defaultChecked className="h-4 w-4" />
                     </div>
                     <div className="flex items-center justify-between py-3 border-b">
                       <div>
-                        <p className="font-medium">Weekly Digest</p>
-                        <p className="text-sm text-muted-foreground">Weekly summary of activity</p>
+                        <p className="font-medium">{t('settings.weeklyDigest')}</p>
+                        <p className="text-sm text-muted-foreground">{t('settings.weeklyDigestDesc')}</p>
                       </div>
                       <input type="checkbox" className="h-4 w-4" />
                     </div>
                     <div className="flex items-center justify-between py-3">
                       <div>
-                        <p className="font-medium">Marketing Emails</p>
-                        <p className="text-sm text-muted-foreground">Receive promotional content</p>
+                        <p className="font-medium">{t('settings.marketingEmails')}</p>
+                        <p className="text-sm text-muted-foreground">{t('settings.marketingEmailsDesc')}</p>
                       </div>
                       <input type="checkbox" className="h-4 w-4" />
                     </div>
                   </div>
                   <div className="pt-4 border-t">
-                    <Button onClick={handleSave}>Save Changes</Button>
-                    <Button variant="outline" className="ml-2">Cancel</Button>
+                    <Button onClick={handleSave}>{t('settings.saveChanges')}</Button>
+                    <Button variant="outline" className="ml-2">{t('settings.cancel')}</Button>
                   </div>
                 </div>
               </>
@@ -197,27 +211,27 @@ const Settings = () => {
 
             {activeSection === 'security' && (
               <>
-                <h2 className="text-xl font-semibold mb-6">Security Settings</h2>
+                <h2 className="text-xl font-semibold mb-6">{t('settings.securitySettings')}</h2>
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-medium mb-4">Change Password</h3>
+                    <h3 className="text-lg font-medium mb-4">{t('settings.changePassword')}</h3>
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium mb-1">Current Password</label>
+                        <label className="block text-sm font-medium mb-1">{t('settings.currentPassword')}</label>
                         <input 
                           type="password" 
                           className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground" 
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">New Password</label>
+                        <label className="block text-sm font-medium mb-1">{t('settings.newPassword')}</label>
                         <input 
                           type="password" 
                           className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground" 
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Confirm New Password</label>
+                        <label className="block text-sm font-medium mb-1">{t('settings.confirmPassword')}</label>
                         <input 
                           type="password" 
                           className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground" 
@@ -226,13 +240,13 @@ const Settings = () => {
                     </div>
                   </div>
                   <div className="pt-4 border-t">
-                    <h3 className="text-lg font-medium mb-4">Two-Factor Authentication</h3>
-                    <p className="text-sm text-muted-foreground mb-4">Add an extra layer of security to your account</p>
-                    <Button variant="outline">Enable 2FA</Button>
+                    <h3 className="text-lg font-medium mb-4">{t('settings.twoFactorAuth')}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{t('settings.twoFactorAuthDesc')}</p>
+                    <Button variant="outline">{t('settings.enable2FA')}</Button>
                   </div>
                   <div className="pt-4 border-t">
-                    <Button onClick={handleSave}>Save Changes</Button>
-                    <Button variant="outline" className="ml-2">Cancel</Button>
+                    <Button onClick={handleSave}>{t('settings.saveChanges')}</Button>
+                    <Button variant="outline" className="ml-2">{t('settings.cancel')}</Button>
                   </div>
                 </div>
               </>
@@ -240,29 +254,53 @@ const Settings = () => {
 
             {activeSection === 'regional' && (
               <>
-                <h2 className="text-xl font-semibold mb-6">Regional Settings</h2>
+                <h2 className="text-xl font-semibold mb-6">{t('settings.regionalSettings')}</h2>
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Language</label>
-                    <select className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground">
-                      <option>English (US)</option>
-                      <option>English (UK)</option>
-                      <option>Afrikaans</option>
-                      <option>Zulu</option>
-                      <option>Xhosa</option>
+                    <label className="block text-sm font-medium mb-1">{t('settings.language')}</label>
+                    <select 
+                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                      value={selectedLanguage}
+                      onChange={(e) => setSelectedLanguage(e.target.value)}
+                    >
+                      {languages.map((lang) => (
+                        <option key={lang.code} value={lang.code}>
+                          {lang.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Timezone</label>
+                    <label className="block text-sm font-medium mb-1">{t('settings.country')}</label>
+                    <select 
+                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                      value={selectedCountry}
+                      onChange={(e) => setSelectedCountry(e.target.value)}
+                    >
+                      {countries.map((country) => (
+                        <option key={country.code} value={country.code}>
+                          {country.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">{t('settings.timezone')}</label>
                     <select className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground">
                       <option>Africa/Johannesburg (SAST)</option>
                       <option>UTC</option>
                       <option>Europe/London (GMT)</option>
                       <option>America/New_York (EST)</option>
+                      <option>Asia/Tokyo (JST)</option>
+                      <option>Australia/Sydney (AEDT)</option>
+                      <option>America/Los_Angeles (PST)</option>
+                      <option>Europe/Paris (CET)</option>
+                      <option>Asia/Dubai (GST)</option>
+                      <option>America/Sao_Paulo (BRT)</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Date Format</label>
+                    <label className="block text-sm font-medium mb-1">{t('settings.dateFormat')}</label>
                     <select className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground">
                       <option>DD/MM/YYYY</option>
                       <option>MM/DD/YYYY</option>
@@ -270,8 +308,8 @@ const Settings = () => {
                     </select>
                   </div>
                   <div className="pt-4 border-t">
-                    <Button onClick={handleSave}>Save Changes</Button>
-                    <Button variant="outline" className="ml-2">Cancel</Button>
+                    <Button onClick={handleSave}>{t('settings.saveChanges')}</Button>
+                    <Button variant="outline" className="ml-2">{t('settings.cancel')}</Button>
                   </div>
                 </div>
               </>
@@ -279,15 +317,15 @@ const Settings = () => {
 
             {activeSection === 'preferences' && (
               <>
-                <h2 className="text-xl font-semibold mb-6">Preferences</h2>
+                <h2 className="text-xl font-semibold mb-6">{t('settings.preferences')}</h2>
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-medium mb-4">Display Settings</h3>
+                    <h3 className="text-lg font-medium mb-4">{t('settings.displaySettings')}</h3>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium">Dark Mode</p>
-                          <p className="text-sm text-muted-foreground">Switch between light and dark theme</p>
+                          <p className="font-medium">{t('settings.darkMode')}</p>
+                          <p className="text-sm text-muted-foreground">{t('settings.darkModeDesc')}</p>
                         </div>
                         <div>
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -304,8 +342,8 @@ const Settings = () => {
                       
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium">Compact View</p>
-                          <p className="text-sm text-muted-foreground">Show more data with less spacing</p>
+                          <p className="font-medium">{t('settings.compactView')}</p>
+                          <p className="text-sm text-muted-foreground">{t('settings.compactViewDesc')}</p>
                         </div>
                         <div>
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -322,8 +360,8 @@ const Settings = () => {
                     </div>
                   </div>
                   <div className="pt-4 border-t">
-                    <Button onClick={handleSave}>Save Changes</Button>
-                    <Button variant="outline" className="ml-2">Cancel</Button>
+                    <Button onClick={handleSave}>{t('settings.saveChanges')}</Button>
+                    <Button variant="outline" className="ml-2">{t('settings.cancel')}</Button>
                   </div>
                 </div>
               </>
