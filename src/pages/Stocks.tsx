@@ -3,8 +3,8 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Upload, Sparkles, TrendingUp, Award, Code, Palette, Database } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { Upload, Sparkles, TrendingUp, Award, Code, Palette, Database, FileText, X } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { AnalysisDialog } from '@/components/skillbridge/AnalysisDialog';
 
@@ -12,7 +12,7 @@ const MySkills = () => {
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const { toast } = useToast();
   const cvInputRef = useRef<HTMLInputElement>(null);
-  const portfolioInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedCV, setUploadedCV] = useState<File | null>(null);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysis, setAnalysis] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -26,27 +26,46 @@ const MySkills = () => {
     });
   };
 
-  const analyzeFiles = async (cvFile?: File, portfolioFile?: File) => {
+  const handleCVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedCV(file);
+      toast({
+        title: "CV Uploaded",
+        description: `${file.name} ready for analysis`,
+      });
+    }
+  };
+
+  const handleRemoveCV = () => {
+    setUploadedCV(null);
+    if (cvInputRef.current) {
+      cvInputRef.current.value = '';
+    }
+  };
+
+  const handleAnalyzePortfolio = async () => {
+    if (!uploadedCV) {
+      toast({
+        title: "No CV Uploaded",
+        description: "Please upload your CV first before analyzing",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsAnalyzing(true);
     setAnalysisOpen(true);
     setAnalysis('');
 
     try {
-      let cvContent = '';
-      let portfolioContent = '';
-
-      if (cvFile) {
-        cvContent = await readFileAsText(cvFile);
-      }
-      if (portfolioFile) {
-        portfolioContent = await readFileAsText(portfolioFile);
-      }
+      const cvContent = await readFileAsText(uploadedCV);
 
       const { data, error } = await supabase.functions.invoke('analyze-portfolio', {
         body: {
           cvContent,
-          portfolioContent,
-          fileName: cvFile?.name || portfolioFile?.name || 'document',
+          portfolioContent: '',
+          fileName: uploadedCV.name,
         },
       });
 
@@ -55,7 +74,7 @@ const MySkills = () => {
       setAnalysis(data.analysis);
       toast({
         title: "Analysis Complete",
-        description: "Your portfolio and CV have been analyzed by AI.",
+        description: "Your CV and portfolio have been analyzed by AI.",
       });
     } catch (error) {
       console.error('Error analyzing files:', error);
@@ -67,28 +86,6 @@ const MySkills = () => {
       setAnalysisOpen(false);
     } finally {
       setIsAnalyzing(false);
-    }
-  };
-
-  const handleCVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      toast({
-        title: "CV Uploaded",
-        description: `${file.name} is being analyzed...`,
-      });
-      await analyzeFiles(file);
-    }
-  };
-
-  const handlePortfolioAnalyze = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      toast({
-        title: "Portfolio Uploaded",
-        description: `${file.name} is being analyzed...`,
-      });
-      await analyzeFiles(undefined, file);
     }
   };
 
@@ -131,8 +128,39 @@ const MySkills = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Upload your CV or portfolio to get instant AI analysis of your skills, gaps, and personalized recommendations.
+                Upload your CV to get instant AI analysis of your skills, gaps, and personalized recommendations.
               </p>
+              
+              {uploadedCV ? (
+                <div className="border rounded-lg p-4 bg-muted/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-8 w-8 text-primary" />
+                      <div>
+                        <p className="font-medium">{uploadedCV.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(uploadedCV.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleRemoveCV}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                  <Upload className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mb-4">
+                    No CV uploaded yet
+                  </p>
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <input
                   ref={cvInputRef}
@@ -149,17 +177,11 @@ const MySkills = () => {
                   <Upload className="h-4 w-4 mr-2" />
                   Upload CV
                 </Button>
-                <input
-                  ref={portfolioInputRef}
-                  type="file"
-                  accept=".pdf,.txt,.doc,.docx"
-                  onChange={handlePortfolioAnalyze}
-                  className="hidden"
-                />
                 <Button 
                   variant="outline" 
                   className="flex-1"
-                  onClick={() => portfolioInputRef.current?.click()}
+                  onClick={handleAnalyzePortfolio}
+                  disabled={!uploadedCV || isAnalyzing}
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
                   Analyze Portfolio
