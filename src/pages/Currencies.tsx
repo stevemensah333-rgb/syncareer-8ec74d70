@@ -4,68 +4,136 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Video, FileText, Mic, Target, Clock, Star } from 'lucide-react';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { getMajorContent } from '@/utils/majorContent';
 
 const Learn = () => {
-  // AI-generated learning paths
-  const learningPaths = [
-    {
-      title: 'Full-Stack Developer Path',
-      description: 'Complete roadmap to become a full-stack developer',
-      duration: '6 months',
-      level: 'Intermediate',
-      progress: 45,
-      modules: 24,
-      icon: Target,
-    },
-    {
-      title: 'UI/UX Design Mastery',
-      description: 'Master modern design principles and tools',
-      duration: '4 months',
-      level: 'Beginner',
-      progress: 20,
-      modules: 18,
-      icon: Target,
-    },
-  ];
+  const { studentDetails, loading } = useUserProfile();
+  const majorContent = getMajorContent(studentDetails?.major);
 
-  // Recommended courses
-  const recommendedCourses = [
-    {
-      title: 'Advanced React Patterns',
-      provider: 'FreeCodeCamp',
-      duration: '12 hours',
-      rating: 4.8,
-      type: 'Video',
-    },
-    {
-      title: 'System Design Fundamentals',
-      provider: 'Coursera',
-      duration: '8 weeks',
-      rating: 4.9,
-      type: 'Course',
-    },
-    {
-      title: 'TypeScript Deep Dive',
-      provider: 'Udemy',
-      duration: '15 hours',
-      rating: 4.7,
-      type: 'Video',
-    },
-  ];
+  // Generate learning paths based on major
+  const getLearningPaths = () => {
+    const major = studentDetails?.major || 'General';
+    const skills = majorContent.skills.slice(0, 3);
+    
+    return [
+      {
+        title: `${major} Career Path`,
+        description: `Complete roadmap to excel in ${major.toLowerCase()}`,
+        duration: '6 months',
+        level: 'Intermediate',
+        progress: 45,
+        modules: 24,
+        icon: Target,
+      },
+      {
+        title: `${skills[0] || 'Core Skills'} Mastery`,
+        description: `Master ${skills[0]?.toLowerCase() || 'essential skills'} and related technologies`,
+        duration: '4 months',
+        level: 'Beginner',
+        progress: 20,
+        modules: 18,
+        icon: Target,
+      },
+    ];
+  };
 
-  // Interview prep materials
-  const interviewPrep = [
-    { topic: 'Algorithms & Data Structures', completed: 15, total: 30 },
-    { topic: 'System Design', completed: 5, total: 15 },
-    { topic: 'Behavioral Questions', completed: 8, total: 20 },
-    { topic: 'Mock Interviews', completed: 3, total: 10 },
-  ];
+  // Generate recommended courses based on major
+  const getRecommendedCourses = () => {
+    return majorContent.suggestedCourses.map((course, index) => ({
+      title: course,
+      provider: ['FreeCodeCamp', 'Coursera', 'Udemy', 'edX'][index % 4],
+      duration: ['12 hours', '8 weeks', '15 hours', '6 weeks'][index % 4],
+      rating: [4.8, 4.9, 4.7, 4.8][index % 4],
+      type: ['Video', 'Course', 'Video', 'Course'][index % 4],
+    }));
+  };
+
+  // Interview prep based on major
+  const getInterviewPrep = () => {
+    const major = studentDetails?.major;
+    
+    if (major === 'Computer Science' || major === 'Data Science' || major === 'Information Technology') {
+      return [
+        { topic: 'Technical Fundamentals', completed: 15, total: 30 },
+        { topic: 'System Design', completed: 5, total: 15 },
+        { topic: 'Behavioral Questions', completed: 8, total: 20 },
+        { topic: 'Mock Interviews', completed: 3, total: 10 },
+      ];
+    } else if (major === 'Business Administration' || major === 'Finance' || major === 'Marketing') {
+      return [
+        { topic: 'Case Studies', completed: 10, total: 25 },
+        { topic: 'Financial Analysis', completed: 8, total: 15 },
+        { topic: 'Behavioral Questions', completed: 12, total: 20 },
+        { topic: 'Mock Interviews', completed: 4, total: 10 },
+      ];
+    } else if (major === 'Law') {
+      return [
+        { topic: 'Legal Case Analysis', completed: 12, total: 25 },
+        { topic: 'Contract Review', completed: 6, total: 15 },
+        { topic: 'Behavioral Questions', completed: 10, total: 20 },
+        { topic: 'Mock Interviews', completed: 3, total: 10 },
+      ];
+    } else if (major === 'Medicine' || major === 'Nursing' || major === 'Pharmacy') {
+      return [
+        { topic: 'Clinical Scenarios', completed: 15, total: 30 },
+        { topic: 'Patient Communication', completed: 8, total: 15 },
+        { topic: 'Ethics Questions', completed: 6, total: 20 },
+        { topic: 'Mock Interviews', completed: 2, total: 10 },
+      ];
+    } else if (major === 'Electrical Engineering' || major === 'Mechanical Engineering' || major === 'Civil Engineering') {
+      return [
+        { topic: 'Technical Problems', completed: 12, total: 30 },
+        { topic: 'Design Challenges', completed: 5, total: 15 },
+        { topic: 'Behavioral Questions', completed: 8, total: 20 },
+        { topic: 'Mock Interviews', completed: 3, total: 10 },
+      ];
+    }
+    
+    return [
+      { topic: 'Industry Knowledge', completed: 10, total: 25 },
+      { topic: 'Professional Skills', completed: 8, total: 20 },
+      { topic: 'Behavioral Questions', completed: 12, total: 20 },
+      { topic: 'Mock Interviews', completed: 4, total: 10 },
+    ];
+  };
+
+  const learningPaths = getLearningPaths();
+  const recommendedCourses = getRecommendedCourses();
+  const interviewPrep = getInterviewPrep();
+
+  if (loading) {
+    return (
+      <PageLayout title="Learn">
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">Loading your personalized content...</p>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout title="Learn">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Major indicator */}
+          {studentDetails?.major && (
+            <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <Target className="h-10 w-10 text-primary" />
+                  <div>
+                    <h3 className="text-lg font-semibold">Personalized for {studentDetails.major}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Content tailored to your field of study
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* AI Learning Paths */}
           <Card>
             <CardHeader>
@@ -120,7 +188,7 @@ const Learn = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
-                Recommended Courses
+                Recommended Courses for {studentDetails?.major || 'You'}
               </CardTitle>
             </CardHeader>
             <CardContent>
