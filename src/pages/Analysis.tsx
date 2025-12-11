@@ -3,40 +3,42 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { TrendingUp, TrendingDown, AlertCircle, Sparkles } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertCircle, Sparkles, GraduationCap } from 'lucide-react';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { getMajorContent } from '@/utils/majorContent';
 
 const Analysis = () => {
-  // Labour market predictions
-  const skillDemandTrends = [
-    { skill: 'AI/ML', demand: 95, growth: '+45%', trend: 'up' },
-    { skill: 'Cloud (AWS/Azure)', demand: 92, growth: '+38%', trend: 'up' },
-    { skill: 'Cybersecurity', demand: 88, growth: '+32%', trend: 'up' },
-    { skill: 'React/Vue', demand: 85, growth: '+28%', trend: 'up' },
-    { skill: 'Data Science', demand: 82, growth: '+25%', trend: 'up' },
-    { skill: 'DevOps', demand: 78, growth: '+22%', trend: 'up' },
-    { skill: 'UI/UX Design', demand: 75, growth: '+18%', trend: 'stable' },
-    { skill: 'Mobile Dev', demand: 70, growth: '+15%', trend: 'stable' },
-  ];
+  const { studentDetails, profile } = useUserProfile();
+  const majorContent = getMajorContent(studentDetails?.major);
+  const userMajor = studentDetails?.major || 'your field';
+
+  // Labour market predictions - personalized based on major
+  const skillDemandTrends = majorContent.skills.slice(0, 8).map((skill, idx) => ({
+    skill,
+    demand: 95 - idx * 3,
+    growth: majorContent.jobTrends[Math.min(idx, majorContent.jobTrends.length - 1)]?.growth || '+15%',
+    trend: idx < 6 ? 'up' : 'stable',
+  }));
 
   // Predicted demand over next 12 months
   const demandForecast = Array.from({ length: 12 }, (_, i) => ({
     month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i],
-    aiml: 70 + i * 2 + Math.random() * 5,
-    cloud: 65 + i * 1.5 + Math.random() * 5,
-    cyber: 60 + i * 1.8 + Math.random() * 5,
+    primary: 70 + i * 2 + Math.random() * 5,
+    secondary: 65 + i * 1.5 + Math.random() * 5,
+    tertiary: 60 + i * 1.8 + Math.random() * 5,
   }));
 
-  // Job market insights
+  // Job market insights - personalized
   const marketInsights = [
     {
-      title: 'AI/ML Engineers in High Demand',
-      description: 'Demand expected to grow 45% in the next 6 months',
+      title: `${majorContent.jobTrends[0]?.title || 'Professionals'} in High Demand`,
+      description: `Demand expected to grow ${majorContent.jobTrends[0]?.growth || '+20%'} in the next 6 months`,
       category: 'Hot',
       icon: TrendingUp,
     },
     {
-      title: 'Cloud Skills Critical',
-      description: 'AWS and Azure certifications seeing 38% growth',
+      title: `${majorContent.skills[0]} Skills Critical`,
+      description: `${majorContent.skills[0]} expertise seeing strong growth`,
       category: 'Growing',
       icon: TrendingUp,
     },
@@ -48,20 +50,17 @@ const Analysis = () => {
     },
     {
       title: 'Skills Gap Widening',
-      description: 'Entry-level positions require more diverse skills',
+      description: `Entry-level ${userMajor} positions require more diverse skills`,
       category: 'Alert',
       icon: AlertCircle,
     },
   ];
 
-  // Salary trends by skill
-  const salaryData = [
-    { skill: 'AI/ML', avgSalary: 95 },
-    { skill: 'Cloud', avgSalary: 88 },
-    { skill: 'Full-Stack', avgSalary: 75 },
-    { skill: 'Frontend', avgSalary: 68 },
-    { skill: 'UI/UX', avgSalary: 65 },
-  ];
+  // Salary trends by skill - personalized
+  const salaryData = majorContent.skills.slice(0, 5).map((skill, idx) => ({
+    skill: skill.length > 12 ? skill.substring(0, 10) + '...' : skill,
+    avgSalary: 95 - idx * 8,
+  }));
 
   return (
     <PageLayout title="Market Analysis">
@@ -156,7 +155,15 @@ const Analysis = () => {
         <div className="lg:col-span-3">
           <Card>
             <CardHeader>
-              <CardTitle>Skill Demand Forecast (Next 12 Months)</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                Skill Demand Forecast (Next 12 Months)
+                {studentDetails?.major && (
+                  <Badge variant="outline" className="ml-2">
+                    <GraduationCap className="h-3 w-3 mr-1" />
+                    {studentDetails.major}
+                  </Badge>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-80">
@@ -168,24 +175,24 @@ const Analysis = () => {
                     <Tooltip />
                     <Line
                       type="monotone"
-                      dataKey="aiml"
-                      name="AI/ML"
+                      dataKey="primary"
+                      name={majorContent.skills[0] || 'Primary Skill'}
                       stroke="hsl(var(--primary))"
                       strokeWidth={2}
                       dot={{ r: 4 }}
                     />
                     <Line
                       type="monotone"
-                      dataKey="cloud"
-                      name="Cloud"
+                      dataKey="secondary"
+                      name={majorContent.skills[1] || 'Secondary Skill'}
                       stroke="hsl(var(--accent))"
                       strokeWidth={2}
                       dot={{ r: 4 }}
                     />
                     <Line
                       type="monotone"
-                      dataKey="cyber"
-                      name="Cybersecurity"
+                      dataKey="tertiary"
+                      name={majorContent.skills[2] || 'Tertiary Skill'}
                       stroke="hsl(var(--secondary))"
                       strokeWidth={2}
                       dot={{ r: 4 }}
@@ -219,30 +226,22 @@ const Analysis = () => {
           </Card>
         </div>
 
-        {/* Career Recommendations */}
+        {/* Career Recommendations - Personalized */}
         <Card>
           <CardHeader>
             <CardTitle>Recommended Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="p-3 bg-primary/10 rounded-lg">
-              <p className="text-sm font-medium mb-1">📚 Learn AI/ML Basics</p>
-              <p className="text-xs text-muted-foreground">
-                High demand with 45% growth predicted
-              </p>
-            </div>
-            <div className="p-3 bg-accent/10 rounded-lg">
-              <p className="text-sm font-medium mb-1">☁️ Get Cloud Certified</p>
-              <p className="text-xs text-muted-foreground">
-                AWS certification opens 300+ opportunities
-              </p>
-            </div>
-            <div className="p-3 bg-secondary/10 rounded-lg">
-              <p className="text-sm font-medium mb-1">🔒 Add Security Skills</p>
-              <p className="text-xs text-muted-foreground">
-                Cybersecurity seeing 32% growth
-              </p>
-            </div>
+            {majorContent.suggestedCourses.slice(0, 3).map((course, idx) => (
+              <div key={idx} className={`p-3 rounded-lg ${idx === 0 ? 'bg-primary/10' : idx === 1 ? 'bg-accent/10' : 'bg-secondary/10'}`}>
+                <p className="text-sm font-medium mb-1">
+                  {idx === 0 ? '📚' : idx === 1 ? '☁️' : '🔒'} {course}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {majorContent.jobTrends[idx]?.growth || '+15%'} growth in demand
+                </p>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
