@@ -86,6 +86,45 @@ export type Database = {
         }
         Relationships: []
       }
+      qualifications: {
+        Row: {
+          created_at: string | null
+          degree_type: string
+          id: string
+          is_current: boolean | null
+          major: string
+          school: string
+          updated_at: string | null
+          user_id: string
+          year_of_admission: number | null
+          year_of_completion: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          degree_type: string
+          id?: string
+          is_current?: boolean | null
+          major: string
+          school: string
+          updated_at?: string | null
+          user_id: string
+          year_of_admission?: number | null
+          year_of_completion?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          degree_type?: string
+          id?: string
+          is_current?: boolean | null
+          major?: string
+          school?: string
+          updated_at?: string | null
+          user_id?: string
+          year_of_admission?: number | null
+          year_of_completion?: number | null
+        }
+        Relationships: []
+      }
       student_details: {
         Row: {
           created_at: string | null
