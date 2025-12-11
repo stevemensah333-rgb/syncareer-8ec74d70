@@ -22,21 +22,35 @@ const Auth = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
+    const checkOnboardingStatus = async (userId: string) => {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('onboarding_completed')
+        .eq('id', userId)
+        .single();
+
+      if (profile?.onboarding_completed) {
+        navigate('/');
+      } else {
+        navigate('/onboarding');
+      }
+    };
+
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session);
       if (session) {
-        console.log('User is logged in, redirecting to home');
-        navigate('/');
+        console.log('User is logged in, checking onboarding status');
+        checkOnboardingStatus(session.user.id);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session);
       if (session) {
-        console.log('Session established, redirecting to home');
+        console.log('Session established, checking onboarding status');
         toast.success('Successfully logged in!');
-        navigate('/');
+        checkOnboardingStatus(session.user.id);
       }
     });
 

@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      employer_details: {
+        Row: {
+          company_location: string | null
+          company_name: string
+          company_size: string | null
+          created_at: string | null
+          id: string
+          industry: string | null
+          job_title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company_location?: string | null
+          company_name: string
+          company_size?: string | null
+          created_at?: string | null
+          id?: string
+          industry?: string | null
+          job_title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company_location?: string | null
+          company_name?: string
+          company_size?: string | null
+          created_at?: string | null
+          id?: string
+          industry?: string | null
+          job_title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -21,7 +57,9 @@ export type Database = {
           created_at: string | null
           full_name: string | null
           id: string
+          onboarding_completed: boolean | null
           updated_at: string | null
+          user_type: string | null
           username: string | null
         }
         Insert: {
@@ -30,7 +68,9 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id: string
+          onboarding_completed?: boolean | null
           updated_at?: string | null
+          user_type?: string | null
           username?: string | null
         }
         Update: {
@@ -39,8 +79,46 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id?: string
+          onboarding_completed?: boolean | null
           updated_at?: string | null
+          user_type?: string | null
           username?: string | null
+        }
+        Relationships: []
+      }
+      student_details: {
+        Row: {
+          created_at: string | null
+          degree_type: string
+          expected_completion: number | null
+          id: string
+          major: string
+          school: string | null
+          updated_at: string | null
+          user_id: string
+          year_of_admission: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          degree_type: string
+          expected_completion?: number | null
+          id?: string
+          major: string
+          school?: string | null
+          updated_at?: string | null
+          user_id: string
+          year_of_admission?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          degree_type?: string
+          expected_completion?: number | null
+          id?: string
+          major?: string
+          school?: string | null
+          updated_at?: string | null
+          user_id?: string
+          year_of_admission?: number | null
         }
         Relationships: []
       }

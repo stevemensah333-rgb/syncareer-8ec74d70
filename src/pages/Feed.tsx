@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { getMajorContent } from '@/utils/majorContent';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { SkillPost } from '@/components/skillbridge/SkillPost';
 import { ChallengeCard } from '@/components/skillbridge/ChallengeCard';
 import { StatsCard } from '@/components/ui/StatsCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, TrendingUp, Users, Award, Target, Zap } from 'lucide-react';
+import { Trophy, TrendingUp, Users, Award, Target, Zap, BookOpen, Briefcase } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -15,6 +17,10 @@ export function Feed() {
   const navigate = useNavigate();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const { profile, studentDetails, loading: profileLoading } = useUserProfile();
+
+  // Get personalized content based on major
+  const majorContent = getMajorContent(studentDetails?.major);
 
   useEffect(() => {
     // Check authentication
@@ -41,53 +47,53 @@ export function Feed() {
     setIsSidebarCollapsed(prev => !prev);
   };
 
-  // Mock data for skill posts
+  // Mock data for skill posts - can be personalized based on major
   const skillPosts = [
     {
       user: 'Maria Chen',
       avatar: 'MC',
-      skill: 'Modern UI Design System',
-      tags: ['Figma', 'UI_Design', 'Design_Systems'],
+      skill: majorContent.skills[0] || 'Modern UI Design System',
+      tags: majorContent.skills.slice(0, 3).map(s => s.replace(/\s+/g, '_')),
       rating: 4.8,
-      description: 'Created a comprehensive design system with reusable components and design tokens.',
+      description: `Demonstrated expertise in ${majorContent.skills[0]} with practical applications.`,
       endorsements: 24,
       comments: 8,
     },
     {
       user: 'Alex Kumar',
       avatar: 'AK',
-      skill: 'Python Data Analysis',
-      tags: ['Python', 'Data_Science', 'Pandas'],
+      skill: majorContent.skills[1] || 'Python Data Analysis',
+      tags: majorContent.skills.slice(1, 4).map(s => s.replace(/\s+/g, '_')),
       rating: 4.6,
-      description: 'Built an automated data analysis pipeline for real-time insights.',
+      description: `Built an impressive project showcasing ${majorContent.skills[1]} skills.`,
       endorsements: 18,
       comments: 5,
     },
     {
       user: 'Jordan Lee',
       avatar: 'JL',
-      skill: 'React Component Library',
-      tags: ['React', 'TypeScript', 'Frontend'],
+      skill: majorContent.skills[2] || 'React Component Library',
+      tags: majorContent.skills.slice(2, 5).map(s => s.replace(/\s+/g, '_')),
       rating: 4.9,
-      description: 'Developed a custom component library with full TypeScript support.',
+      description: `Advanced ${majorContent.skills[2]} implementation with best practices.`,
       endorsements: 31,
       comments: 12,
     },
   ];
 
-  // Mock data for challenges
+  // Mock data for challenges - personalized
   const challenges = [
     {
-      title: 'Design a Sustainable Brand Logo',
-      description: 'Create an eco-friendly brand identity that resonates with Gen-Z consumers.',
+      title: `${majorContent.skills[0]} Challenge`,
+      description: `Demonstrate your ${majorContent.skills[0]} abilities in this week's challenge.`,
       deadline: '5 days left',
       participants: 127,
       reward: 'Top 10 Featured',
       difficulty: 'Intermediate' as const,
     },
     {
-      title: 'Build a REST API',
-      description: 'Design and implement a scalable API with proper authentication.',
+      title: `${majorContent.skills[1]} Project`,
+      description: `Build a real-world project using ${majorContent.skills[1]}.`,
       deadline: '3 days left',
       participants: 89,
       reward: 'SkillScore +50',
@@ -95,12 +101,12 @@ export function Feed() {
     },
   ];
 
-  // Mock trending skills
-  const trendingSkills = [
-    { name: 'AI/ML', growth: '+25%', icon: Zap },
-    { name: 'UI/UX', growth: '+18%', icon: Target },
-    { name: 'Cloud', growth: '+22%', icon: TrendingUp },
-  ];
+  // Trending skills from major content
+  const trendingSkills = majorContent.skills.slice(0, 3).map((skill, idx) => ({
+    name: skill,
+    growth: ['+25%', '+18%', '+22%'][idx],
+    icon: [Zap, Target, TrendingUp][idx],
+  }));
 
   // Mock leaderboard
   const leaderboard = [

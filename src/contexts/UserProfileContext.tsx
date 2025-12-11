@@ -1,0 +1,136 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface StudentDetails {
+  year_of_admission: number | null;
+  expected_completion: number | null;
+  major: string;
+  school: string | null;
+  degree_type: string;
+}
+
+interface EmployerDetails {
+  company_name: string;
+  company_location: string | null;
+  industry: string | null;
+  company_size: string | null;
+  job_title: string | null;
+}
+
+interface UserProfile {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  onboarding_completed: boolean;
+  user_type: string | null;
+}
+
+interface UserProfileContextType {
+  profile: UserProfile | null;
+  studentDetails: StudentDetails | null;
+  employerDetails: EmployerDetails | null;
+  loading: boolean;
+  refreshProfile: () => Promise<void>;
+}
+
+const UserProfileContext = createContext<UserProfileContextType | undefined>(undefined);
+
+export const useUserProfile = () => {
+  const context = useContext(UserProfileContext);
+  if (context === undefined) {
+    throw new Error('useUserProfile must be used within a UserProfileProvider');
+  }
+  return context;
+};
+
+interface UserProfileProviderProps {
+  children: ReactNode;
+}
+
+export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ children }) => {
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [studentDetails, setStudentDetails] = useState<StudentDetails | null>(null);
+  const [employerDetails, setEmployerDetails] = useState<EmployerDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProfile = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        setProfile(null);
+        setStudentDetails(null);
+        setEmployerDetails(null);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Error fetching profile:', profileError);
+      }
+
+      if (profileData) {
+        setProfile(profileData as UserProfile);
+
+        // Fetch role-specific details
+        if (profileData.user_type === 'student') {
+          const { data: studentData } = await supabase
+            .from('student_details')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+          
+          if (studentData) {
+            setStudentDetails(studentData as StudentDetails);
+          }
+        } else if (profileData.user_type === 'employer') {
+          const { data: employerData } = await supabase
+            .from('employer_details')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+          
+          if (employerData) {
+            setEmployerDetails(employerData as EmployerDetails);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error in fetchProfile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        fetchProfile();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const refreshProfile = async () => {
+    setLoading(true);
+    await fetchProfile();
+  };
+
+  return (
+    <UserProfileContext.Provider value={{ profile, studentDetails, employerDetails, loading, refreshProfile }}>
+      {children}
+    </UserProfileContext.Provider>
+  );
+};
