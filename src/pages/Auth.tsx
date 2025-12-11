@@ -8,6 +8,23 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Eye, EyeOff, User, Lock } from 'lucide-react';
+import { z } from 'zod';
+
+// Validation schemas
+const signUpSchema = z.object({
+  fullName: z.string().trim().min(1, 'Full name is required').max(100, 'Full name must be less than 100 characters'),
+  email: z.string().trim().email('Invalid email address').max(255, 'Email must be less than 255 characters'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
+});
+
+const signInSchema = z.object({
+  email: z.string().trim().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -60,8 +77,14 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!fullName.trim()) {
-      toast.error('Please enter your full name');
+    // Validate with zod schema
+    const result = signUpSchema.safeParse({ 
+      fullName: fullName.trim(), 
+      email: email.trim(), 
+      password 
+    });
+    if (!result.success) {
+      toast.error(result.error.errors[0].message);
       return;
     }
     
@@ -119,6 +142,14 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate with zod schema
+    const result = signInSchema.safeParse({ email: email.trim(), password });
+    if (!result.success) {
+      toast.error(result.error.errors[0].message);
+      return;
+    }
+    
     setLoading(true);
     
     try {

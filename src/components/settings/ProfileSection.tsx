@@ -15,6 +15,14 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { GraduationCap, Briefcase, Plus, Trash2, Edit2, X, Check } from 'lucide-react';
+import { z } from 'zod';
+
+// Validation schema for qualifications
+const qualificationSchema = z.object({
+  school: z.string().trim().min(1, 'School name is required').max(200, 'School name must be less than 200 characters'),
+  degree_type: z.string().min(1, 'Degree type is required'),
+  major: z.string().min(1, 'Major is required'),
+});
 
 interface Qualification {
   id: string;
@@ -100,8 +108,13 @@ export function ProfileSection() {
   };
 
   const handleAddQualification = async () => {
-    if (!formData.school || !formData.degree_type || !formData.major) {
-      toast.error('Please fill in all required fields');
+    const result = qualificationSchema.safeParse({
+      school: formData.school.trim(),
+      degree_type: formData.degree_type,
+      major: formData.major,
+    });
+    if (!result.success) {
+      toast.error(result.error.errors[0].message);
       return;
     }
 
@@ -132,8 +145,15 @@ export function ProfileSection() {
   };
 
   const handleUpdateQualification = async () => {
-    if (!editingId || !formData.school || !formData.degree_type || !formData.major) {
-      toast.error('Please fill in all required fields');
+    if (!editingId) return;
+    
+    const result = qualificationSchema.safeParse({
+      school: formData.school.trim(),
+      degree_type: formData.degree_type,
+      major: formData.major,
+    });
+    if (!result.success) {
+      toast.error(result.error.errors[0].message);
       return;
     }
 

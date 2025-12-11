@@ -14,6 +14,20 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { GraduationCap, Briefcase, Users, Building2, ChevronRight, ChevronLeft } from 'lucide-react';
+import { z } from 'zod';
+
+// Validation schemas
+const studentSchema = z.object({
+  school: z.string().max(200, 'School name must be less than 200 characters').optional(),
+  major: z.string().min(1, 'Major is required'),
+  degreeType: z.string().min(1, 'Degree type is required'),
+});
+
+const employerSchema = z.object({
+  companyName: z.string().trim().min(1, 'Company name is required').max(200, 'Company name must be less than 200 characters'),
+  companyLocation: z.string().max(200, 'Location must be less than 200 characters').optional(),
+  jobTitle: z.string().max(100, 'Job title must be less than 100 characters').optional(),
+});
 
 const USER_TYPES = [
   { id: 'student', label: 'Student', icon: GraduationCap, description: 'I am currently studying or recently graduated' },
@@ -160,15 +174,21 @@ const Onboarding = () => {
   const handleSubmit = async () => {
     if (!userId) return;
 
-    // Validate required fields
+    // Validate with zod schemas
     if (userType === 'student') {
-      if (!major || !degreeType) {
-        toast.error('Please fill in all required fields');
+      const result = studentSchema.safeParse({ school, major, degreeType });
+      if (!result.success) {
+        toast.error(result.error.errors[0].message);
         return;
       }
     } else if (userType === 'employer' || userType === 'manager' || userType === 'recruiter') {
-      if (!companyName) {
-        toast.error('Please enter your company name');
+      const result = employerSchema.safeParse({ 
+        companyName: companyName.trim(), 
+        companyLocation: companyLocation || undefined, 
+        jobTitle: jobTitle || undefined 
+      });
+      if (!result.success) {
+        toast.error(result.error.errors[0].message);
         return;
       }
     }
