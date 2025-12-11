@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
-import { Bell, Globe, Lock, User, Settings as SettingsIcon } from 'lucide-react';
+import { Bell, Globe, Lock, User, Settings as SettingsIcon, UserCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 import { countries } from '@/utils/countries';
 import { languages } from '@/utils/languages';
+import { ProfileSection } from '@/components/settings/ProfileSection';
 
-type SettingsSection = 'account' | 'notifications' | 'security' | 'regional' | 'preferences';
+type SettingsSection = 'profile' | 'account' | 'notifications' | 'security' | 'regional' | 'preferences';
 
 const Settings = () => {
   const { toast } = useToast();
   const { t, i18n } = useTranslation();
-  const [activeSection, setActiveSection] = useState<SettingsSection>('account');
+  const [searchParams] = useSearchParams();
+  const initialTab = (searchParams.get('tab') as SettingsSection) || 'account';
+  const [activeSection, setActiveSection] = useState<SettingsSection>(initialTab);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -68,6 +72,15 @@ const Settings = () => {
             <h2 className="text-xl font-semibold mb-4">{t('settings.title')}</h2>
             <nav className="space-y-2">
               <Button 
+                variant={activeSection === 'profile' ? 'secondary' : 'ghost'} 
+                className="w-full justify-start" 
+                size="lg"
+                onClick={() => setActiveSection('profile')}
+              >
+                <UserCircle className="mr-2 h-5 w-5" />
+                Profile
+              </Button>
+              <Button 
                 variant={activeSection === 'account' ? 'secondary' : 'ghost'} 
                 className="w-full justify-start" 
                 size="lg"
@@ -117,6 +130,11 @@ const Settings = () => {
         </div>
         
         <div className="lg:col-span-2">
+          {activeSection === 'profile' && (
+            <div className="bg-card rounded-lg p-6 shadow">
+              <ProfileSection />
+            </div>
+          )}
           <div className="bg-card rounded-lg p-6 shadow">
             {activeSection === 'account' && (
               <>
