@@ -191,27 +191,27 @@ const Onboarding = () => {
       if (userType === 'student') {
         const { error: studentError } = await supabase
           .from('student_details')
-          .insert({
+          .upsert({
             user_id: userId,
             year_of_admission: yearOfAdmission ? parseInt(yearOfAdmission) : null,
             expected_completion: expectedCompletion ? parseInt(expectedCompletion) : null,
             major,
             school: school || null,
             degree_type: degreeType,
-          });
+          }, { onConflict: 'user_id' });
 
         if (studentError) throw studentError;
       } else if (userType === 'employer' || userType === 'manager' || userType === 'recruiter') {
         const { error: employerError } = await supabase
           .from('employer_details')
-          .insert({
+          .upsert({
             user_id: userId,
             company_name: companyName,
             company_location: companyLocation || null,
             industry: industry || null,
             company_size: companySize || null,
             job_title: jobTitle || null,
-          });
+          }, { onConflict: 'user_id' });
 
         if (employerError) throw employerError;
       }
