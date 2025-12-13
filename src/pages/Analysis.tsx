@@ -8,7 +8,7 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { getMajorContent } from '@/utils/majorContent';
 
 const Analysis = () => {
-  const { studentDetails, profile } = useUserProfile();
+  const { studentDetails, loading } = useUserProfile();
   const majorContent = getMajorContent(studentDetails?.major);
   const userMajor = studentDetails?.major || 'your field';
 
@@ -61,6 +61,16 @@ const Analysis = () => {
     skill: skill.length > 12 ? skill.substring(0, 10) + '...' : skill,
     avgSalary: 95 - idx * 8,
   }));
+
+  if (loading) {
+    return (
+      <PageLayout title="Market Analysis">
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">Loading personalized market analysis...</p>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout title="Market Analysis">
