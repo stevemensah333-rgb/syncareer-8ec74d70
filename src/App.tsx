@@ -19,6 +19,12 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import AICoach from "./pages/AICoach";
 import Onboarding from "./pages/Onboarding";
+// Employer pages
+import MyCompany from "./pages/employer/MyCompany";
+import TalentInsights from "./pages/employer/TalentInsights";
+import PostJob from "./pages/employer/PostJob";
+import TrainEmployees from "./pages/employer/TrainEmployees";
+import HireWithAI from "./pages/employer/HireWithAI";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +48,12 @@ const App = () => (
             <Route path="/global" element={<Global />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/ai-coach" element={<AICoach />} />
+            {/* Employer routes */}
+            <Route path="/my-company" element={<MyCompany />} />
+            <Route path="/talent-insights" element={<TalentInsights />} />
+            <Route path="/post-job" element={<PostJob />} />
+            <Route path="/train" element={<TrainEmployees />} />
+            <Route path="/hire-ai" element={<HireWithAI />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

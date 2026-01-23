@@ -1,15 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, Briefcase, Users, LogOut, ChevronDown, UserPlus, Megaphone, ShoppingCart, FileText, Menu } from 'lucide-react';
+import { Search, Bell, User, Briefcase, Users, LogOut, ChevronDown, MessageCircle, Menu } from 'lucide-react';
 import skillbridgeLogo from '@/assets/skillbridge-logo.png';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,10 +26,12 @@ interface NavbarProps {
 }
 
 export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
-  const [userType, setUserType] = useState<'seeker' | 'employer'>('seeker');
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { profile } = useUserProfile();
+
+  const isEmployer = profile?.user_type === 'employer';
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -84,64 +86,36 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
           </div>
 
           <div className="hidden lg:flex items-center gap-2">
-            <Button
-              variant="ghost"
-              className="text-sm"
-              onClick={() => setUserType('seeker')}
-            >
-              <Users className="h-4 w-4 mr-1" />
-              For Job Seekers
-            </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-sm">
-                  <Briefcase className="h-4 w-4 mr-1" />
-                  For Employers
-                  <ChevronDown className="h-4 w-4 ml-1" />
+            {isEmployer ? (
+              // Employer sees "For Employers" button
+              <Button
+                variant="ghost"
+                className="text-sm"
+              >
+                <Briefcase className="h-4 w-4 mr-1" />
+                For Employers
+              </Button>
+            ) : (
+              // Job seekers see both buttons
+              <>
+                <Button
+                  variant="ghost"
+                  className="text-sm"
+                >
+                  <Users className="h-4 w-4 mr-1" />
+                  For Job Seekers
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64">
-                <DropdownMenuLabel>Employer Services</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer py-3">
-                  <UserPlus className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
-                  <div className="flex flex-col">
-                    <div className="font-medium">Hire with SkillBridge</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Find and recruit top talent for your company
-                    </div>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer py-3">
-                  <Megaphone className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
-                  <div className="flex flex-col">
-                    <div className="font-medium">Advertise on SkillBridge</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Promote your brand to skilled professionals
-                    </div>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer py-3">
-                  <ShoppingCart className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
-                  <div className="flex flex-col">
-                    <div className="font-medium">Sell on SkillBridge</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Offer products or services to our community
-                    </div>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer py-3">
-                  <FileText className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
-                  <div className="flex flex-col">
-                    <div className="font-medium">Post a Job</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Create and publish job openings quickly
-                    </div>
-                  </div>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                
+                <Button 
+                  variant="ghost" 
+                  className="text-sm"
+                  onClick={() => navigate('/ai-coach')}
+                >
+                  <MessageCircle className="h-4 w-4 mr-1" />
+                  Ask a Counsellor
+                </Button>
+              </>
+            )}
           </div>
         </div>
         
