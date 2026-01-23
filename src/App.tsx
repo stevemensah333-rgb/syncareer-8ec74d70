@@ -25,6 +25,8 @@ import TalentInsights from "./pages/employer/TalentInsights";
 import PostJob from "./pages/employer/PostJob";
 import TrainEmployees from "./pages/employer/TrainEmployees";
 import HireWithAI from "./pages/employer/HireWithAI";
+// Counsellor pages
+import CounsellorDashboard from "./pages/counsellor/CounsellorDashboard";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +56,8 @@ const App = () => (
             <Route path="/post-job" element={<PostJob />} />
             <Route path="/train" element={<TrainEmployees />} />
             <Route path="/hire-ai" element={<HireWithAI />} />
+            {/* Counsellor routes */}
+            <Route path="/counsellor-dashboard" element={<CounsellorDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

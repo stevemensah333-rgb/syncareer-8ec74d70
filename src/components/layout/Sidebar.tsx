@@ -3,7 +3,7 @@ import React from 'react';
 import { 
   Home, Users, Briefcase, GraduationCap, Trophy, 
   BarChart, Brain, Settings, ChevronRight, ChevronLeft, Sparkles,
-  Building2, TrendingUp, FileText, UserPlus
+  Building2, TrendingUp, FileText, UserPlus, Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,8 +28,9 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
   const { profile } = useUserProfile();
   
   const isEmployer = profile?.user_type === 'employer';
+  const isCounsellor = profile?.user_type === 'career_counsellor';
   
-  // Navigation items for job seekers (students, professionals, counsellors)
+  // Navigation items for job seekers (students, professionals)
   const jobSeekerNavItems: NavItem[] = [
     {
       title: 'Feed',
@@ -127,7 +128,65 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
     }
   ];
 
-  const navItems = isEmployer ? employerNavItems : jobSeekerNavItems;
+  // Navigation items for counsellors
+  const counsellorNavItems: NavItem[] = [
+    {
+      title: 'Feed',
+      icon: Home,
+      href: '/',
+    },
+    {
+      title: 'My Portfolio',
+      icon: Users,
+      href: '/counsellor-dashboard',
+    },
+    {
+      title: 'Ratings',
+      icon: Star,
+      href: '/counsellor-dashboard',
+    },
+    {
+      title: 'Settings',
+      icon: Settings,
+      href: '/settings',
+    }
+  ];
+
+  const getNavItems = () => {
+    if (isEmployer) return employerNavItems;
+    if (isCounsellor) return counsellorNavItems;
+    return jobSeekerNavItems;
+  };
+
+  const navItems = getNavItems();
+
+  const getProgressText = () => {
+    if (isEmployer) {
+      return (
+        <>
+          <p className="font-medium">Employer Dashboard</p>
+          <p>3 active job posts</p>
+          <p className="text-[10px]">12 new applications</p>
+        </>
+      );
+    }
+    if (isCounsellor) {
+      return (
+        <>
+          <p className="font-medium">Counsellor Dashboard</p>
+          <p>Your profile is live</p>
+          <p className="text-[10px]">Check your bookings</p>
+        </>
+      );
+    }
+    return (
+      <>
+        <p className="font-medium">Your Progress</p>
+        <p>5-day streak 🔥</p>
+        <p className="text-[10px]">Keep learning!</p>
+      </>
+    );
+  };
 
   return (
     <aside className={cn(
@@ -188,19 +247,7 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
           "transition-opacity duration-200 rounded-md bg-sidebar-accent/50 p-2 text-xs text-sidebar-accent-foreground",
           isCollapsed ? "opacity-0" : "opacity-100"
         )}>
-          {isEmployer ? (
-            <>
-              <p className="font-medium">Employer Dashboard</p>
-              <p>3 active job posts</p>
-              <p className="text-[10px]">12 new applications</p>
-            </>
-          ) : (
-            <>
-              <p className="font-medium">Your Progress</p>
-              <p>5-day streak 🔥</p>
-              <p className="text-[10px]">Keep learning!</p>
-            </>
-          )}
+          {getProgressText()}
         </div>
       </div>
     </aside>

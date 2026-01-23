@@ -12,9 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { GraduationCap, Briefcase, Users, RefreshCw, ChevronRight, ChevronLeft } from 'lucide-react';
 import { z } from 'zod';
+import { countries } from '@/utils/countries';
 
 // Validation schemas
 const studentSchema = z.object({
@@ -27,6 +29,12 @@ const employerSchema = z.object({
   companyName: z.string().trim().min(1, 'Company name is required').max(200, 'Company name must be less than 200 characters'),
   companyLocation: z.string().max(200, 'Location must be less than 200 characters').optional(),
   jobTitle: z.string().max(100, 'Job title must be less than 100 characters').optional(),
+});
+
+const counsellorSchema = z.object({
+  fullName: z.string().trim().min(1, 'Full name is required').max(100, 'Name must be less than 100 characters'),
+  countryCode: z.string().min(1, 'Country code is required'),
+  phoneNumber: z.string().trim().min(1, 'Phone number is required').max(20, 'Phone number must be less than 20 characters'),
 });
 
 const transitionSchema = z.object({
@@ -180,6 +188,11 @@ const Onboarding = () => {
   const [companySize, setCompanySize] = useState<string>('');
   const [jobTitle, setJobTitle] = useState<string>('');
 
+  // Counsellor fields
+  const [counsellorFullName, setCounsellorFullName] = useState<string>('');
+  const [countryCode, setCountryCode] = useState<string>('');
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
+
   // Professional transition fields
   const [existingRole, setExistingRole] = useState<string>('');
   const [aspiredRole, setAspiredRole] = useState<string>('');
@@ -235,11 +248,21 @@ const Onboarding = () => {
         toast.error(result.error.errors[0].message);
         return;
       }
-    } else if (userType === 'employer' || userType === 'career_counsellor') {
+    } else if (userType === 'employer') {
       const result = employerSchema.safeParse({ 
         companyName: companyName.trim(), 
         companyLocation: companyLocation || undefined, 
         jobTitle: jobTitle || undefined 
+      });
+      if (!result.success) {
+        toast.error(result.error.errors[0].message);
+        return;
+      }
+    } else if (userType === 'career_counsellor') {
+      const result = counsellorSchema.safeParse({
+        fullName: counsellorFullName.trim(),
+        countryCode,
+        phoneNumber: phoneNumber.trim(),
       });
       if (!result.success) {
         toast.error(result.error.errors[0].message);
@@ -288,7 +311,7 @@ const Onboarding = () => {
           }, { onConflict: 'user_id' });
 
         if (studentError) throw studentError;
-      } else if (userType === 'employer' || userType === 'career_counsellor') {
+      } else if (userType === 'employer') {
         const { error: employerError } = await supabase
           .from('employer_details')
           .upsert({
@@ -301,6 +324,17 @@ const Onboarding = () => {
           }, { onConflict: 'user_id' });
 
         if (employerError) throw employerError;
+      } else if (userType === 'career_counsellor') {
+        const { error: counsellorError } = await supabase
+          .from('counsellor_details')
+          .upsert({
+            user_id: userId,
+            full_name: counsellorFullName.trim(),
+            country_code: countryCode,
+            phone_number: phoneNumber.trim(),
+          }, { onConflict: 'user_id' });
+
+        if (counsellorError) throw counsellorError;
       } else if (userType === 'professional_transition') {
         const { error: transitionError } = await supabase
           .from('professional_transition_details')
@@ -464,7 +498,7 @@ const Onboarding = () => {
           </div>
         )}
 
-        {step === 2 && (userType === 'employer' || userType === 'career_counsellor') && (
+        {step === 2 && userType === 'employer' && (
           <div className="space-y-6">
             <div className="text-center">
               <h1 className="text-3xl font-bold text-foreground">Company Details</h1>
@@ -536,6 +570,72 @@ const Onboarding = () => {
                 <ChevronLeft className="mr-2 w-4 h-4" /> Back
               </Button>
               <Button onClick={handleSubmit} disabled={loading || !companyName} className="px-8">
+                {loading ? 'Saving...' : 'Complete Setup'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && userType === 'career_counsellor' && (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-foreground">Counsellor Details</h1>
+              <p className="text-muted-foreground mt-2">Set up your counsellor profile</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 mt-8">
+              <div className="space-y-2">
+                <Label>Full Name *</Label>
+                <Input
+                  value={counsellorFullName}
+                  onChange={(e) => setCounsellorFullName(e.target.value)}
+                  placeholder="Enter your full name"
+                  className="h-12"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Country Code *</Label>
+                  <Select value={countryCode} onValueChange={setCountryCode}>
+                    <SelectTrigger className="h-12">
+                      <SelectValue placeholder="Select country" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border shadow-lg z-50">
+                      <ScrollArea className="h-[200px]">
+                        {countries.map((country) => (
+                          <SelectItem key={country.code} value={`+${country.code}`}>
+                            {country.name} (+{country.code})
+                          </SelectItem>
+                        ))}
+                      </ScrollArea>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Phone Number *</Label>
+                  <Input
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="Enter phone number"
+                    className="h-12"
+                    type="tel"
+                  />
+                </div>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Your phone number will be visible to clients who book sessions with you.
+                You can update your bio, specialization, and hiring price after completing setup.
+              </p>
+            </div>
+
+            <div className="flex justify-between mt-8">
+              <Button variant="outline" onClick={handleBack}>
+                <ChevronLeft className="mr-2 w-4 h-4" /> Back
+              </Button>
+              <Button onClick={handleSubmit} disabled={loading || !counsellorFullName || !countryCode || !phoneNumber} className="px-8">
                 {loading ? 'Saving...' : 'Complete Setup'}
               </Button>
             </div>
