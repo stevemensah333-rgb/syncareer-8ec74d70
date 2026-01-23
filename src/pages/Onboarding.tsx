@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { GraduationCap, Briefcase, Users, Building2, ChevronRight, ChevronLeft } from 'lucide-react';
+import { GraduationCap, Briefcase, Users, RefreshCw, ChevronRight, ChevronLeft } from 'lucide-react';
 import { z } from 'zod';
 
 // Validation schemas
@@ -31,9 +31,9 @@ const employerSchema = z.object({
 
 const USER_TYPES = [
   { id: 'student', label: 'Student', icon: GraduationCap, description: 'I am currently studying or recently graduated' },
-  { id: 'employer', label: 'Employer', icon: Briefcase, description: 'I represent a company looking to hire' },
-  { id: 'manager', label: 'Manager', icon: Users, description: 'I manage teams and talent acquisition' },
-  { id: 'recruiter', label: 'Recruiter', icon: Building2, description: 'I help companies find candidates' },
+  { id: 'employer', label: 'Employer / Recruiter', icon: Briefcase, description: 'I represent a company looking to hire or recruit talent' },
+  { id: 'career_counsellor', label: 'Career Counsellor', icon: Users, description: 'I help individuals with career guidance and planning' },
+  { id: 'professional_transition', label: 'Professional in Transition', icon: RefreshCw, description: 'I am changing careers or re-entering the workforce' },
 ];
 
 const MAJORS = [
@@ -181,7 +181,7 @@ const Onboarding = () => {
         toast.error(result.error.errors[0].message);
         return;
       }
-    } else if (userType === 'employer' || userType === 'manager' || userType === 'recruiter') {
+    } else if (userType === 'employer' || userType === 'career_counsellor') {
       const result = employerSchema.safeParse({ 
         companyName: companyName.trim(), 
         companyLocation: companyLocation || undefined, 
@@ -221,7 +221,7 @@ const Onboarding = () => {
           }, { onConflict: 'user_id' });
 
         if (studentError) throw studentError;
-      } else if (userType === 'employer' || userType === 'manager' || userType === 'recruiter') {
+      } else if (userType === 'employer' || userType === 'career_counsellor') {
         const { error: employerError } = await supabase
           .from('employer_details')
           .upsert({
@@ -384,7 +384,7 @@ const Onboarding = () => {
           </div>
         )}
 
-        {step === 2 && (userType === 'employer' || userType === 'manager' || userType === 'recruiter') && (
+        {step === 2 && (userType === 'employer' || userType === 'career_counsellor') && (
           <div className="space-y-6">
             <div className="text-center">
               <h1 className="text-3xl font-bold text-foreground">Company Details</h1>
