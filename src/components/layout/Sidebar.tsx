@@ -61,11 +61,6 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       href: '/analysis',
     },
     {
-      title: 'Global',
-      icon: Users,
-      href: '/global',
-    },
-    {
       title: 'SkillBridge AI',
       icon: Sparkles,
       href: '/ai-coach',
