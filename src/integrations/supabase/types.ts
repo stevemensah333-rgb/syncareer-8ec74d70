@@ -50,6 +50,36 @@ export type Database = {
         }
         Relationships: []
       }
+      professional_transition_details: {
+        Row: {
+          aspired_role: string
+          created_at: string
+          existing_role: string
+          id: string
+          updated_at: string
+          user_id: string
+          years_of_experience: string
+        }
+        Insert: {
+          aspired_role: string
+          created_at?: string
+          existing_role: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          years_of_experience: string
+        }
+        Update: {
+          aspired_role?: string
+          created_at?: string
+          existing_role?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          years_of_experience?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
