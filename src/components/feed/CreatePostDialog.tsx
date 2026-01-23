@@ -38,9 +38,18 @@ export function CreatePostDialog({ onPostCreated }: CreatePostDialogProps) {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
+  const MAX_CONTENT_LENGTH = 5000;
+
   const handleSubmit = async () => {
-    if (!content.trim()) {
+    const trimmedContent = content.trim();
+    
+    if (!trimmedContent) {
       toast.error('Please enter some content for your post');
+      return;
+    }
+
+    if (trimmedContent.length > MAX_CONTENT_LENGTH) {
+      toast.error(`Post content cannot exceed ${MAX_CONTENT_LENGTH} characters`);
       return;
     }
 
@@ -96,13 +105,19 @@ export function CreatePostDialog({ onPostCreated }: CreatePostDialogProps) {
         </DialogHeader>
         <div className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label>What's on your mind?</Label>
+            <div className="flex justify-between">
+              <Label>What's on your mind?</Label>
+              <span className={`text-xs ${content.length > MAX_CONTENT_LENGTH ? 'text-destructive' : 'text-muted-foreground'}`}>
+                {content.length}/{MAX_CONTENT_LENGTH}
+              </span>
+            </div>
             <Textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Share your skills, achievements, or ask for feedback..."
               rows={4}
               className="resize-none"
+              maxLength={MAX_CONTENT_LENGTH + 100}
             />
           </div>
 
