@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Star, MapPin, DollarSign, ChevronRight, ArrowLeft, Phone, User, MessageSquare } from 'lucide-react';
+import { Star, MapPin, DollarSign, ChevronRight, ArrowLeft, User, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -23,8 +23,6 @@ interface Counsellor {
   id: string;
   user_id: string;
   full_name: string;
-  phone_number: string;
-  country_code: string;
   bio: string | null;
   specialization: string | null;
   hiring_price: number;
@@ -76,9 +74,9 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
   const fetchCounsellors = async () => {
     setLoading(true);
     try {
-      // Fetch all counsellors
+      // Fetch all counsellors using the public view (excludes phone numbers for privacy)
       const { data: counsellorsData, error } = await supabase
-        .from('counsellor_details')
+        .from('counsellor_profiles_public')
         .select('*');
 
       if (error) throw error;
@@ -313,23 +311,19 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
 
                 <Separator />
 
-                {/* Contact Info */}
-                <div className="space-y-3">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Contact Information
-                  </h4>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Phone className="h-4 w-4" />
-                    <span>{selectedCounsellor.country_code} {selectedCounsellor.phone_number}</span>
-                  </div>
-                  {selectedCounsellor.location && (
+                {/* Location Info */}
+                {selectedCounsellor.location && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Location
+                    </h4>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <MapPin className="h-4 w-4" />
                       <span>{selectedCounsellor.location}</span>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 <Separator />
 
