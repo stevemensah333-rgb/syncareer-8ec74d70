@@ -208,7 +208,12 @@ const TrainEmployees = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Registered Employees</CardTitle>
-              <Button>
+              <Button onClick={() => {
+                toast({
+                  title: 'Add Employee',
+                  description: 'Use the email invitation form above to add employees.',
+                });
+              }}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Employee
               </Button>
@@ -238,7 +243,18 @@ const TrainEmployees = () => {
                         <p className="text-lg font-bold text-primary">{employee.inProgress}</p>
                         <p className="text-xs text-muted-foreground">In Progress</p>
                       </div>
-                      <Button variant="outline" size="sm">View Progress</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          toast({
+                            title: 'Progress Details',
+                            description: `${employee.name} has completed ${employee.coursesCompleted} courses with ${employee.inProgress} in progress.`,
+                          });
+                        }}
+                      >
+                        View Progress
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -251,7 +267,12 @@ const TrainEmployees = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Training Programs</CardTitle>
-              <Button>
+              <Button onClick={() => {
+                toast({
+                  title: 'Create Program',
+                  description: 'New program creation will be available soon.',
+                });
+              }}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Program
               </Button>
@@ -281,8 +302,29 @@ const TrainEmployees = () => {
                     </div>
                     <Progress value={(program.completed / program.enrolled) * 100} className="h-2 mb-4" />
                     <div className="flex gap-2">
-                      <Button variant="outline" className="flex-1">Edit</Button>
-                      <Button className="flex-1">Manage</Button>
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => {
+                          toast({
+                            title: 'Edit Program',
+                            description: `Editing ${program.name}`,
+                          });
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button 
+                        className="flex-1"
+                        onClick={() => {
+                          toast({
+                            title: 'Manage Program',
+                            description: `Managing ${program.name} - ${program.enrolled} employees enrolled`,
+                          });
+                        }}
+                      >
+                        Manage
+                      </Button>
                     </div>
                   </div>
                 ))}

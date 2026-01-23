@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Upload, Star, MessageSquare, ThumbsUp, ExternalLink } from 'lucide-react';
+import { UploadProjectDialog } from '@/components/portfolio/UploadProjectDialog';
+import { toast } from 'sonner';
 
 const Portfolio = () => {
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
@@ -97,7 +99,7 @@ const Portfolio = () => {
                     Upload projects to get peer ratings and boost your SkillScore
                   </p>
                 </div>
-                <Button>Upload Project</Button>
+                <UploadProjectDialog />
               </div>
             </CardContent>
           </Card>
@@ -263,7 +265,15 @@ const Portfolio = () => {
               <p className="text-sm mb-4 opacity-90">
                 Let employers see your amazing work!
               </p>
-              <Button variant="secondary">Copy Link</Button>
+              <Button 
+                variant="secondary"
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  toast.success('Portfolio link copied to clipboard!');
+                }}
+              >
+                Copy Link
+              </Button>
             </CardContent>
           </Card>
         </div>

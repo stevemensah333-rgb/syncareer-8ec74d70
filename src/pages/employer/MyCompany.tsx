@@ -1,12 +1,17 @@
+import { useState } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Building2, MapPin, Users, Megaphone, ShoppingCart, Edit, Globe, Mail, Phone } from 'lucide-react';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { EditCompanyDialog } from '@/components/employer/EditCompanyDialog';
+import { AddEmployeeDialog } from '@/components/employer/AddEmployeeDialog';
+import { toast } from 'sonner';
 
 const MyCompany = () => {
-  const { employerDetails, loading } = useUserProfile();
+  const { employerDetails, loading, refreshProfile } = useUserProfile();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   if (loading) {
     return (
@@ -30,7 +35,7 @@ const MyCompany = () => {
                 <Building2 className="h-5 w-5 text-primary" />
                 Company Profile
               </CardTitle>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Profile
               </Button>
@@ -80,7 +85,14 @@ const MyCompany = () => {
                 Add a description about your company, its mission, values, and what makes it a great place to work.
                 This will be visible to job seekers browsing your job postings.
               </p>
-              <Button variant="outline" className="mt-4">
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => {
+                  setIsEditDialogOpen(true);
+                  toast.info('You can add company description in the edit dialog');
+                }}
+              >
                 Add Company Description
               </Button>
             </CardContent>
@@ -99,7 +111,9 @@ const MyCompany = () => {
                 <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No employees registered yet</p>
                 <p className="text-sm mt-2">Invite employees to join your company training programs</p>
-                <Button className="mt-4">Invite Employees</Button>
+                <AddEmployeeDialog 
+                  trigger={<Button className="mt-4">Invite Employees</Button>}
+                />
               </div>
             </CardContent>
           </Card>
@@ -144,7 +158,10 @@ const MyCompany = () => {
               <p className="text-sm text-muted-foreground mb-4">
                 Promote your brand to thousands of skilled professionals on SkillBridge.
               </p>
-              <Button className="w-full">
+              <Button 
+                className="w-full"
+                onClick={() => toast.info('Ad campaign feature coming soon!')}
+              >
                 <Megaphone className="h-4 w-4 mr-2" />
                 Create Ad Campaign
               </Button>
@@ -163,7 +180,11 @@ const MyCompany = () => {
               <p className="text-sm text-muted-foreground mb-4">
                 Offer products or services to our community of professionals.
               </p>
-              <Button variant="outline" className="w-full">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => toast.info('Marketplace feature coming soon!')}
+              >
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 Start Selling
               </Button>
@@ -171,6 +192,13 @@ const MyCompany = () => {
           </Card>
         </div>
       </div>
+
+      <EditCompanyDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        companyData={employerDetails}
+        onSave={refreshProfile}
+      />
     </PageLayout>
   );
 };

@@ -149,8 +149,58 @@ const CounsellorDashboard = () => {
     const file = e.target.files?.[0];
     if (!file || !counsellorDetails) return;
 
-    // For now, we'll show a message that storage needs to be set up
-    toast.info('Profile picture upload will be available soon');
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be smaller than 5MB');
+      return;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast.error('Please sign in to upload an avatar');
+        return;
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${session.user.id}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update counsellor details with avatar URL
+      const { error: updateError } = await supabase
+        .from('counsellor_details')
+        .update({ avatar_url: publicUrl })
+        .eq('id', counsellorDetails.id);
+
+      if (updateError) throw updateError;
+
+      setCounsellorDetails({
+        ...counsellorDetails,
+        avatar_url: publicUrl,
+      });
+
+      toast.success('Profile picture updated successfully!');
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      toast.error(error.message || 'Failed to upload profile picture');
+    }
   };
 
   const averageRating = reviews.length > 0 

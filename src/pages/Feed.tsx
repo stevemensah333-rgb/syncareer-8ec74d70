@@ -8,8 +8,9 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { SkillPost } from '@/components/skillbridge/SkillPost';
 import { ChallengeCard } from '@/components/skillbridge/ChallengeCard';
 import { StatsCard } from '@/components/ui/StatsCard';
+import { CreatePostDialog } from '@/components/feed/CreatePostDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, TrendingUp, Users, Award, Target, Zap, BookOpen, Briefcase } from 'lucide-react';
+import { Trophy, TrendingUp, Users, Award, Target, Zap, BookOpen, Briefcase, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -164,10 +165,13 @@ export function Feed() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Main Feed */}
               <div className="lg:col-span-2 space-y-4">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Recent Activity
-                </h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    Recent Activity
+                  </h2>
+                  <CreatePostDialog />
+                </div>
                 {skillPosts.map((post, idx) => (
                   <SkillPost key={idx} {...post} />
                 ))}
