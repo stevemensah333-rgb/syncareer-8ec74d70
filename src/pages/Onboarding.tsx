@@ -29,6 +29,12 @@ const employerSchema = z.object({
   jobTitle: z.string().max(100, 'Job title must be less than 100 characters').optional(),
 });
 
+const transitionSchema = z.object({
+  existingRole: z.string().min(1, 'Current role is required'),
+  aspiredRole: z.string().min(1, 'Aspired role is required'),
+  yearsOfExperience: z.string().min(1, 'Years of experience is required'),
+});
+
 const USER_TYPES = [
   { id: 'student', label: 'Student', icon: GraduationCap, description: 'I am currently studying or recently graduated' },
   { id: 'employer', label: 'Employer / Recruiter', icon: Briefcase, description: 'I represent a company looking to hire or recruit talent' },
@@ -105,6 +111,41 @@ const COMPANY_SIZES = [
   '1000+ employees',
 ];
 
+const JOB_ROLES = [
+  'Software Developer',
+  'Data Analyst',
+  'Project Manager',
+  'Business Analyst',
+  'Marketing Manager',
+  'Sales Representative',
+  'Human Resources Manager',
+  'Financial Analyst',
+  'Operations Manager',
+  'Product Manager',
+  'UX/UI Designer',
+  'Account Manager',
+  'Consultant',
+  'Teacher/Educator',
+  'Healthcare Professional',
+  'Engineer',
+  'Administrative Assistant',
+  'Customer Service Representative',
+  'Legal Professional',
+  'Research Scientist',
+  'Entrepreneur/Business Owner',
+  'Other',
+];
+
+const YEARS_OF_EXPERIENCE = [
+  'Less than 1 year',
+  '1-2 years',
+  '3-5 years',
+  '6-10 years',
+  '11-15 years',
+  '16-20 years',
+  'More than 20 years',
+];
+
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 20 }, (_, i) => currentYear - 10 + i);
 
@@ -130,6 +171,11 @@ const Onboarding = () => {
   const [industry, setIndustry] = useState<string>('');
   const [companySize, setCompanySize] = useState<string>('');
   const [jobTitle, setJobTitle] = useState<string>('');
+
+  // Professional transition fields
+  const [existingRole, setExistingRole] = useState<string>('');
+  const [aspiredRole, setAspiredRole] = useState<string>('');
+  const [yearsOfExperience, setYearsOfExperience] = useState<string>('');
 
   useEffect(() => {
     const checkSession = async () => {
@@ -191,6 +237,16 @@ const Onboarding = () => {
         toast.error(result.error.errors[0].message);
         return;
       }
+    } else if (userType === 'professional_transition') {
+      const result = transitionSchema.safeParse({ 
+        existingRole, 
+        aspiredRole, 
+        yearsOfExperience 
+      });
+      if (!result.success) {
+        toast.error(result.error.errors[0].message);
+        return;
+      }
     }
 
     setLoading(true);
@@ -234,6 +290,17 @@ const Onboarding = () => {
           }, { onConflict: 'user_id' });
 
         if (employerError) throw employerError;
+      } else if (userType === 'professional_transition') {
+        const { error: transitionError } = await supabase
+          .from('professional_transition_details')
+          .upsert({
+            user_id: userId,
+            existing_role: existingRole,
+            aspired_role: aspiredRole,
+            years_of_experience: yearsOfExperience,
+          }, { onConflict: 'user_id' });
+
+        if (transitionError) throw transitionError;
       }
 
       toast.success('Profile setup complete!');
@@ -456,6 +523,68 @@ const Onboarding = () => {
                 <ChevronLeft className="mr-2 w-4 h-4" /> Back
               </Button>
               <Button onClick={handleSubmit} disabled={loading || !companyName} className="px-8">
+                {loading ? 'Saving...' : 'Complete Setup'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && userType === 'professional_transition' && (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-foreground">Career Transition Details</h1>
+              <p className="text-muted-foreground mt-2">Tell us about your career journey</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 mt-8">
+              <div className="space-y-2">
+                <Label>Current Role *</Label>
+                <Select value={existingRole} onValueChange={setExistingRole}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Select your current role" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    {JOB_ROLES.map((role) => (
+                      <SelectItem key={role} value={role}>{role}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Aspired Role *</Label>
+                <Select value={aspiredRole} onValueChange={setAspiredRole}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Select your aspired role" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    {JOB_ROLES.map((role) => (
+                      <SelectItem key={role} value={role}>{role}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Years of Work Experience *</Label>
+                <Select value={yearsOfExperience} onValueChange={setYearsOfExperience}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Select years of experience" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    {YEARS_OF_EXPERIENCE.map((exp) => (
+                      <SelectItem key={exp} value={exp}>{exp}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex justify-between mt-8">
+              <Button variant="outline" onClick={handleBack}>
+                <ChevronLeft className="mr-2 w-4 h-4" /> Back
+              </Button>
+              <Button onClick={handleSubmit} disabled={loading || !existingRole || !aspiredRole || !yearsOfExperience} className="px-8">
                 {loading ? 'Saving...' : 'Complete Setup'}
               </Button>
             </div>
