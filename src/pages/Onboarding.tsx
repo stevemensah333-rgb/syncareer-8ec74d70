@@ -165,6 +165,14 @@ const Onboarding = () => {
   const [school, setSchool] = useState<string>('');
   const [degreeType, setDegreeType] = useState<string>('');
 
+  // Reset expected completion if it becomes invalid when year of admission changes
+  const handleYearOfAdmissionChange = (year: string) => {
+    setYearOfAdmission(year);
+    if (expectedCompletion && parseInt(expectedCompletion) < parseInt(year)) {
+      setExpectedCompletion('');
+    }
+  };
+
   // Employer fields
   const [companyName, setCompanyName] = useState<string>('');
   const [companyLocation, setCompanyLocation] = useState<string>('');
@@ -413,7 +421,7 @@ const Onboarding = () => {
 
               <div className="space-y-2">
                 <Label>Year of Admission</Label>
-                <Select value={yearOfAdmission} onValueChange={setYearOfAdmission}>
+                <Select value={yearOfAdmission} onValueChange={handleYearOfAdmissionChange}>
                   <SelectTrigger className="h-12">
                     <SelectValue placeholder="Select year" />
                   </SelectTrigger>
@@ -432,9 +440,11 @@ const Onboarding = () => {
                     <SelectValue placeholder="Select year" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border shadow-lg z-50">
-                    {years.map((y) => (
-                      <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
-                    ))}
+                    {years
+                      .filter((y) => !yearOfAdmission || y >= parseInt(yearOfAdmission))
+                      .map((y) => (
+                        <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>

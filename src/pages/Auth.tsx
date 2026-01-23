@@ -40,13 +40,19 @@ const Auth = () => {
 
   useEffect(() => {
     const checkOnboardingStatus = async (userId: string) => {
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('onboarding_completed')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      if (profile?.onboarding_completed) {
+      if (error) {
+        console.error('Error checking onboarding status:', error);
+        navigate('/onboarding');
+        return;
+      }
+
+      if (profile?.onboarding_completed === true) {
         navigate('/');
       } else {
         navigate('/onboarding');
