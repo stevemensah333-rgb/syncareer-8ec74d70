@@ -6,6 +6,70 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Input validation constants
+const MAX_MESSAGE_LENGTH = 10000; // 10KB per message
+const MAX_MESSAGES = 50; // Maximum number of messages in conversation
+const VALID_ROLES = ["user", "assistant", "system"] as const;
+
+interface ChatMessage {
+  role: string;
+  content: string;
+}
+
+// Validate a single message
+function validateMessage(message: unknown, index: number): { valid: boolean; error?: string } {
+  if (!message || typeof message !== "object") {
+    return { valid: false, error: `Message at index ${index} must be an object` };
+  }
+
+  const msg = message as Record<string, unknown>;
+
+  // Validate role
+  if (typeof msg.role !== "string" || !VALID_ROLES.includes(msg.role as typeof VALID_ROLES[number])) {
+    return { valid: false, error: `Message at index ${index} has invalid role. Must be one of: ${VALID_ROLES.join(", ")}` };
+  }
+
+  // Validate content
+  if (typeof msg.content !== "string") {
+    return { valid: false, error: `Message at index ${index} must have a string content` };
+  }
+
+  if (msg.content.length === 0) {
+    return { valid: false, error: `Message at index ${index} has empty content` };
+  }
+
+  if (msg.content.length > MAX_MESSAGE_LENGTH) {
+    return { valid: false, error: `Message at index ${index} exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` };
+  }
+
+  return { valid: true };
+}
+
+// Validate the entire messages array
+function validateMessages(messages: unknown): { valid: boolean; error?: string; messages?: ChatMessage[] } {
+  if (!Array.isArray(messages)) {
+    return { valid: false, error: "Messages must be an array" };
+  }
+
+  if (messages.length === 0) {
+    return { valid: false, error: "Messages array cannot be empty" };
+  }
+
+  if (messages.length > MAX_MESSAGES) {
+    return { valid: false, error: `Too many messages. Maximum allowed: ${MAX_MESSAGES}` };
+  }
+
+  // Validate each message
+  for (let i = 0; i < messages.length; i++) {
+    const result = validateMessage(messages[i], i);
+    if (!result.valid) {
+      return { valid: false, error: result.error };
+    }
+  }
+
+  return { valid: true, messages: messages as ChatMessage[] };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -38,7 +102,36 @@ serve(async (req) => {
     const userId = claimsData.claims.sub;
     console.log("Authenticated user:", userId);
 
-    const { messages } = await req.json();
+    // Parse and validate request body
+    let requestBody: unknown;
+    try {
+      requestBody = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON in request body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!requestBody || typeof requestBody !== "object") {
+      return new Response(
+        JSON.stringify({ error: "Request body must be an object" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { messages } = requestBody as { messages?: unknown };
+
+    // Validate messages
+    const validation = validateMessages(messages);
+    if (!validation.valid) {
+      console.warn("Input validation failed:", validation.error);
+      return new Response(
+        JSON.stringify({ error: validation.error }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -55,7 +148,7 @@ serve(async (req) => {
             role: "system", 
             content: "You are SkillBridge AI, a career counsellor and advisor for young professionals and students in South Africa. Your role is to provide guidance on career paths, skill development, job market trends, CV improvement, interview preparation, and connecting skills to opportunities. Be encouraging, practical, and focused on actionable advice. Reference the user's portfolio, skills, and peer ratings when available." 
           },
-          ...messages,
+          ...validation.messages!,
         ],
         stream: true,
       }),

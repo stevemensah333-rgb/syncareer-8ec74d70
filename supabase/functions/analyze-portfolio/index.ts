@@ -7,6 +7,75 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Input validation constants
+const MAX_CV_CONTENT_LENGTH = 50000; // 50KB for CV content
+const MAX_PORTFOLIO_CONTENT_LENGTH = 50000; // 50KB for portfolio content
+const MAX_FILENAME_LENGTH = 255; // Standard filename length limit
+
+// Validate portfolio analysis request
+interface PortfolioRequest {
+  cvContent?: string;
+  portfolioContent?: string;
+  fileName: string;
+}
+
+function validatePortfolioRequest(body: unknown): { valid: boolean; error?: string; data?: PortfolioRequest } {
+  if (!body || typeof body !== "object") {
+    return { valid: false, error: "Request body must be an object" };
+  }
+
+  const request = body as Record<string, unknown>;
+
+  // Validate fileName (required)
+  if (typeof request.fileName !== "string") {
+    return { valid: false, error: "fileName is required and must be a string" };
+  }
+
+  if (request.fileName.length === 0) {
+    return { valid: false, error: "fileName cannot be empty" };
+  }
+
+  if (request.fileName.length > MAX_FILENAME_LENGTH) {
+    return { valid: false, error: `fileName exceeds maximum length of ${MAX_FILENAME_LENGTH} characters` };
+  }
+
+  // Validate cvContent (optional)
+  if (request.cvContent !== undefined) {
+    if (typeof request.cvContent !== "string") {
+      return { valid: false, error: "cvContent must be a string" };
+    }
+
+    if (request.cvContent.length > MAX_CV_CONTENT_LENGTH) {
+      return { valid: false, error: `cvContent exceeds maximum length of ${MAX_CV_CONTENT_LENGTH} characters (${Math.round(MAX_CV_CONTENT_LENGTH / 1000)}KB)` };
+    }
+  }
+
+  // Validate portfolioContent (optional)
+  if (request.portfolioContent !== undefined) {
+    if (typeof request.portfolioContent !== "string") {
+      return { valid: false, error: "portfolioContent must be a string" };
+    }
+
+    if (request.portfolioContent.length > MAX_PORTFOLIO_CONTENT_LENGTH) {
+      return { valid: false, error: `portfolioContent exceeds maximum length of ${MAX_PORTFOLIO_CONTENT_LENGTH} characters (${Math.round(MAX_PORTFOLIO_CONTENT_LENGTH / 1000)}KB)` };
+    }
+  }
+
+  // Ensure at least one content type is provided
+  if (!request.cvContent && !request.portfolioContent) {
+    return { valid: false, error: "At least one of cvContent or portfolioContent must be provided" };
+  }
+
+  return {
+    valid: true,
+    data: {
+      cvContent: request.cvContent as string | undefined,
+      portfolioContent: request.portfolioContent as string | undefined,
+      fileName: request.fileName as string,
+    },
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -41,7 +110,28 @@ serve(async (req) => {
     const userId = claimsData.claims.sub;
     console.log('Authenticated user:', userId);
 
-    const { cvContent, portfolioContent, fileName } = await req.json();
+    // Parse and validate request body
+    let requestBody: unknown;
+    try {
+      requestBody = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate portfolio request
+    const validation = validatePortfolioRequest(requestBody);
+    if (!validation.valid) {
+      console.warn('Input validation failed:', validation.error);
+      return new Response(
+        JSON.stringify({ error: validation.error }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { cvContent, portfolioContent, fileName } = validation.data!;
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
