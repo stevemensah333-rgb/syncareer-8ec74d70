@@ -68,7 +68,7 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       href: '/analysis',
     },
     {
-      title: 'SkillBridge AI',
+      title: 'Synconnect AI',
       icon: Sparkles,
       href: '/ai-coach',
     },
@@ -184,7 +184,7 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
           "font-semibold tracking-tight transition-opacity duration-200",
           isCollapsed ? "opacity-0" : "opacity-100"
         )}>
-          SkillBridge
+          Synconnect
         </h2>
         
         <Button
