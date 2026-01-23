@@ -38,23 +38,32 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const ensureProfileRow = async (userId: string) => {
+    // Ensures a profiles row exists so onboarding status can be persisted/read.
+    // Only inserts the minimal required field (id) to avoid overwriting any existing profile data.
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({ id: userId }, { onConflict: 'id' });
+
+    if (error) throw error;
+  };
+
   useEffect(() => {
     const checkOnboardingStatus = async (userId: string) => {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('onboarding_completed')
-        .eq('id', userId)
-        .maybeSingle();
+      try {
+        await ensureProfileRow(userId);
 
-      if (error) {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        navigate(profile?.onboarding_completed === true ? '/' : '/onboarding');
+      } catch (error) {
         console.error('Error checking onboarding status:', error);
-        navigate('/onboarding');
-        return;
-      }
-
-      if (profile?.onboarding_completed === true) {
-        navigate('/');
-      } else {
         navigate('/onboarding');
       }
     };
@@ -73,7 +82,8 @@ const Auth = () => {
       if (session) {
         console.log('Session established, checking onboarding status');
         toast.success('Successfully logged in!');
-        checkOnboardingStatus(session.user.id);
+        // Avoid Supabase calls directly inside the auth callback.
+        setTimeout(() => checkOnboardingStatus(session.user.id), 0);
       }
     });
 
@@ -120,6 +130,16 @@ const Auth = () => {
           toast.error(error.message);
         }
       } else {
+        // If a session is created immediately (e.g. auto-confirm enabled), ensure profiles row exists.
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          try {
+            await ensureProfileRow(session.user.id);
+          } catch (e) {
+            // Non-blocking: user can still complete onboarding; this just prevents repeated onboarding later.
+            console.error('Error ensuring profile row after sign up:', e);
+          }
+        }
         toast.success('Account created successfully!');
       }
     } catch (error: any) {
