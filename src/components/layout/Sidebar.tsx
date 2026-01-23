@@ -102,16 +102,6 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       href: '/post-job',
     },
     {
-      title: 'Portfolio',
-      icon: BarChart,
-      href: '/portfolio',
-    },
-    {
-      title: 'Performance',
-      icon: BarChart,
-      href: '/performance',
-    },
-    {
       title: 'Talent Insights',
       icon: TrendingUp,
       href: '/talent-insights',
@@ -138,11 +128,6 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
     {
       title: 'My Portfolio',
       icon: Users,
-      href: '/counsellor-dashboard',
-    },
-    {
-      title: 'Ratings',
-      icon: Star,
       href: '/counsellor-dashboard',
     },
     {
