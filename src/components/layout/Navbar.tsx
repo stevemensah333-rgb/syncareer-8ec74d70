@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, Briefcase, Users, LogOut, ChevronDown, MessageCircle, Menu } from 'lucide-react';
+import { Search, Bell, User, Briefcase, Users, LogOut, MessageCircle, Menu } from 'lucide-react';
 import skillbridgeLogo from '@/assets/skillbridge-logo.png';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import AskCounsellorDialog from '@/components/counsellor/AskCounsellorDialog';
 
 interface NavbarProps {
   className?: string;
@@ -27,11 +28,13 @@ interface NavbarProps {
 
 export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
   const [user, setUser] = useState<any>(null);
+  const [askCounsellorOpen, setAskCounsellorOpen] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { profile } = useUserProfile();
 
   const isEmployer = profile?.user_type === 'employer';
+  const isCounsellor = profile?.user_type === 'career_counsellor';
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -56,103 +59,117 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
   };
 
   return (
-    <header className={cn("bg-background/95 backdrop-blur-sm sticky top-0 z-30 border-b", className)}>
-      <div className="container flex items-center justify-between h-16 px-4">
-        <div className="flex items-center gap-2 lg:gap-6">
-          {/* Mobile Menu Button */}
-          {isMobile && onMobileMenuClick && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onMobileMenuClick}
-              className="md:hidden h-9 w-9"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          )}
-          
-          <div className="flex items-center gap-2">
-            <img src={skillbridgeLogo} alt="SkillBridge" className="h-8 w-8 object-contain" />
-            <h1 className="text-lg font-semibold tracking-tight lg:text-xl">SkillBridge</h1>
-          </div>
-          
-          <div className="relative hidden md:flex items-center h-9 rounded-md px-3 text-muted-foreground focus-within:text-foreground bg-muted/50">
-            <Search className="h-4 w-4 mr-2" />
-            <Input 
-              type="search" 
-              placeholder="Search skills, people..." 
-              className="h-9 w-[200px] lg:w-[280px] bg-transparent border-none px-0 py-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground"
-            />
-          </div>
-
-          <div className="hidden lg:flex items-center gap-2">
-            {isEmployer ? (
-              // Employer sees "For Employers" button
+    <>
+      <header className={cn("bg-background/95 backdrop-blur-sm sticky top-0 z-30 border-b", className)}>
+        <div className="container flex items-center justify-between h-16 px-4">
+          <div className="flex items-center gap-2 lg:gap-6">
+            {/* Mobile Menu Button */}
+            {isMobile && onMobileMenuClick && (
               <Button
                 variant="ghost"
-                className="text-sm"
+                size="icon"
+                onClick={onMobileMenuClick}
+                className="md:hidden h-9 w-9"
               >
-                <Briefcase className="h-4 w-4 mr-1" />
-                For Employers
+                <Menu className="h-5 w-5" />
               </Button>
-            ) : (
-              // Job seekers see both buttons
-              <>
+            )}
+            
+            <div className="flex items-center gap-2">
+              <img src={skillbridgeLogo} alt="SkillBridge" className="h-8 w-8 object-contain" />
+              <h1 className="text-lg font-semibold tracking-tight lg:text-xl">SkillBridge</h1>
+            </div>
+            
+            <div className="relative hidden md:flex items-center h-9 rounded-md px-3 text-muted-foreground focus-within:text-foreground bg-muted/50">
+              <Search className="h-4 w-4 mr-2" />
+              <Input 
+                type="search" 
+                placeholder="Search skills, people..." 
+                className="h-9 w-[200px] lg:w-[280px] bg-transparent border-none px-0 py-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground"
+              />
+            </div>
+
+            <div className="hidden lg:flex items-center gap-2">
+              {isEmployer ? (
+                // Employer sees "For Employers" button
+                <Button
+                  variant="ghost"
+                  className="text-sm"
+                >
+                  <Briefcase className="h-4 w-4 mr-1" />
+                  For Employers
+                </Button>
+              ) : isCounsellor ? (
+                // Counsellors see their role indicator
                 <Button
                   variant="ghost"
                   className="text-sm"
                 >
                   <Users className="h-4 w-4 mr-1" />
-                  For Job Seekers
+                  Counsellor Portal
                 </Button>
-                
-                <Button 
-                  variant="ghost" 
-                  className="text-sm"
-                  onClick={() => navigate('/ai-coach')}
-                >
-                  <MessageCircle className="h-4 w-4 mr-1" />
-                  Ask a Counsellor
-                </Button>
-              </>
-            )}
+              ) : (
+                // Job seekers see both buttons
+                <>
+                  <Button
+                    variant="ghost"
+                    className="text-sm"
+                  >
+                    <Users className="h-4 w-4 mr-1" />
+                    For Job Seekers
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    className="text-sm"
+                    onClick={() => setAskCounsellorOpen(true)}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-1" />
+                    Ask a Counsellor
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="relative h-9 w-9"
+            >
+              <Bell className="h-5 w-5" />
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary animate-pulse" />
+            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar className="h-9 w-9 transition-transform duration-200 hover:scale-105 cursor-pointer">
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    <User className="h-5 w-5" />
+                  </AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/settings?tab=profile')} className="cursor-pointer">
+                  <User className="h-4 w-4 mr-2" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
-        
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="relative h-9 w-9"
-          >
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary animate-pulse" />
-          </Button>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Avatar className="h-9 w-9 transition-transform duration-200 hover:scale-105 cursor-pointer">
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  <User className="h-5 w-5" />
-                </AvatarFallback>
-              </Avatar>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/settings?tab=profile')} className="cursor-pointer">
-                <User className="h-4 w-4 mr-2" />
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Ask a Counsellor Dialog */}
+      <AskCounsellorDialog open={askCounsellorOpen} onOpenChange={setAskCounsellorOpen} />
+    </>
   );
 }

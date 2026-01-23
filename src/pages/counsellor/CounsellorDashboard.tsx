@@ -1,0 +1,472 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { 
+  User, Star, MapPin, Phone, DollarSign, Edit2, Save, X, 
+  Calendar, MessageSquare, Award, TrendingUp, Camera
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+
+interface CounsellorDetails {
+  id: string;
+  user_id: string;
+  full_name: string;
+  phone_number: string;
+  country_code: string;
+  bio: string | null;
+  specialization: string | null;
+  hiring_price: number;
+  location: string | null;
+  avatar_url: string | null;
+}
+
+interface Review {
+  id: string;
+  rating: number;
+  review_text: string | null;
+  created_at: string;
+  reviewer_id: string;
+}
+
+interface Booking {
+  id: string;
+  user_name: string;
+  user_contact: string;
+  status: string;
+  created_at: string;
+}
+
+const CounsellorDashboard = () => {
+  const { profile } = useUserProfile();
+  const [counsellorDetails, setCounsellorDetails] = useState<CounsellorDetails | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  
+  // Edit form state
+  const [editForm, setEditForm] = useState({
+    bio: '',
+    specialization: '',
+    hiring_price: 0,
+    location: '',
+  });
+
+  useEffect(() => {
+    fetchCounsellorData();
+  }, []);
+
+  const fetchCounsellorData = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      // Fetch counsellor details
+      const { data: details, error: detailsError } = await supabase
+        .from('counsellor_details')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (detailsError && detailsError.code !== 'PGRST116') {
+        console.error('Error fetching counsellor details:', detailsError);
+      }
+
+      if (details) {
+        setCounsellorDetails(details as CounsellorDetails);
+        setEditForm({
+          bio: details.bio || '',
+          specialization: details.specialization || '',
+          hiring_price: details.hiring_price || 0,
+          location: details.location || '',
+        });
+
+        // Fetch reviews
+        const { data: reviewsData } = await supabase
+          .from('counsellor_reviews')
+          .select('*')
+          .eq('counsellor_id', details.id)
+          .order('created_at', { ascending: false });
+
+        if (reviewsData) {
+          setReviews(reviewsData as Review[]);
+        }
+
+        // Fetch bookings
+        const { data: bookingsData } = await supabase
+          .from('counsellor_bookings')
+          .select('*')
+          .eq('counsellor_id', details.id)
+          .order('created_at', { ascending: false });
+
+        if (bookingsData) {
+          setBookings(bookingsData as Booking[]);
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!counsellorDetails) return;
+
+    try {
+      const { error } = await supabase
+        .from('counsellor_details')
+        .update({
+          bio: editForm.bio || null,
+          specialization: editForm.specialization || null,
+          hiring_price: editForm.hiring_price,
+          location: editForm.location || null,
+        })
+        .eq('id', counsellorDetails.id);
+
+      if (error) throw error;
+
+      setCounsellorDetails({
+        ...counsellorDetails,
+        ...editForm,
+      });
+      setIsEditing(false);
+      toast.success('Profile updated successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update profile');
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !counsellorDetails) return;
+
+    // For now, we'll show a message that storage needs to be set up
+    toast.info('Profile picture upload will be available soon');
+  };
+
+  const averageRating = reviews.length > 0 
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    : '0.0';
+
+  const pendingBookings = bookings.filter(b => b.status === 'pending').length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!counsellorDetails) {
+    return (
+      <div className="p-6">
+        <Card className="p-8 text-center">
+          <p className="text-muted-foreground">Counsellor profile not found. Please complete your onboarding.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header Section - Portfolio Style */}
+      <Card className="overflow-hidden">
+        <div className="bg-gradient-to-r from-primary/20 to-primary/5 h-32" />
+        <CardContent className="relative pt-0">
+          <div className="flex flex-col md:flex-row gap-6 -mt-16">
+            {/* Avatar */}
+            <div className="relative">
+              <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
+                <AvatarImage src={counsellorDetails.avatar_url || ''} />
+                <AvatarFallback className="text-3xl bg-primary/10 text-primary">
+                  {counsellorDetails.full_name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <label className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors">
+                <Camera className="h-4 w-4 text-primary-foreground" />
+                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+              </label>
+            </div>
+
+            {/* Profile Info */}
+            <div className="flex-1 pt-4 md:pt-8">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold">{counsellorDetails.full_name}</h1>
+                  <p className="text-muted-foreground flex items-center gap-1 mt-1">
+                    <Phone className="h-4 w-4" />
+                    {counsellorDetails.country_code} {counsellorDetails.phone_number}
+                  </p>
+                  {counsellorDetails.location && (
+                    <p className="text-muted-foreground flex items-center gap-1 mt-1">
+                      <MapPin className="h-4 w-4" />
+                      {counsellorDetails.location}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant={isEditing ? "outline" : "default"}
+                  size="sm"
+                  onClick={() => isEditing ? setIsEditing(false) : setIsEditing(true)}
+                >
+                  {isEditing ? <X className="h-4 w-4 mr-1" /> : <Edit2 className="h-4 w-4 mr-1" />}
+                  {isEditing ? 'Cancel' : 'Edit Profile'}
+                </Button>
+              </div>
+
+              {/* Stats Row */}
+              <div className="flex flex-wrap gap-4 mt-4">
+                <Badge variant="secondary" className="flex items-center gap-1 px-3 py-1">
+                  <Star className="h-4 w-4 text-yellow-500" />
+                  {averageRating} Rating
+                </Badge>
+                <Badge variant="secondary" className="flex items-center gap-1 px-3 py-1">
+                  <MessageSquare className="h-4 w-4" />
+                  {reviews.length} Reviews
+                </Badge>
+                <Badge variant="secondary" className="flex items-center gap-1 px-3 py-1">
+                  <Calendar className="h-4 w-4" />
+                  {bookings.length} Sessions
+                </Badge>
+                <Badge variant="outline" className="flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 border-green-200">
+                  <DollarSign className="h-4 w-4" />
+                  ${counsellorDetails.hiring_price}/session
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Bio & Specialization */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                About Me
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isEditing ? (
+                <>
+                  <div className="space-y-2">
+                    <Label>Bio</Label>
+                    <Textarea
+                      value={editForm.bio}
+                      onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                      placeholder="Tell clients about yourself, your experience, and your approach..."
+                      rows={4}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Specialization</Label>
+                    <Input
+                      value={editForm.specialization}
+                      onChange={(e) => setEditForm({ ...editForm, specialization: e.target.value })}
+                      placeholder="e.g., Career transitions, Tech industry, Leadership coaching"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Hiring Price ($/session)</Label>
+                      <Input
+                        type="number"
+                        value={editForm.hiring_price}
+                        onChange={(e) => setEditForm({ ...editForm, hiring_price: parseFloat(e.target.value) || 0 })}
+                        min={0}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Location</Label>
+                      <Input
+                        value={editForm.location}
+                        onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                        placeholder="e.g., New York, USA"
+                      />
+                    </div>
+                  </div>
+                  <Button onClick={handleSaveProfile} className="w-full">
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-foreground">
+                    {counsellorDetails.bio || 'No bio added yet. Click "Edit Profile" to add one.'}
+                  </p>
+                  {counsellorDetails.specialization && (
+                    <div className="pt-2">
+                      <Label className="text-muted-foreground">Specialization</Label>
+                      <p className="text-foreground">{counsellorDetails.specialization}</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Reviews */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Star className="h-5 w-5" />
+                Client Reviews
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {reviews.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">
+                  No reviews yet. Your ratings will appear here after client sessions.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {reviews.map((review) => (
+                    <div key={review.id} className="border-b pb-4 last:border-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-4 w-4 ${i < review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-muted'}`}
+                          />
+                        ))}
+                        <span className="text-sm text-muted-foreground ml-2">
+                          {new Date(review.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {review.review_text && (
+                        <p className="text-foreground">{review.review_text}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Quick Stats */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Quick Stats
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Average Rating</span>
+                <span className="font-semibold flex items-center gap-1">
+                  <Star className="h-4 w-4 text-yellow-500" />
+                  {averageRating}
+                </span>
+              </div>
+              <Separator />
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Total Sessions</span>
+                <span className="font-semibold">{bookings.length}</span>
+              </div>
+              <Separator />
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Pending Requests</span>
+                <Badge variant={pendingBookings > 0 ? "default" : "secondary"}>
+                  {pendingBookings}
+                </Badge>
+              </div>
+              <Separator />
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Session Price</span>
+                <span className="font-semibold text-green-600">${counsellorDetails.hiring_price}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Bookings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Recent Bookings
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {bookings.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">
+                  No bookings yet
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {bookings.slice(0, 5).map((booking) => (
+                    <div key={booking.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                      <div>
+                        <p className="font-medium text-sm">{booking.user_name}</p>
+                        <p className="text-xs text-muted-foreground">{booking.user_contact}</p>
+                      </div>
+                      <Badge variant={booking.status === 'pending' ? 'outline' : 'secondary'}>
+                        {booking.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Achievements */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Achievements
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {reviews.length >= 1 && (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    First Review
+                  </Badge>
+                )}
+                {reviews.length >= 5 && (
+                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                    5+ Reviews
+                  </Badge>
+                )}
+                {bookings.length >= 10 && (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    10+ Sessions
+                  </Badge>
+                )}
+                {parseFloat(averageRating) >= 4.5 && reviews.length > 0 && (
+                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                    Top Rated
+                  </Badge>
+                )}
+                {reviews.length === 0 && bookings.length === 0 && (
+                  <p className="text-muted-foreground text-sm">Complete sessions to earn badges!</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CounsellorDashboard;

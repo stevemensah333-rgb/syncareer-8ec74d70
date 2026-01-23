@@ -14,6 +14,130 @@ export type Database = {
   }
   public: {
     Tables: {
+      counsellor_bookings: {
+        Row: {
+          counsellor_id: string
+          created_at: string
+          id: string
+          status: string
+          updated_at: string
+          user_contact: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          counsellor_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_contact: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          counsellor_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_contact?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "counsellor_bookings_counsellor_id_fkey"
+            columns: ["counsellor_id"]
+            isOneToOne: false
+            referencedRelation: "counsellor_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      counsellor_details: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          country_code: string
+          created_at: string
+          full_name: string
+          hiring_price: number | null
+          id: string
+          location: string | null
+          phone_number: string
+          specialization: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          country_code: string
+          created_at?: string
+          full_name: string
+          hiring_price?: number | null
+          id?: string
+          location?: string | null
+          phone_number: string
+          specialization?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          country_code?: string
+          created_at?: string
+          full_name?: string
+          hiring_price?: number | null
+          id?: string
+          location?: string | null
+          phone_number?: string
+          specialization?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      counsellor_reviews: {
+        Row: {
+          counsellor_id: string
+          created_at: string
+          id: string
+          rating: number
+          review_text: string | null
+          reviewer_id: string
+          updated_at: string
+        }
+        Insert: {
+          counsellor_id: string
+          created_at?: string
+          id?: string
+          rating: number
+          review_text?: string | null
+          reviewer_id: string
+          updated_at?: string
+        }
+        Update: {
+          counsellor_id?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          review_text?: string | null
+          reviewer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "counsellor_reviews_counsellor_id_fkey"
+            columns: ["counsellor_id"]
+            isOneToOne: false
+            referencedRelation: "counsellor_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employer_details: {
         Row: {
           company_location: string | null
