@@ -8,6 +8,9 @@ import { useTranslation } from 'react-i18next';
 import { countries } from '@/utils/countries';
 import { languages } from '@/utils/languages';
 import { ProfileSection } from '@/components/settings/ProfileSection';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type SettingsSection = 'profile' | 'account' | 'notifications' | 'security' | 'regional' | 'preferences';
 
@@ -17,6 +20,13 @@ const Settings = () => {
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as SettingsSection) || 'account';
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialTab);
+  const { profile, studentDetails, employerDetails, loading: profileLoading } = useUserProfile();
+  const [professionalDetails, setProfessionalDetails] = useState<{
+    existing_role: string;
+    aspired_role: string;
+    years_of_experience: string;
+  } | null>(null);
+  const [userEmail, setUserEmail] = useState<string>('');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -27,6 +37,41 @@ const Settings = () => {
   });
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
   const [selectedCountry, setSelectedCountry] = useState(() => localStorage.getItem('country') || 'ZA');
+
+  // Fetch user email and professional details
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUserEmail(session.user.email || '');
+        
+        // Fetch professional transition details if applicable
+        if (profile?.user_type === 'professional_transition') {
+          const { data } = await supabase
+            .from('professional_transition_details')
+            .select('existing_role, aspired_role, years_of_experience')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          
+          if (data) {
+            setProfessionalDetails(data);
+          }
+        }
+      }
+    };
+    
+    fetchUserData();
+  }, [profile?.user_type]);
+
+  const getUserTypeLabel = (userType: string | null) => {
+    switch (userType) {
+      case 'student': return 'Student';
+      case 'employer': return 'Employer / Recruiter';
+      case 'career_counsellor': return 'Career Counsellor';
+      case 'professional_transition': return 'Professional in Transition';
+      default: return 'Not specified';
+    }
+  };
 
   useEffect(() => {
     const root = document.documentElement;
@@ -139,49 +184,202 @@ const Settings = () => {
             {activeSection === 'account' && (
               <>
                 <h2 className="text-xl font-semibold mb-6">{t('settings.accountSettings')}</h2>
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">{t('settings.personalInfo')}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">{t('settings.firstName')}</label>
-                        <input 
-                          type="text" 
-                          defaultValue="John"
-                          className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground" 
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">{t('settings.lastName')}</label>
-                        <input 
-                          type="text" 
-                          defaultValue="Smith"
-                          className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground" 
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">{t('settings.email')}</label>
-                        <input 
-                          type="email" 
-                          defaultValue="john.smith@example.com"
-                          className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground" 
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">{t('settings.phone')}</label>
-                        <input 
-                          type="text" 
-                          defaultValue="+1 (555) 123-4567"
-                          className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground" 
-                        />
+                {profileLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-medium mb-4">{t('settings.personalInfo')}</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Full Name</label>
+                          <input 
+                            type="text" 
+                            value={profile?.full_name || ''}
+                            readOnly
+                            className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Username</label>
+                          <input 
+                            type="text" 
+                            value={profile?.username || ''}
+                            readOnly
+                            className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">{t('settings.email')}</label>
+                          <input 
+                            type="email" 
+                            value={userEmail}
+                            readOnly
+                            className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Account Type</label>
+                          <input 
+                            type="text" 
+                            value={getUserTypeLabel(profile?.user_type || null)}
+                            readOnly
+                            className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                          />
+                        </div>
                       </div>
                     </div>
+
+                    {/* Role-specific details */}
+                    {profile?.user_type === 'student' && studentDetails && (
+                      <div className="pt-4 border-t">
+                        <h3 className="text-lg font-medium mb-4">Education Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">School</label>
+                            <input 
+                              type="text" 
+                              value={studentDetails.school || ''}
+                              readOnly
+                              className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Major</label>
+                            <input 
+                              type="text" 
+                              value={studentDetails.major || ''}
+                              readOnly
+                              className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Degree Type</label>
+                            <input 
+                              type="text" 
+                              value={studentDetails.degree_type || ''}
+                              readOnly
+                              className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Year of Admission</label>
+                            <input 
+                              type="text" 
+                              value={studentDetails.year_of_admission?.toString() || ''}
+                              readOnly
+                              className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Expected Completion</label>
+                            <input 
+                              type="text" 
+                              value={studentDetails.expected_completion?.toString() || ''}
+                              readOnly
+                              className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {profile?.user_type === 'employer' && employerDetails && (
+                      <div className="pt-4 border-t">
+                        <h3 className="text-lg font-medium mb-4">Company Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Company Name</label>
+                            <input 
+                              type="text" 
+                              value={employerDetails.company_name || ''}
+                              readOnly
+                              className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Company Location</label>
+                            <input 
+                              type="text" 
+                              value={employerDetails.company_location || ''}
+                              readOnly
+                              className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                            />
+                          </div>
+                          {employerDetails.industry && (
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Industry</label>
+                              <input 
+                                type="text" 
+                                value={employerDetails.industry}
+                                readOnly
+                                className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                              />
+                            </div>
+                          )}
+                          {employerDetails.job_title && (
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Job Title</label>
+                              <input 
+                                type="text" 
+                                value={employerDetails.job_title}
+                                readOnly
+                                className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {profile?.user_type === 'professional_transition' && professionalDetails && (
+                      <div className="pt-4 border-t">
+                        <h3 className="text-lg font-medium mb-4">Career Transition Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Current Role</label>
+                            <input 
+                              type="text" 
+                              value={professionalDetails.existing_role}
+                              readOnly
+                              className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Aspired Role</label>
+                            <input 
+                              type="text" 
+                              value={professionalDetails.aspired_role}
+                              readOnly
+                              className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Years of Experience</label>
+                            <input 
+                              type="text" 
+                              value={professionalDetails.years_of_experience}
+                              readOnly
+                              className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="pt-4 border-t">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        To edit your profile information, please visit the Profile section.
+                      </p>
+                      <Button onClick={() => setActiveSection('profile')}>Edit Profile</Button>
+                    </div>
                   </div>
-                  <div className="pt-4 border-t">
-                    <Button onClick={handleSave}>{t('settings.saveChanges')}</Button>
-                    <Button variant="outline" className="ml-2">{t('settings.cancel')}</Button>
-                  </div>
-                </div>
+                )}
               </>
             )}
 
