@@ -2,12 +2,14 @@
 import React from 'react';
 import { 
   Home, Users, Briefcase, GraduationCap, Trophy, 
-  BarChart, Brain, Settings, ChevronRight, ChevronLeft, Sparkles
+  BarChart, Brain, Settings, ChevronRight, ChevronLeft, Sparkles,
+  Building2, TrendingUp, FileText, UserPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Link, useLocation } from 'react-router-dom';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -23,8 +25,12 @@ interface NavItem {
 
 export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
   const location = useLocation();
+  const { profile } = useUserProfile();
   
-  const navItems = [
+  const isEmployer = profile?.user_type === 'employer';
+  
+  // Navigation items for job seekers (students, professionals, counsellors)
+  const jobSeekerNavItems: NavItem[] = [
     {
       title: 'Feed',
       icon: Home,
@@ -71,6 +77,57 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       href: '/settings',
     }
   ];
+
+  // Navigation items for employers
+  const employerNavItems: NavItem[] = [
+    {
+      title: 'Feed',
+      icon: Home,
+      href: '/',
+    },
+    {
+      title: 'My Company',
+      icon: Building2,
+      href: '/my-company',
+    },
+    {
+      title: 'Train',
+      icon: GraduationCap,
+      href: '/train',
+    },
+    {
+      title: 'Post a Job',
+      icon: FileText,
+      href: '/post-job',
+    },
+    {
+      title: 'Portfolio',
+      icon: BarChart,
+      href: '/portfolio',
+    },
+    {
+      title: 'Performance',
+      icon: BarChart,
+      href: '/performance',
+    },
+    {
+      title: 'Talent Insights',
+      icon: TrendingUp,
+      href: '/talent-insights',
+    },
+    {
+      title: 'Hire with AI',
+      icon: UserPlus,
+      href: '/hire-ai',
+    },
+    {
+      title: 'Settings',
+      icon: Settings,
+      href: '/settings',
+    }
+  ];
+
+  const navItems = isEmployer ? employerNavItems : jobSeekerNavItems;
 
   return (
     <aside className={cn(
@@ -131,9 +188,19 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
           "transition-opacity duration-200 rounded-md bg-sidebar-accent/50 p-2 text-xs text-sidebar-accent-foreground",
           isCollapsed ? "opacity-0" : "opacity-100"
         )}>
-          <p className="font-medium">Your Progress</p>
-          <p>5-day streak 🔥</p>
-          <p className="text-[10px]">Keep learning!</p>
+          {isEmployer ? (
+            <>
+              <p className="font-medium">Employer Dashboard</p>
+              <p>3 active job posts</p>
+              <p className="text-[10px]">12 new applications</p>
+            </>
+          ) : (
+            <>
+              <p className="font-medium">Your Progress</p>
+              <p>5-day streak 🔥</p>
+              <p className="text-[10px]">Keep learning!</p>
+            </>
+          )}
         </div>
       </div>
     </aside>
