@@ -365,7 +365,44 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      counsellor_bookings_public: {
+        Row: {
+          counsellor_id: string | null
+          created_at: string | null
+          id: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          counsellor_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          counsellor_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "counsellor_bookings_counsellor_id_fkey"
+            columns: ["counsellor_id"]
+            isOneToOne: false
+            referencedRelation: "counsellor_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {
