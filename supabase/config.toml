@@ -1,7 +1,7 @@
 project_id = "fsorkxlcasekndigezlx"
 
 [functions.analyze-portfolio]
-verify_jwt = true
+verify_jwt = false
 
 [functions.skillbridge-chat]
-verify_jwt = true
+verify_jwt = false
