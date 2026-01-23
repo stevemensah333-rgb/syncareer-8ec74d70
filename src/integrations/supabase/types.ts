@@ -53,6 +53,13 @@ export type Database = {
             referencedRelation: "counsellor_details"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "counsellor_bookings_counsellor_id_fkey"
+            columns: ["counsellor_id"]
+            isOneToOne: false
+            referencedRelation: "counsellor_profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       counsellor_details: {
@@ -134,6 +141,13 @@ export type Database = {
             columns: ["counsellor_id"]
             isOneToOne: false
             referencedRelation: "counsellor_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "counsellor_reviews_counsellor_id_fkey"
+            columns: ["counsellor_id"]
+            isOneToOne: false
+            referencedRelation: "counsellor_profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -401,7 +415,53 @@ export type Database = {
             referencedRelation: "counsellor_details"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "counsellor_bookings_counsellor_id_fkey"
+            columns: ["counsellor_id"]
+            isOneToOne: false
+            referencedRelation: "counsellor_profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      counsellor_profiles_public: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          full_name: string | null
+          hiring_price: number | null
+          id: string | null
+          location: string | null
+          specialization: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          hiring_price?: number | null
+          id?: string | null
+          location?: string | null
+          specialization?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          hiring_price?: number | null
+          id?: string | null
+          location?: string | null
+          specialization?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
