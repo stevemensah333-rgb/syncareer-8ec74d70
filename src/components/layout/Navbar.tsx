@@ -17,6 +17,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import AskCounsellorDialog from '@/components/counsellor/AskCounsellorDialog';
@@ -158,26 +161,30 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
                   Profile
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="flex items-center gap-2 text-xs font-normal">
-                  <HelpCircle className="h-4 w-4" />
-                  Contact Support
-                </DropdownMenuLabel>
-                <div className="px-2 py-1.5 space-y-1">
-                  <a 
-                    href="tel:+233555156128" 
-                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Phone className="h-3.5 w-3.5" />
-                    +233 555 156 128
-                  </a>
-                  <a 
-                    href="mailto:stephen.mensah@ashesi.edu.gh" 
-                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Mail className="h-3.5 w-3.5" />
-                    stephen.mensah@ashesi.edu.gh
-                  </a>
-                </div>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="cursor-pointer">
+                    <HelpCircle className="h-4 w-4 mr-2" />
+                    Contact Support
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="bg-popover">
+                    <div className="px-3 py-2 space-y-2">
+                      <a 
+                        href="tel:+233555156128" 
+                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <Phone className="h-3.5 w-3.5" />
+                        +233 555 156 128
+                      </a>
+                      <a 
+                        href="mailto:stephen.mensah@ashesi.edu.gh" 
+                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                        stephen.mensah@ashesi.edu.gh
+                      </a>
+                    </div>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
                   <LogOut className="h-4 w-4 mr-2" />
