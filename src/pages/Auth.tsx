@@ -70,17 +70,13 @@ const Auth = () => {
 
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session);
       if (session) {
-        console.log('User is logged in, checking onboarding status');
         checkOnboardingStatus(session.user.id);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session);
       if (session) {
-        console.log('Session established, checking onboarding status');
         toast.success('Successfully logged in!');
         // Avoid Supabase calls directly inside the auth callback.
         setTimeout(() => checkOnboardingStatus(session.user.id), 0);
