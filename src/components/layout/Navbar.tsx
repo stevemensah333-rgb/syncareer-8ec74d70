@@ -79,8 +79,8 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
             )}
             
             <div className="flex items-center gap-2">
-              <img src={skillbridgeLogo} alt="SkillBridge" className="h-8 w-8 object-contain" />
-              <h1 className="text-lg font-semibold tracking-tight lg:text-xl">SkillBridge</h1>
+              <img src={skillbridgeLogo} alt="Synconnect" className="h-8 w-8 object-contain" />
+              <h1 className="text-lg font-semibold tracking-tight lg:text-xl">Synconnect</h1>
             </div>
             
             <div className="relative hidden md:flex items-center h-9 rounded-md px-3 text-muted-foreground focus-within:text-foreground bg-muted/50">

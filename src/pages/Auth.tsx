@@ -196,7 +196,7 @@ const Auth = () => {
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-8 py-6">
-        <h1 className="text-2xl font-bold text-white">SkillBridge</h1>
+        <h1 className="text-2xl font-bold text-white">Synconnect</h1>
         <nav className="flex gap-8">
           <Link to="/" className="text-sm font-medium text-white/90 hover:text-white transition-colors">
             HOME
