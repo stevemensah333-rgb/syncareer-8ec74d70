@@ -199,7 +199,7 @@ const Onboarding = () => {
         .from('profiles')
         .select('onboarding_completed')
         .eq('id', session.user.id)
-        .single();
+        .maybeSingle();
 
       if (profile?.onboarding_completed) {
         navigate('/');
@@ -263,11 +263,14 @@ const Onboarding = () => {
       // Update profile with user type
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
-          user_type: userType,
-          onboarding_completed: true,
-        })
-        .eq('id', userId);
+        .upsert(
+          {
+            id: userId,
+            user_type: userType,
+            onboarding_completed: true,
+          },
+          { onConflict: 'id' }
+        );
 
       if (profileError) throw profileError;
 
