@@ -79,7 +79,7 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       href: '/performance',
     },
     {
-      title: 'Synconnect AI',
+      title: 'Syncareer AI',
       icon: Sparkles,
       href: '/ai-coach',
     },
@@ -210,7 +210,7 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
           "font-semibold tracking-tight transition-opacity duration-200",
           isCollapsed ? "opacity-0" : "opacity-100"
         )}>
-          Synconnect
+          Syncareer
         </h2>
         
         <Button

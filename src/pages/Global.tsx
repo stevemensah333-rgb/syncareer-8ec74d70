@@ -107,7 +107,7 @@ const Global = () => {
               <div className="flex items-center gap-4">
                 <Globe className="h-12 w-12 text-primary" />
                 <div>
-                  <h3 className="text-xl font-bold">Global Synconnect Network</h3>
+                  <h3 className="text-xl font-bold">Global Syncareer Network</h3>
                   <p className="text-muted-foreground">
                     <span className="font-bold">176,800</span> learners worldwide •{' '}
                     <span className="font-bold">420+</span> countries •{' '}

@@ -377,7 +377,7 @@ const Onboarding = () => {
         {step === 1 && (
           <div className="space-y-6">
             <div className="text-center">
-              <h1 className="text-3xl font-bold text-foreground">Welcome to Synconnect!</h1>
+              <h1 className="text-3xl font-bold text-foreground">Welcome to Syncareer!</h1>
               <p className="text-muted-foreground mt-2">Tell us about yourself to personalize your experience</p>
             </div>
 
