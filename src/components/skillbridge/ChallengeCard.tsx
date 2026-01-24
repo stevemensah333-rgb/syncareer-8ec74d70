@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Trophy, Clock, Users } from 'lucide-react';
 
 interface ChallengeCardProps {
@@ -28,9 +27,9 @@ export function ChallengeCard({ title, description, deadline, participants, rewa
             <Trophy className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">{title}</CardTitle>
           </div>
-          <Badge className={difficultyColors[difficulty]}>
+          <span className={`text-xs px-2 py-1 rounded-full ${difficultyColors[difficulty]}`}>
             {difficulty}
-          </Badge>
+          </span>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

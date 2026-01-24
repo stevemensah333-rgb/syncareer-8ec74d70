@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ThumbsUp, MessageCircle, Send } from 'lucide-react';
@@ -226,9 +226,9 @@ export function PostCard({ id, content, skill_tags, created_at, author_name, use
         {skill_tags && skill_tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {skill_tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-xs">
+              <span key={tag} className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
                 #{tag}
-              </Badge>
+              </span>
             ))}
           </div>
         )}

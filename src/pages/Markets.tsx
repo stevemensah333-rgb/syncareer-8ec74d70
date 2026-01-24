@@ -1,114 +1,294 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Briefcase, Users, Zap, MapPin, Clock, DollarSign, TrendingUp } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Briefcase, MapPin, Clock, DollarSign, TrendingUp, Building2, CheckCircle2, XCircle } from 'lucide-react';
 import { useUserProfile } from '@/contexts/UserProfileContext';
-import { getMajorContent } from '@/utils/majorContent';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface JobPosting {
+  id: string;
+  title: string;
+  department: string | null;
+  location: string;
+  employment_type: string;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_currency: string | null;
+  description: string;
+  requirements: string | null;
+  skills: string[] | null;
+  created_at: string;
+  employer_id: string;
+}
+
+interface JobWithMatch extends JobPosting {
+  matchPercentage: number;
+  matchedSkills: string[];
+  missingSkills: string[];
+}
 
 const Opportunities = () => {
-  const { studentDetails, loading } = useUserProfile();
-  const majorContent = getMajorContent(studentDetails?.major);
+  const { studentDetails, loading: profileLoading } = useUserProfile();
+  const [jobs, setJobs] = useState<JobWithMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedJob, setSelectedJob] = useState<JobWithMatch | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [applying, setApplying] = useState(false);
 
-  // Generate job matches based on major
-  const getJobMatches = () => {
-    const jobTrends = majorContent.jobTrends;
-    const skills = majorContent.skills;
+  // User's skills from their profile/resume (in a real app, fetch from DB)
+  const getUserSkills = useCallback((): string[] => {
+    // For now, return skills based on their major
+    const major = studentDetails?.major?.toLowerCase() || '';
+    
+    if (major.includes('computer') || major.includes('software') || major.includes('data')) {
+      return ['JavaScript', 'React', 'Python', 'SQL', 'Git', 'TypeScript', 'Node.js', 'HTML', 'CSS'];
+    } else if (major.includes('business') || major.includes('finance') || major.includes('marketing')) {
+      return ['Excel', 'Financial Analysis', 'Marketing', 'Communication', 'Project Management', 'Data Analysis'];
+    } else if (major.includes('design') || major.includes('graphic')) {
+      return ['Figma', 'Adobe Creative Suite', 'UI/UX', 'Prototyping', 'Visual Design'];
+    } else if (major.includes('engineering')) {
+      return ['CAD', 'Project Management', 'Technical Writing', 'Problem Solving', 'Mathematics'];
+    }
+    return ['Communication', 'Problem Solving', 'Teamwork', 'Microsoft Office'];
+  }, [studentDetails?.major]);
 
-    return jobTrends.map((trend, index) => ({
-      title: trend.title,
-      company: ['TechStart Inc.', 'Innovation Labs', 'Global Solutions', 'NextGen Corp'][index % 4],
-      location: ['Remote', 'Johannesburg', 'Cape Town', 'Hybrid'][index % 4],
-      type: index === 2 ? 'Internship' : 'Full-time',
-      match: [94, 87, 91, 85][index % 4],
-      salary: trend.demand === 'Very High' ? 'R45k - R65k' : trend.demand === 'High' ? 'R35k - R50k' : 'R25k - R40k',
-      posted: ['2 days ago', '1 week ago', '3 days ago', '5 days ago'][index % 4],
-      skills: skills.slice(index, index + 3),
-    }));
-  };
-
-  // Generate micro-tasks based on major
-  const getMicroTasks = () => {
-    const major = studentDetails?.major;
-
-    if (major === 'Computer Science' || major === 'Data Science' || major === 'Information Technology') {
-      return [
-        { title: 'Build Landing Page', duration: '3 days', pay: 'R2,500', company: 'Local Startup', difficulty: 'Easy' },
-        { title: 'API Integration', duration: '5 days', pay: 'R4,000', company: 'E-commerce Store', difficulty: 'Medium' },
-        { title: 'Database Optimization', duration: '2 days', pay: 'R3,000', company: 'SaaS Company', difficulty: 'Medium' },
-      ];
-    } else if (major === 'Business Administration' || major === 'Finance' || major === 'Marketing') {
-      return [
-        { title: 'Market Research Report', duration: '4 days', pay: 'R2,000', company: 'Consulting Firm', difficulty: 'Easy' },
-        { title: 'Financial Analysis', duration: '3 days', pay: 'R3,500', company: 'Investment Firm', difficulty: 'Medium' },
-        { title: 'Business Plan Review', duration: '5 days', pay: 'R4,000', company: 'Startup Incubator', difficulty: 'Medium' },
-      ];
-    } else if (major === 'Law') {
-      return [
-        { title: 'Contract Review', duration: '2 days', pay: 'R3,000', company: 'Law Firm', difficulty: 'Medium' },
-        { title: 'Legal Research', duration: '4 days', pay: 'R2,500', company: 'Corporate Office', difficulty: 'Easy' },
-        { title: 'Compliance Audit Support', duration: '5 days', pay: 'R4,500', company: 'Financial Services', difficulty: 'Medium' },
-      ];
-    } else if (major === 'Graphic Design' || major === 'Communications') {
-      return [
-        { title: 'Logo Design', duration: '3 days', pay: 'R2,000', company: 'New Restaurant', difficulty: 'Easy' },
-        { title: 'Social Media Campaign', duration: '5 days', pay: 'R3,500', company: 'Fashion Brand', difficulty: 'Medium' },
-        { title: 'Brand Identity Package', duration: '7 days', pay: 'R5,000', company: 'Tech Startup', difficulty: 'Medium' },
-      ];
-    } else if (major === 'Electrical Engineering' || major === 'Mechanical Engineering') {
-      return [
-        { title: 'CAD Drawing Review', duration: '2 days', pay: 'R2,500', company: 'Manufacturing Co', difficulty: 'Easy' },
-        { title: 'Technical Documentation', duration: '4 days', pay: 'R3,500', company: 'Engineering Firm', difficulty: 'Medium' },
-        { title: 'Quality Control Analysis', duration: '3 days', pay: 'R3,000', company: 'Auto Parts Supplier', difficulty: 'Medium' },
-      ];
+  const calculateMatchPercentage = useCallback((jobSkills: string[] | null, userSkills: string[]): { percentage: number; matched: string[]; missing: string[] } => {
+    if (!jobSkills || jobSkills.length === 0) {
+      return { percentage: 75, matched: [], missing: [] }; // Default match if no skills specified
     }
 
-    return [
-      { title: 'Research Project', duration: '4 days', pay: 'R2,000', company: 'Research Institute', difficulty: 'Easy' },
-      { title: 'Data Entry & Analysis', duration: '3 days', pay: 'R1,500', company: 'Local Business', difficulty: 'Easy' },
-      { title: 'Report Writing', duration: '5 days', pay: 'R2,500', company: 'Consulting Firm', difficulty: 'Medium' },
-    ];
+    const normalizedUserSkills = userSkills.map(s => s.toLowerCase());
+    const matched: string[] = [];
+    const missing: string[] = [];
+
+    jobSkills.forEach(skill => {
+      const normalizedSkill = skill.toLowerCase();
+      if (normalizedUserSkills.some(us => us.includes(normalizedSkill) || normalizedSkill.includes(us))) {
+        matched.push(skill);
+      } else {
+        missing.push(skill);
+      }
+    });
+
+    const percentage = jobSkills.length > 0 
+      ? Math.round((matched.length / jobSkills.length) * 100)
+      : 75;
+
+    return { percentage: Math.max(percentage, 20), matched, missing };
+  }, []);
+
+  const fetchJobs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('job_postings')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const userSkills = getUserSkills();
+      
+      const jobsWithMatch: JobWithMatch[] = (data || []).map(job => {
+        const { percentage, matched, missing } = calculateMatchPercentage(job.skills, userSkills);
+        return {
+          ...job,
+          matchPercentage: percentage,
+          matchedSkills: matched,
+          missingSkills: missing,
+        };
+      });
+
+      // Sort by match percentage
+      jobsWithMatch.sort((a, b) => b.matchPercentage - a.matchPercentage);
+      
+      setJobs(jobsWithMatch);
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+      toast.error('Failed to load opportunities');
+    } finally {
+      setLoading(false);
+    }
+  }, [getUserSkills, calculateMatchPercentage]);
+
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]);
+
+  const handleApply = async (job: JobWithMatch) => {
+    setApplying(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('Please log in to apply');
+        return;
+      }
+
+      // Check if already applied
+      const { data: existing } = await supabase
+        .from('job_applications')
+        .select('id')
+        .eq('job_id', job.id)
+        .eq('applicant_id', session.user.id)
+        .single();
+
+      if (existing) {
+        toast.info('You have already applied for this position');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('job_applications')
+        .insert({
+          job_id: job.id,
+          applicant_id: session.user.id,
+          status: 'pending',
+        });
+
+      if (error) throw error;
+
+      toast.success('Application submitted successfully!');
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Error applying:', error);
+      toast.error('Failed to submit application');
+    } finally {
+      setApplying(false);
+    }
   };
 
-  // Generate local business opportunities based on major
-  const getLocalBusinesses = () => {
-    const major = studentDetails?.major;
+  const formatSalary = (min: number | null, max: number | null, currency: string | null) => {
+    if (!min && !max) return 'Competitive';
+    const curr = currency || 'USD';
+    if (min && max) return `${curr} ${min.toLocaleString()} - ${max.toLocaleString()}`;
+    if (min) return `${curr} ${min.toLocaleString()}+`;
+    return `Up to ${curr} ${max?.toLocaleString()}`;
+  };
 
-    if (major === 'Computer Science' || major === 'Data Science' || major === 'Information Technology') {
-      return [
-        { name: 'Green Coffee Shop', needs: ['Website Redesign', 'POS Integration'], budget: 'R8,000-R15,000', type: 'Project' },
-        { name: 'Local Gym', needs: ['Member App', 'Booking System'], budget: 'R15,000-R25,000', type: 'Project' },
-      ];
-    } else if (major === 'Business Administration' || major === 'Finance') {
-      return [
-        { name: 'Family Restaurant', needs: ['Business Plan', 'Financial Forecasting'], budget: 'R5,000-R10,000', type: 'Consulting' },
-        { name: 'Retail Store', needs: ['Inventory Management', 'Growth Strategy'], budget: 'R8,000-R15,000', type: 'Part-time' },
-      ];
-    } else if (major === 'Marketing' || major === 'Communications') {
-      return [
-        { name: 'Boutique Hotel', needs: ['Digital Marketing', 'Brand Strategy'], budget: 'R10,000-R20,000', type: 'Project' },
-        { name: 'Local Bakery', needs: ['Social Media Management', 'Content Creation'], budget: 'R5,000-R8,000', type: 'Part-time' },
-      ];
-    } else if (major === 'Law') {
-      return [
-        { name: 'Small Business Alliance', needs: ['Contract Templates', 'Legal Consultation'], budget: 'R8,000-R12,000', type: 'Consulting' },
-        { name: 'Property Management Co', needs: ['Lease Review', 'Compliance Check'], budget: 'R6,000-R10,000', type: 'Project' },
-      ];
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+  };
+
+  const getJobsByType = (type: string) => {
+    return jobs.filter(job => job.employment_type === type);
+  };
+
+  const renderJobCard = (job: JobWithMatch) => (
+    <Card key={job.id} className="hover:border-primary/50 transition-colors">
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-lg mb-1">{job.title}</CardTitle>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Building2 className="h-3 w-3" />
+              <span>{job.department || 'General'}</span>
+              <span>•</span>
+              <MapPin className="h-3 w-3" />
+              <span>{job.location}</span>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className={`text-lg font-bold ${
+              job.matchPercentage >= 80 ? 'text-green-600' :
+              job.matchPercentage >= 60 ? 'text-yellow-600' :
+              'text-muted-foreground'
+            }`}>
+              {job.matchPercentage}% Match
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {job.skills && job.skills.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {job.skills.slice(0, 5).map((skill) => (
+                <span 
+                  key={skill} 
+                  className={`text-xs px-2 py-1 rounded-full ${
+                    job.matchedSkills.includes(skill) 
+                      ? 'bg-green-100 text-green-700' 
+                      : 'bg-secondary text-secondary-foreground'
+                  }`}
+                >
+                  {skill}
+                </span>
+              ))}
+              {job.skills.length > 5 && (
+                <span className="text-xs text-muted-foreground">+{job.skills.length - 5} more</span>
+              )}
+            </div>
+          )}
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-4 text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <DollarSign className="h-4 w-4" />
+                {formatSalary(job.salary_min, job.salary_max, job.salary_currency)}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                {formatTimeAgo(job.created_at)}
+              </span>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              className="flex-1"
+              onClick={() => handleApply(job)}
+              disabled={applying}
+            >
+              Quick Apply
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setSelectedJob(job);
+                setIsDialogOpen(true);
+              }}
+            >
+              Learn More
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderJobList = (type: string) => {
+    const filteredJobs = getJobsByType(type);
+    
+    if (filteredJobs.length === 0) {
+      return (
+        <Card className="p-8 text-center">
+          <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">No {type} opportunities available at the moment.</p>
+          <p className="text-sm text-muted-foreground mt-2">Check back later for new postings!</p>
+        </Card>
+      );
     }
 
-    return [
-      { name: 'Community Center', needs: ['Admin Support', 'Project Coordination'], budget: 'R4,000-R8,000', type: 'Part-time' },
-      { name: 'Local NGO', needs: ['Research', 'Report Writing'], budget: 'R5,000-R10,000', type: 'Project' },
-    ];
+    return (
+      <div className="grid gap-4">
+        {filteredJobs.map(renderJobCard)}
+      </div>
+    );
   };
 
-  const jobMatches = getJobMatches();
-  const microTasks = getMicroTasks();
-  const localBusinesses = getLocalBusinesses();
-
-  if (loading) {
+  if (profileLoading || loading) {
     return (
       <PageLayout title="Opportunities">
         <div className="flex items-center justify-center h-64">
@@ -120,173 +300,158 @@ const Opportunities = () => {
 
   return (
     <PageLayout title="Opportunities">
-      <Tabs defaultValue="jobs" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="jobs">Job Matches</TabsTrigger>
-          <TabsTrigger value="micro">Micro-Tasks</TabsTrigger>
-          <TabsTrigger value="local">Local Businesses</TabsTrigger>
+      <Tabs defaultValue="full-time" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="full-time">
+            Full-time ({getJobsByType('full-time').length})
+          </TabsTrigger>
+          <TabsTrigger value="part-time">
+            Part-time ({getJobsByType('part-time').length})
+          </TabsTrigger>
+          <TabsTrigger value="internship">
+            Internships ({getJobsByType('internship').length})
+          </TabsTrigger>
+          <TabsTrigger value="remote">
+            Remote ({getJobsByType('remote').length})
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="jobs" className="space-y-4">
-          <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <TrendingUp className="h-12 w-12 text-primary" />
-                <div>
-                  <h3 className="text-xl font-bold">
-                    {studentDetails?.major ? `${studentDetails.major} Opportunities` : 'Your Match Score'}
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Based on your skills, we've found <span className="font-bold text-primary">{jobMatches.length} perfect matches</span>
-                  </p>
-                </div>
+        {/* Header Card */}
+        <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <TrendingUp className="h-12 w-12 text-primary" />
+              <div>
+                <h3 className="text-xl font-bold">
+                  {studentDetails?.major ? `${studentDetails.major} Opportunities` : 'Career Opportunities'}
+                </h3>
+                <p className="text-muted-foreground">
+                  We found <span className="font-bold text-primary">{jobs.length} opportunities</span> matching your profile
+                </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="grid gap-4">
-            {jobMatches.map((job, index) => (
-              <Card key={`${job.title}-${index}`} className="hover:border-primary/50 transition-colors">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg mb-1">{job.title}</CardTitle>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="font-medium">{job.company}</span>
-                        <span>•</span>
-                        <MapPin className="h-3 w-3" />
-                        <span>{job.location}</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <Badge className="bg-primary text-primary-foreground">
-                        {job.match}% Match
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      {job.skills.map((skill) => (
-                        <Badge key={skill} variant="secondary">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-4 text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Briefcase className="h-4 w-4" />
-                          {job.type}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4" />
-                          {job.salary}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          {job.posted}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button className="flex-1">Quick Apply</Button>
-                      <Button variant="outline">Learn More</Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        <TabsContent value="full-time" className="space-y-4">
+          {renderJobList('full-time')}
         </TabsContent>
 
-        <TabsContent value="micro" className="space-y-4">
-          <Card className="bg-gradient-to-br from-accent/10 to-secondary/10">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <Zap className="h-12 w-12 text-accent" />
-                <div>
-                  <h3 className="text-xl font-bold">Quick Gigs for {studentDetails?.major || 'Your Field'}</h3>
-                  <p className="text-muted-foreground">
-                    Build your portfolio while earning. Complete tasks in 1-7 days.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            {microTasks.map((task) => (
-              <Card key={task.title}>
-                <CardHeader>
-                  <CardTitle className="text-base">{task.title}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{task.company}</p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <Badge variant="outline">{task.difficulty}</Badge>
-                    <span className="text-lg font-bold text-primary">{task.pay}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>{task.duration}</span>
-                  </div>
-                  <Button className="w-full">Apply Now</Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        <TabsContent value="part-time" className="space-y-4">
+          {renderJobList('part-time')}
         </TabsContent>
 
-        <TabsContent value="local" className="space-y-4">
-          <Card className="bg-gradient-to-br from-secondary/10 to-primary/10">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <Users className="h-12 w-12 text-secondary" />
-                <div>
-                  <h3 className="text-xl font-bold">Support Local Businesses</h3>
-                  <p className="text-muted-foreground">
-                    Help businesses in your community while building real-world experience in {studentDetails?.major || 'your field'}.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="internship" className="space-y-4">
+          {renderJobList('internship')}
+        </TabsContent>
 
-          <div className="grid gap-4">
-            {localBusinesses.map((business) => (
-              <Card key={business.name}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle>{business.name}</CardTitle>
-                      <Badge variant="secondary" className="mt-2">{business.type}</Badge>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Budget</p>
-                      <p className="font-bold">{business.budget}</p>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm font-medium mb-2">What they need:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {business.needs.map((need) => (
-                        <Badge key={need} variant="outline">
-                          {need}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <Button className="w-full">Express Interest</Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        <TabsContent value="remote" className="space-y-4">
+          {renderJobList('remote')}
         </TabsContent>
       </Tabs>
+
+      {/* Job Details Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          {selectedJob && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl">{selectedJob.title}</DialogTitle>
+                <DialogDescription>
+                  <div className="flex items-center gap-4 mt-2">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-4 w-4" />
+                      {selectedJob.location}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Briefcase className="h-4 w-4" />
+                      {selectedJob.employment_type}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <DollarSign className="h-4 w-4" />
+                      {formatSalary(selectedJob.salary_min, selectedJob.salary_max, selectedJob.salary_currency)}
+                    </span>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6 py-4">
+                {/* Match Score */}
+                <div className="p-4 rounded-lg bg-muted">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-semibold">Your Match Score</span>
+                    <span className={`text-2xl font-bold ${
+                      selectedJob.matchPercentage >= 80 ? 'text-green-600' :
+                      selectedJob.matchPercentage >= 60 ? 'text-yellow-600' :
+                      'text-muted-foreground'
+                    }`}>
+                      {selectedJob.matchPercentage}%
+                    </span>
+                  </div>
+                  
+                  {selectedJob.matchedSkills.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-sm font-medium text-green-700 mb-2 flex items-center gap-1">
+                        <CheckCircle2 className="h-4 w-4" /> Skills you have
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedJob.matchedSkills.map(skill => (
+                          <span key={skill} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedJob.missingSkills.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-orange-700 mb-2 flex items-center gap-1">
+                        <XCircle className="h-4 w-4" /> Skills to develop
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedJob.missingSkills.map(skill => (
+                          <span key={skill} className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Description */}
+                <div>
+                  <h4 className="font-semibold mb-2">Job Description</h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {selectedJob.description}
+                  </p>
+                </div>
+
+                {/* Requirements */}
+                {selectedJob.requirements && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Requirements</h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {selectedJob.requirements}
+                    </p>
+                  </div>
+                )}
+
+                {/* Apply Button */}
+                <Button 
+                  className="w-full" 
+                  size="lg"
+                  onClick={() => handleApply(selectedJob)}
+                  disabled={applying}
+                >
+                  {applying ? 'Submitting...' : 'Apply Now'}
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   );
 };

@@ -11,7 +11,7 @@ import NotFound from "./pages/NotFound";
 import Stocks from "./pages/Stocks";
 import Markets from "./pages/Markets";
 import Currencies from "./pages/Currencies";
-import Global from "./pages/Global";
+
 import Portfolio from "./pages/Portfolio";
 import Performance from "./pages/Performance";
 import Analysis from "./pages/Analysis";
@@ -54,7 +54,7 @@ const App = () => (
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/performance" element={<Performance />} />
             <Route path="/analysis" element={<Analysis />} />
-            <Route path="/global" element={<Global />} />
+            
             <Route path="/settings" element={<Settings />} />
             <Route path="/ai-coach" element={<AICoach />} />
             {/* New feature routes */}

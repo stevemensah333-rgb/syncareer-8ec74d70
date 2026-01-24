@@ -3,7 +3,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -261,9 +261,9 @@ const ApplicationTracker = () => {
                           <h3 className="font-semibold text-lg">
                             {app.job?.title || 'Unknown Position'}
                           </h3>
-                          <Badge className={STATUS_COLORS[app.status] || 'bg-gray-100'}>
+                          <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[app.status] || 'bg-gray-100'}`}>
                             {app.status}
-                          </Badge>
+                          </span>
                         </div>
                         
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-2">
