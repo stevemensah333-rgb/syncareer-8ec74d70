@@ -14,10 +14,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Star, MapPin, DollarSign, ChevronRight, ArrowLeft, User, MessageSquare, Search } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Star, MapPin, DollarSign, ChevronRight, ArrowLeft, User, MessageSquare, Search, CalendarIcon, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { format, addDays, isBefore, startOfDay } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface Counsellor {
   id: string;
@@ -32,6 +36,13 @@ interface Counsellor {
   review_count: number;
 }
 
+interface TimeSlot {
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  is_available: boolean;
+}
+
 interface AskCounsellorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -42,7 +53,9 @@ const bookingSchema = z.object({
   contact: z.string().trim().min(1, 'Contact is required').max(200, 'Contact must be less than 200 characters'),
 });
 
-type Step = 'form' | 'list' | 'profile';
+type Step = 'form' | 'list' | 'profile' | 'time';
+
+const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenChange }) => {
   const [step, setStep] = useState<Step>('form');
@@ -55,6 +68,12 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
   const [userName, setUserName] = useState('');
   const [userContact, setUserContact] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Time selection state
+  const [availability, setAvailability] = useState<TimeSlot[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(null);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
 
   useEffect(() => {
     if (open && step === 'list') {
@@ -70,13 +89,15 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
       setUserContact('');
       setSelectedCounsellor(null);
       setSearchQuery('');
+      setAvailability([]);
+      setSelectedDate(undefined);
+      setSelectedTimeSlot(null);
     }
   }, [open]);
 
   const fetchCounsellors = async () => {
     setLoading(true);
     try {
-      // Fetch all counsellors using the public view (excludes phone numbers for privacy)
       const { data: counsellorsData, error } = await supabase
         .from('counsellor_profiles_public')
         .select('*');
@@ -84,7 +105,6 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
       if (error) throw error;
 
       if (counsellorsData) {
-        // Fetch ratings for each counsellor
         const counsellorsWithRatings = await Promise.all(
           counsellorsData.map(async (counsellor) => {
             const { data: reviews } = await supabase
@@ -105,7 +125,6 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
           })
         );
 
-        // Sort by rating (highest first)
         counsellorsWithRatings.sort((a, b) => b.average_rating - a.average_rating);
         setCounsellors(counsellorsWithRatings);
       }
@@ -114,6 +133,25 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
       toast.error('Failed to load counsellors');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAvailability = async (counsellorId: string) => {
+    setLoadingAvailability(true);
+    try {
+      const { data, error } = await supabase
+        .from('counsellor_availability')
+        .select('*')
+        .eq('counsellor_id', counsellorId)
+        .eq('is_available', true);
+
+      if (error) throw error;
+      setAvailability(data || []);
+    } catch (error) {
+      console.error('Error fetching availability:', error);
+      toast.error('Failed to load availability');
+    } finally {
+      setLoadingAvailability(false);
     }
   };
 
@@ -131,8 +169,52 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
     setStep('profile');
   };
 
-  const handleBook = async () => {
+  const handleProceedToTimeSelection = async () => {
     if (!selectedCounsellor) return;
+    await fetchAvailability(selectedCounsellor.id);
+    setStep('time');
+  };
+
+  const handleBack = () => {
+    if (step === 'time') {
+      setStep('profile');
+      setSelectedDate(undefined);
+      setSelectedTimeSlot(null);
+    } else if (step === 'profile') {
+      setStep('list');
+    } else if (step === 'list') {
+      setStep('form');
+    }
+  };
+
+  const getAvailableDays = (): number[] => {
+    return availability.map(slot => slot.day_of_week);
+  };
+
+  const isDateAvailable = (date: Date): boolean => {
+    const dayOfWeek = date.getDay();
+    const today = startOfDay(new Date());
+    return !isBefore(date, today) && getAvailableDays().includes(dayOfWeek);
+  };
+
+  const getTimeSlotsForDate = (date: Date): TimeSlot[] => {
+    const dayOfWeek = date.getDay();
+    return availability.filter(slot => slot.day_of_week === dayOfWeek);
+  };
+
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const formattedHour = hour % 12 || 12;
+    return `${formattedHour}:${minutes} ${ampm}`;
+  };
+
+  const handleBook = async () => {
+    if (!selectedCounsellor || !selectedDate || !selectedTimeSlot) {
+      toast.error('Please select a date and time');
+      return;
+    }
 
     setBookingLoading(true);
     try {
@@ -150,11 +232,14 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
           user_name: userName,
           user_contact: userContact,
           status: 'pending',
+          scheduled_date: format(selectedDate, 'yyyy-MM-dd'),
+          scheduled_time: selectedTimeSlot.start_time,
+          day_of_week: selectedDate.getDay(),
         });
 
       if (error) throw error;
 
-      toast.success('Booking request sent! The counsellor will contact you soon.');
+      toast.success('Booking request sent! You will be notified when the counsellor accepts.');
       onOpenChange(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to book session');
@@ -176,6 +261,24 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
     );
   };
 
+  const getStepTitle = () => {
+    switch (step) {
+      case 'form': return 'Book a Counsellor';
+      case 'list': return 'Select a Counsellor';
+      case 'profile': return selectedCounsellor?.full_name || 'Counsellor Profile';
+      case 'time': return 'Select Date & Time';
+    }
+  };
+
+  const getStepDescription = () => {
+    switch (step) {
+      case 'form': return 'Enter your details to find and book a career counsellor.';
+      case 'list': return 'Choose from our top-rated career counsellors.';
+      case 'profile': return 'View counsellor profile and proceed to book.';
+      case 'time': return 'Choose an available time slot for your session.';
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[80vh] flex flex-col">
@@ -186,20 +289,14 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() => setStep(step === 'profile' ? 'list' : 'form')}
+                onClick={handleBack}
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
-            {step === 'form' && 'Book a Counsellor'}
-            {step === 'list' && 'Select a Counsellor'}
-            {step === 'profile' && selectedCounsellor?.full_name}
+            {getStepTitle()}
           </DialogTitle>
-          <DialogDescription>
-            {step === 'form' && 'Enter your details to find and book a career counsellor.'}
-            {step === 'list' && 'Choose from our top-rated career counsellors.'}
-            {step === 'profile' && 'View counsellor profile and book a session.'}
-          </DialogDescription>
+          <DialogDescription>{getStepDescription()}</DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden">
@@ -234,7 +331,6 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
           {/* Step 2: Counsellor List */}
           {step === 'list' && (
             <div className="flex flex-col h-[400px]">
-              {/* Search Bar */}
               <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -313,7 +409,6 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
           {step === 'profile' && selectedCounsellor && (
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-6 py-4">
-                {/* Profile Header */}
                 <div className="flex items-center gap-4">
                   <Avatar className="h-20 w-20">
                     <AvatarImage src={selectedCounsellor.avatar_url || ''} />
@@ -334,7 +429,6 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
 
                 <Separator />
 
-                {/* Location Info */}
                 {selectedCounsellor.location && (
                   <div className="space-y-3">
                     <h4 className="font-semibold flex items-center gap-2">
@@ -350,7 +444,6 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
 
                 <Separator />
 
-                {/* Price */}
                 <div className="flex items-center justify-between p-4 rounded-lg bg-green-50 border border-green-200">
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-5 w-5 text-green-600" />
@@ -361,7 +454,6 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
                   </span>
                 </div>
 
-                {/* Bio */}
                 {selectedCounsellor.bio && (
                   <div className="space-y-2">
                     <h4 className="font-semibold">About</h4>
@@ -369,7 +461,6 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
                   </div>
                 )}
 
-                {/* Specialization */}
                 {selectedCounsellor.specialization && (
                   <div className="space-y-2">
                     <h4 className="font-semibold">Specialization</h4>
@@ -377,17 +468,115 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
                   </div>
                 )}
 
-                {/* Book Button */}
                 <Button
-                  onClick={handleBook}
-                  disabled={bookingLoading}
+                  onClick={handleProceedToTimeSelection}
                   className="w-full"
                   size="lg"
                 >
-                  {bookingLoading ? 'Booking...' : 'Book Session'}
+                  Select Time Slot
+                  <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
             </ScrollArea>
+          )}
+
+          {/* Step 4: Time Selection */}
+          {step === 'time' && selectedCounsellor && (
+            <div className="space-y-4 py-4">
+              {loadingAvailability ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : availability.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>This counsellor has no availability set yet.</p>
+                  <p className="text-sm mt-2">Please try another counsellor or check back later.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4" />
+                      Select a Date
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !selectedDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-50" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={(date) => {
+                            setSelectedDate(date);
+                            setSelectedTimeSlot(null);
+                          }}
+                          disabled={(date) => !isDateAvailable(date)}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-xs text-muted-foreground">
+                      Available on: {availability.map(slot => DAYS_OF_WEEK[slot.day_of_week]).join(', ')}
+                    </p>
+                  </div>
+
+                  {selectedDate && (
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Select a Time
+                      </Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {getTimeSlotsForDate(selectedDate).map((slot, index) => (
+                          <Button
+                            key={index}
+                            variant={selectedTimeSlot === slot ? "default" : "outline"}
+                            className="w-full"
+                            onClick={() => setSelectedTimeSlot(slot)}
+                          >
+                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedDate && selectedTimeSlot && (
+                    <Card className="bg-primary/5 border-primary/20">
+                      <CardContent className="p-4">
+                        <h4 className="font-semibold mb-2">Your Selection</h4>
+                        <div className="space-y-1 text-sm">
+                          <p><span className="text-muted-foreground">Date:</span> {format(selectedDate, 'EEEE, MMMM d, yyyy')}</p>
+                          <p><span className="text-muted-foreground">Time:</span> {formatTime(selectedTimeSlot.start_time)} - {formatTime(selectedTimeSlot.end_time)}</p>
+                          <p><span className="text-muted-foreground">Counsellor:</span> {selectedCounsellor.full_name}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <Button
+                    onClick={handleBook}
+                    disabled={bookingLoading || !selectedDate || !selectedTimeSlot}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {bookingLoading ? 'Booking...' : 'Confirm Booking'}
+                  </Button>
+                </>
+              )}
+            </div>
           )}
         </div>
       </DialogContent>

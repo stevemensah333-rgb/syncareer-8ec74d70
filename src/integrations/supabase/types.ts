@@ -359,7 +359,10 @@ export type Database = {
         Row: {
           counsellor_id: string
           created_at: string
+          day_of_week: number | null
           id: string
+          scheduled_date: string | null
+          scheduled_time: string | null
           status: string
           updated_at: string
           user_contact: string
@@ -369,7 +372,10 @@ export type Database = {
         Insert: {
           counsellor_id: string
           created_at?: string
+          day_of_week?: number | null
           id?: string
+          scheduled_date?: string | null
+          scheduled_time?: string | null
           status?: string
           updated_at?: string
           user_contact: string
@@ -379,7 +385,10 @@ export type Database = {
         Update: {
           counsellor_id?: string
           created_at?: string
+          day_of_week?: number | null
           id?: string
+          scheduled_date?: string | null
+          scheduled_time?: string | null
           status?: string
           updated_at?: string
           user_contact?: string
