@@ -73,7 +73,7 @@ interface Interview {
 const PIPELINE_STAGES = [
   { id: 'pending', label: 'Applied', color: 'bg-slate-100 text-slate-700' },
   { id: 'reviewing', label: 'Reviewing', color: 'bg-blue-100 text-blue-700' },
-  { id: 'interviewing', label: 'Interview', color: 'bg-purple-100 text-purple-700' },
+  { id: 'interview', label: 'Interview', color: 'bg-purple-100 text-purple-700' },
   { id: 'offered', label: 'Offered', color: 'bg-green-100 text-green-700' },
   { id: 'rejected', label: 'Rejected', color: 'bg-red-100 text-red-700' },
 ];
@@ -192,7 +192,7 @@ const ApplicantTracker = () => {
       if (error) throw error;
 
       // Update application status to interviewing
-      await updateApplicationStatus(selectedApplication.id, 'interviewing');
+      await updateApplicationStatus(selectedApplication.id, 'interview');
 
       // Send notification to applicant
       const formattedDate = format(scheduledAt, 'PPp');
