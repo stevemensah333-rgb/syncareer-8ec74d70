@@ -197,6 +197,12 @@ const Onboarding = () => {
       }
       setUserId(session.user.id);
 
+      // Pre-fill counsellor name from auth metadata
+      const userFullName = session.user.user_metadata?.full_name;
+      if (userFullName) {
+        setCounsellorFullName(userFullName);
+      }
+
       // Check if onboarding is already completed
       const { data: profile } = await supabase
         .from('profiles')

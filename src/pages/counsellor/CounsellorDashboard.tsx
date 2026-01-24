@@ -14,7 +14,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   User, Star, MapPin, Phone, DollarSign, Edit2, Save, X, 
-  Calendar, MessageSquare, Award, TrendingUp, Camera, ArrowLeft, Menu
+  Calendar, MessageSquare, TrendingUp, Camera, ArrowLeft, Menu
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -521,42 +521,6 @@ const CounsellorDashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Achievements */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5" />
-                Achievements
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {reviews.length >= 1 && (
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                    First Review
-                  </Badge>
-                )}
-                {reviews.length >= 5 && (
-                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                    5+ Reviews
-                  </Badge>
-                )}
-                {bookings.length >= 10 && (
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                    10+ Sessions
-                  </Badge>
-                )}
-                {parseFloat(averageRating) >= 4.5 && reviews.length > 0 && (
-                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                    Top Rated
-                  </Badge>
-                )}
-                {reviews.length === 0 && bookings.length === 0 && (
-                  <p className="text-muted-foreground text-sm">Complete sessions to earn badges!</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
           </div>
