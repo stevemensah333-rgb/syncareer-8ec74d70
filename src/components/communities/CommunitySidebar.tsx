@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Pin, PinOff, Plus, Compass, Users } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Pin, PinOff, Plus, Compass, Users, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,6 +10,8 @@ import { useCommunities } from '@/hooks/useCommunities';
 export function CommunitySidebar() {
   const { userCommunities, loading, togglePinCommunity } = useCommunities();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isOnMainCommunities = location.pathname === '/communities';
 
   if (loading) {
     return (
@@ -49,9 +51,21 @@ export function CommunitySidebar() {
 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-1">
+          {!isOnMainCommunities && (
+            <button
+              onClick={() => navigate('/communities')}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors w-full text-left mb-2"
+            >
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Home className="h-4 w-4 text-primary" />
+              </div>
+              <span className="font-medium">Back to Communities</span>
+            </button>
+          )}
+          
           <Link
             to="/communities"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors"
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors ${isOnMainCommunities ? 'bg-accent' : ''}`}
           >
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
               <Users className="h-4 w-4 text-primary" />
