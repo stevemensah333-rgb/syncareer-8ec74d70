@@ -52,7 +52,7 @@ export function CommunitySidebar() {
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-1">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/portfolio')}
             className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors w-full text-left mb-2"
           >
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
