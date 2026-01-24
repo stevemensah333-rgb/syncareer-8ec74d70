@@ -1,0 +1,339 @@
+import { useState, useEffect } from 'react';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Briefcase, MapPin, Calendar, Clock, Building2, ExternalLink, Edit, Trash2, Search, Filter } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface Application {
+  id: string;
+  job_id: string;
+  status: string;
+  cover_letter: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  job?: {
+    title: string;
+    location: string;
+    employment_type: string;
+    salary_min: number | null;
+    salary_max: number | null;
+    employer_name?: string;
+  };
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  reviewing: 'bg-blue-100 text-blue-800',
+  shortlisted: 'bg-purple-100 text-purple-800',
+  interview: 'bg-indigo-100 text-indigo-800',
+  offered: 'bg-green-100 text-green-800',
+  hired: 'bg-green-500 text-white',
+  rejected: 'bg-red-100 text-red-800',
+  withdrawn: 'bg-gray-100 text-gray-800',
+};
+
+const ApplicationTracker = () => {
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingApp, setEditingApp] = useState<Application | null>(null);
+  
+  // Form state for manual entry
+  const [formData, setFormData] = useState({
+    companyName: '',
+    jobTitle: '',
+    location: '',
+    status: 'pending',
+    notes: '',
+    applicationUrl: '',
+  });
+
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  const fetchApplications = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase
+        .from('job_applications')
+        .select(`
+          *,
+          job:job_postings(title, location, employment_type, salary_min, salary_max)
+        `)
+        .eq('applicant_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setApplications(data || []);
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+      toast.error('Failed to load applications');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateApplicationStatus = async (appId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('job_applications')
+        .update({ status: newStatus })
+        .eq('id', appId);
+
+      if (error) throw error;
+      
+      setApplications(apps => 
+        apps.map(app => app.id === appId ? { ...app, status: newStatus } : app)
+      );
+      toast.success('Status updated');
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Failed to update status');
+    }
+  };
+
+  const deleteApplication = async (appId: string) => {
+    try {
+      const { error } = await supabase
+        .from('job_applications')
+        .delete()
+        .eq('id', appId);
+
+      if (error) throw error;
+      
+      setApplications(apps => apps.filter(app => app.id !== appId));
+      toast.success('Application removed');
+    } catch (error) {
+      console.error('Error deleting application:', error);
+      toast.error('Failed to delete application');
+    }
+  };
+
+  const filteredApplications = applications.filter(app => {
+    const matchesSearch = 
+      app.job?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.notes?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || app.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const getStatusCounts = () => {
+    const counts: Record<string, number> = {
+      all: applications.length,
+      pending: 0,
+      reviewing: 0,
+      shortlisted: 0,
+      interview: 0,
+      offered: 0,
+      hired: 0,
+      rejected: 0,
+      withdrawn: 0,
+    };
+    applications.forEach(app => {
+      if (counts[app.status] !== undefined) {
+        counts[app.status]++;
+      }
+    });
+    return counts;
+  };
+
+  const statusCounts = getStatusCounts();
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const getDaysAgo = (dateString: string) => {
+    const days = Math.floor((Date.now() - new Date(dateString).getTime()) / (1000 * 60 * 60 * 24));
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    return `${days} days ago`;
+  };
+
+  return (
+    <PageLayout title="Application Tracker">
+      <div className="space-y-6">
+        {/* Stats Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+          {['all', 'pending', 'reviewing', 'interview', 'offered', 'hired', 'rejected'].map(status => (
+            <Card 
+              key={status} 
+              className={`cursor-pointer transition-all ${filterStatus === status ? 'ring-2 ring-primary' : ''}`}
+              onClick={() => setFilterStatus(status)}
+            >
+              <CardContent className="p-3 text-center">
+                <div className="text-2xl font-bold">{statusCounts[status]}</div>
+                <div className="text-xs text-muted-foreground capitalize">{status}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Search and Filter */}
+        <div className="flex gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search applications..."
+              className="pl-10"
+            />
+          </div>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-40">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="reviewing">Reviewing</SelectItem>
+              <SelectItem value="shortlisted">Shortlisted</SelectItem>
+              <SelectItem value="interview">Interview</SelectItem>
+              <SelectItem value="offered">Offered</SelectItem>
+              <SelectItem value="hired">Hired</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+              <SelectItem value="withdrawn">Withdrawn</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Applications List */}
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>Your Applications</CardTitle>
+                <CardDescription>
+                  Track the status of your job applications
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Loading applications...
+              </div>
+            ) : filteredApplications.length === 0 ? (
+              <div className="text-center py-12">
+                <Briefcase className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="text-lg font-medium mb-2">No applications yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  {applications.length === 0 
+                    ? "Start applying to jobs from the Opportunities page"
+                    : "No applications match your search criteria"}
+                </p>
+                <Button onClick={() => window.location.href = '/opportunities'}>
+                  Browse Opportunities
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredApplications.map((app) => (
+                  <div
+                    key={app.id}
+                    className="p-4 border rounded-lg hover:border-primary/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-lg">
+                            {app.job?.title || 'Unknown Position'}
+                          </h3>
+                          <Badge className={STATUS_COLORS[app.status] || 'bg-gray-100'}>
+                            {app.status}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-2">
+                          {app.job?.location && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              {app.job.location}
+                            </span>
+                          )}
+                          {app.job?.employment_type && (
+                            <span className="flex items-center gap-1">
+                              <Briefcase className="h-4 w-4" />
+                              {app.job.employment_type}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            Applied {formatDate(app.created_at)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            {getDaysAgo(app.updated_at)}
+                          </span>
+                        </div>
+
+                        {app.notes && (
+                          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                            {app.notes}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={app.status}
+                          onValueChange={(value) => updateApplicationStatus(app.id, value)}
+                        >
+                          <SelectTrigger className="w-32 h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="reviewing">Reviewing</SelectItem>
+                            <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                            <SelectItem value="interview">Interview</SelectItem>
+                            <SelectItem value="offered">Offered</SelectItem>
+                            <SelectItem value="hired">Hired</SelectItem>
+                            <SelectItem value="rejected">Rejected</SelectItem>
+                            <SelectItem value="withdrawn">Withdrawn</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive"
+                          onClick={() => deleteApplication(app.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </PageLayout>
+  );
+};
+
+export default ApplicationTracker;

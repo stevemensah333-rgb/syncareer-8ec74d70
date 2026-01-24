@@ -14,6 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
+      assessment_results: {
+        Row: {
+          answers: Json
+          application_id: string | null
+          assessment_id: string
+          candidate_id: string
+          completed_at: string | null
+          id: string
+          passed: boolean | null
+          score: number | null
+          started_at: string
+        }
+        Insert: {
+          answers?: Json
+          application_id?: string | null
+          assessment_id: string
+          candidate_id: string
+          completed_at?: string | null
+          id?: string
+          passed?: boolean | null
+          score?: number | null
+          started_at?: string
+        }
+        Update: {
+          answers?: Json
+          application_id?: string | null
+          assessment_id?: string
+          candidate_id?: string
+          completed_at?: string | null
+          id?: string
+          passed?: boolean | null
+          score?: number | null
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_results_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_results_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "skills_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      counsellor_availability: {
+        Row: {
+          counsellor_id: string
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_available: boolean
+          start_time: string
+        }
+        Insert: {
+          counsellor_id: string
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_available?: boolean
+          start_time: string
+        }
+        Update: {
+          counsellor_id?: string
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_available?: boolean
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "counsellor_availability_counsellor_id_fkey"
+            columns: ["counsellor_id"]
+            isOneToOne: false
+            referencedRelation: "counsellor_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "counsellor_availability_counsellor_id_fkey"
+            columns: ["counsellor_id"]
+            isOneToOne: false
+            referencedRelation: "counsellor_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       counsellor_bookings: {
         Row: {
           counsellor_id: string
@@ -152,6 +248,66 @@ export type Database = {
           },
         ]
       }
+      counsellor_sessions: {
+        Row: {
+          amount_paid: number | null
+          client_id: string
+          counsellor_id: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          meeting_link: string | null
+          payment_status: string | null
+          scheduled_at: string
+          session_notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          client_id: string
+          counsellor_id: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          meeting_link?: string | null
+          payment_status?: string | null
+          scheduled_at: string
+          session_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number | null
+          client_id?: string
+          counsellor_id?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          meeting_link?: string | null
+          payment_status?: string | null
+          scheduled_at?: string
+          session_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "counsellor_sessions_counsellor_id_fkey"
+            columns: ["counsellor_id"]
+            isOneToOne: false
+            referencedRelation: "counsellor_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "counsellor_sessions_counsellor_id_fkey"
+            columns: ["counsellor_id"]
+            isOneToOne: false
+            referencedRelation: "counsellor_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employer_details: {
         Row: {
           company_location: string | null
@@ -184,6 +340,241 @@ export type Database = {
           industry?: string | null
           job_title?: string | null
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      interview_sessions: {
+        Row: {
+          application_id: string
+          candidate_feedback: string | null
+          created_at: string
+          duration_minutes: number
+          id: string
+          interview_type: string
+          interviewer_notes: string | null
+          location: string | null
+          meeting_link: string | null
+          notes: string | null
+          scheduled_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          application_id: string
+          candidate_feedback?: string | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          interview_type?: string
+          interviewer_notes?: string | null
+          location?: string | null
+          meeting_link?: string | null
+          notes?: string | null
+          scheduled_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          application_id?: string
+          candidate_feedback?: string | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          interview_type?: string
+          interviewer_notes?: string | null
+          location?: string | null
+          meeting_link?: string | null
+          notes?: string | null
+          scheduled_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_sessions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_applications: {
+        Row: {
+          applicant_id: string
+          cover_letter: string | null
+          created_at: string
+          id: string
+          job_id: string
+          notes: string | null
+          resume_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          applicant_id: string
+          cover_letter?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          notes?: string | null
+          resume_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          applicant_id?: string
+          cover_letter?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          notes?: string | null
+          resume_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "job_postings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_postings: {
+        Row: {
+          created_at: string
+          department: string | null
+          description: string
+          employer_id: string
+          employment_type: string
+          id: string
+          location: string
+          requirements: string | null
+          salary_currency: string | null
+          salary_max: number | null
+          salary_min: number | null
+          skills: string[] | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          description: string
+          employer_id: string
+          employment_type: string
+          id?: string
+          location: string
+          requirements?: string | null
+          salary_currency?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          skills?: string[] | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          description?: string
+          employer_id?: string
+          employment_type?: string
+          id?: string
+          location?: string
+          requirements?: string | null
+          salary_currency?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          skills?: string[] | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mock_interviews: {
+        Row: {
+          answers: Json
+          completed_at: string | null
+          created_at: string
+          difficulty: string
+          duration_seconds: number | null
+          feedback: Json | null
+          id: string
+          industry: string | null
+          job_role: string
+          overall_score: number | null
+          questions: Json
+          status: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          completed_at?: string | null
+          created_at?: string
+          difficulty?: string
+          duration_seconds?: number | null
+          feedback?: Json | null
+          id?: string
+          industry?: string | null
+          job_role: string
+          overall_score?: number | null
+          questions?: Json
+          status?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          completed_at?: string | null
+          created_at?: string
+          difficulty?: string
+          duration_seconds?: number | null
+          feedback?: Json | null
+          id?: string
+          industry?: string | null
+          job_role?: string
+          overall_score?: number | null
+          questions?: Json
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message?: string
+          title?: string
+          type?: string
           user_id?: string
         }
         Relationships: []
@@ -317,6 +708,96 @@ export type Database = {
           user_id?: string
           year_of_admission?: number | null
           year_of_completion?: number | null
+        }
+        Relationships: []
+      }
+      resumes: {
+        Row: {
+          achievements: Json
+          created_at: string
+          education: Json
+          experience: Json
+          id: string
+          is_primary: boolean | null
+          personal_info: Json
+          projects: Json
+          references_section: string | null
+          skills: Json
+          template: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          achievements?: Json
+          created_at?: string
+          education?: Json
+          experience?: Json
+          id?: string
+          is_primary?: boolean | null
+          personal_info?: Json
+          projects?: Json
+          references_section?: string | null
+          skills?: Json
+          template?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          achievements?: Json
+          created_at?: string
+          education?: Json
+          experience?: Json
+          id?: string
+          is_primary?: boolean | null
+          personal_info?: Json
+          projects?: Json
+          references_section?: string | null
+          skills?: Json
+          template?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      skills_assessments: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          employer_id: string
+          id: string
+          is_active: boolean | null
+          passing_score: number | null
+          questions: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          employer_id: string
+          id?: string
+          is_active?: boolean | null
+          passing_score?: number | null
+          questions?: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          employer_id?: string
+          id?: string
+          is_active?: boolean | null
+          passing_score?: number | null
+          questions?: Json
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }

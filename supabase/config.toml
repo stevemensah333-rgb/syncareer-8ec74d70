@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.skillbridge-chat]
 verify_jwt = false
+
+[functions.mock-interview]
+verify_jwt = false
+
+[functions.generate-resume]
+verify_jwt = false

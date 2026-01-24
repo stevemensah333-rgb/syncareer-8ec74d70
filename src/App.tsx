@@ -19,6 +19,10 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import AICoach from "./pages/AICoach";
 import Onboarding from "./pages/Onboarding";
+// New feature pages
+import InterviewSimulator from "./pages/InterviewSimulator";
+import ResumeBuilder from "./pages/ResumeBuilder";
+import ApplicationTracker from "./pages/ApplicationTracker";
 // Employer pages
 import MyCompany from "./pages/employer/MyCompany";
 import TalentInsights from "./pages/employer/TalentInsights";
@@ -50,6 +54,10 @@ const App = () => (
             <Route path="/global" element={<Global />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/ai-coach" element={<AICoach />} />
+            {/* New feature routes */}
+            <Route path="/interview-simulator" element={<InterviewSimulator />} />
+            <Route path="/resume-builder" element={<ResumeBuilder />} />
+            <Route path="/applications" element={<ApplicationTracker />} />
             {/* Employer routes */}
             <Route path="/my-company" element={<MyCompany />} />
             <Route path="/talent-insights" element={<TalentInsights />} />
