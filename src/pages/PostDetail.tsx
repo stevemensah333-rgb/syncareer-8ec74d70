@@ -380,7 +380,7 @@ export default function PostDetail() {
                 </AvatarFallback>
               </Avatar>
               <Link 
-                to={`/profile/${post.author_id}`}
+                to={`/portfolio/${post.author_id}`}
                 className="font-medium text-foreground hover:underline"
               >
                 {post.author?.username || post.author?.full_name || 'Anonymous'}
@@ -500,9 +500,12 @@ export default function PostDetail() {
                             {comment.author?.username?.substring(0, 2).toUpperCase() || 'U'}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-medium text-sm">
+                        <Link 
+                          to={`/portfolio/${comment.author_id}`}
+                          className="font-medium text-sm hover:underline"
+                        >
                           {comment.author?.username || comment.author?.full_name || 'Anonymous'}
-                        </span>
+                        </Link>
                         <span className="text-xs text-muted-foreground">
                           {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                         </span>

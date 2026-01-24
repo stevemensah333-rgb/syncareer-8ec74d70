@@ -26,7 +26,7 @@ const Performance = () => {
     interviewsScheduled: 0,
     endorsementsReceived: 0,
     postsCreated: 0,
-    connectionsCount: 0,
+    communitiesJoined: 0,
   });
   const [learningStreak, setLearningStreak] = useState<LearningStreak | null>(null);
   const [monthlyData, setMonthlyData] = useState<Array<{ month: string; applications: number; posts: number }>>([]);
@@ -67,19 +67,18 @@ const Performance = () => {
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId);
 
-      // Fetch posts created this month
+      // Fetch community posts created this month
       const { count: postsCount } = await supabase
-        .from('posts')
+        .from('community_posts')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
+        .eq('author_id', userId)
         .gte('created_at', startOfMonth.toISOString());
 
-      // Fetch connections count
-      const { count: connectionsCount } = await supabase
-        .from('user_connections')
+      // Fetch community memberships count
+      const { count: communitiesCount } = await supabase
+        .from('community_members')
         .select('*', { count: 'exact', head: true })
-        .or(`user_id.eq.${userId},connected_user_id.eq.${userId}`)
-        .eq('status', 'accepted');
+        .eq('user_id', userId);
 
       // Fetch learning streak
       const { data: streakData } = await supabase
@@ -88,11 +87,11 @@ const Performance = () => {
         .eq('user_id', userId)
         .single();
 
-      // Fetch posts for last 6 months for chart
+      // Fetch community posts for last 6 months for chart
       const { data: postsData } = await supabase
-        .from('posts')
-        .select('created_at, skill_tags')
-        .eq('user_id', userId)
+        .from('community_posts')
+        .select('created_at, tags')
+        .eq('author_id', userId)
         .gte('created_at', sixMonthsAgo.toISOString())
         .order('created_at', { ascending: true });
 
@@ -139,10 +138,10 @@ const Performance = () => {
         };
       });
 
-      // Calculate skill progress from posts
+      // Calculate skill progress from community posts
       const skillCounts: Record<string, number> = {};
       (postsData || []).forEach(post => {
-        (post.skill_tags || []).forEach((tag: string) => {
+        (post.tags || []).forEach((tag: string) => {
           skillCounts[tag] = (skillCounts[tag] || 0) + 1;
         });
       });
@@ -161,7 +160,7 @@ const Performance = () => {
         interviewsScheduled: interviewsCount || 0,
         endorsementsReceived: endorsementsCount || 0,
         postsCreated: postsCount || 0,
-        connectionsCount: connectionsCount || 0,
+        communitiesJoined: communitiesCount || 0,
       });
       setLearningStreak(streakData);
       setMonthlyData(chartData);
@@ -241,8 +240,8 @@ const Performance = () => {
                   <Users className="h-5 w-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{stats.connectionsCount}</p>
-                  <p className="text-xs text-muted-foreground">Connections</p>
+                  <p className="text-2xl font-bold">{stats.communitiesJoined}</p>
+                  <p className="text-xs text-muted-foreground">Communities Joined</p>
                 </div>
               </div>
             </CardContent>
@@ -341,7 +340,7 @@ const Performance = () => {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Your Top Skills (from posts)</CardTitle>
+              <CardTitle>Your Top Skills (from community posts)</CardTitle>
             </CardHeader>
             <CardContent>
               {skillProgress.length > 0 && skillProgress[0].posts > 0 ? (
@@ -415,11 +414,11 @@ const Performance = () => {
                 </p>
               </div>
             )}
-            {stats.connectionsCount > 0 && (
+            {stats.communitiesJoined > 0 && (
               <div className="p-3 bg-secondary/30 rounded-lg">
-                <p className="text-sm font-medium mb-1">🤝 Growing Network</p>
+                <p className="text-sm font-medium mb-1">🤝 Community Member</p>
                 <p className="text-xs text-muted-foreground">
-                  You're connected with {stats.connectionsCount} professional{stats.connectionsCount !== 1 ? 's' : ''}.
+                  You're part of {stats.communitiesJoined} communit{stats.communitiesJoined !== 1 ? 'ies' : 'y'}.
                 </p>
               </div>
             )}
