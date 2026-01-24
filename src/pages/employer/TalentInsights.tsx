@@ -41,10 +41,10 @@ const TalentInsights = () => {
   ];
 
   const featuredCandidates = [
-    { name: 'Sarah K.', skill: 'Full Stack Developer', score: 95, school: 'University of Lagos' },
-    { name: 'James M.', skill: 'Data Scientist', score: 92, school: 'Kenyatta University' },
-    { name: 'Amina O.', skill: 'UI/UX Designer', score: 90, school: 'University of Ghana' },
-    { name: 'David T.', skill: 'Machine Learning', score: 88, school: 'UCT' },
+    { name: 'Sarah K.', skill: 'Full Stack Developer', match: 95, school: 'University of Lagos' },
+    { name: 'James M.', skill: 'Data Scientist', match: 92, school: 'Kenyatta University' },
+    { name: 'Amina O.', skill: 'UI/UX Designer', match: 90, school: 'University of Ghana' },
+    { name: 'David T.', skill: 'Machine Learning', match: 88, school: 'UCT' },
   ];
 
   return (
@@ -68,12 +68,12 @@ const TalentInsights = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Avg. Skill Score</p>
-                  <p className="text-2xl font-bold">78.5</p>
+                  <p className="text-sm text-muted-foreground">Avg. Match Rate</p>
+                  <p className="text-2xl font-bold">78.5%</p>
                 </div>
                 <Star className="h-8 w-8 text-primary" />
               </div>
-              <p className="text-xs text-green-500 mt-2">+3.2 points improvement</p>
+              <p className="text-xs text-green-500 mt-2">+3.2% improvement</p>
             </CardContent>
           </Card>
           <Card>
@@ -273,8 +273,8 @@ const TalentInsights = () => {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Skill Score</span>
-                      <Badge variant="secondary">{candidate.score}</Badge>
+                      <span className="text-muted-foreground">Match</span>
+                      <Badge variant="secondary">{candidate.match}%</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <GraduationCap className="h-3 w-3" />

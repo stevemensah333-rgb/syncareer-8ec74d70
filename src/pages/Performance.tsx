@@ -5,11 +5,11 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { TrendingUp, Award, Target, Zap } from 'lucide-react';
 
 const Performance = () => {
-  // Skill growth over time
-  const skillGrowthData = Array.from({ length: 6 }, (_, i) => ({
+  // Projects completed over time
+  const projectGrowthData = Array.from({ length: 6 }, (_, i) => ({
     month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][i],
-    skillScore: 1200 + i * 100 + Math.random() * 50,
-    projectsCompleted: 2 + i * 1,
+    projectsCompleted: 2 + i * 1 + Math.floor(Math.random() * 2),
+    endorsements: 10 + i * 3 + Math.floor(Math.random() * 5),
   }));
 
   // Skill category breakdown
@@ -39,14 +39,14 @@ const Performance = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
-                SkillScore Growth (Last 6 Months)
+                Progress Overview (Last 6 Months)
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
-                    data={skillGrowthData}
+                    data={projectGrowthData}
                     margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
@@ -56,8 +56,8 @@ const Performance = () => {
                     <Legend />
                     <Line
                       type="monotone"
-                      dataKey="skillScore"
-                      name="SkillScore"
+                      dataKey="projectsCompleted"
+                      name="Projects"
                       stroke="hsl(var(--primary))"
                       strokeWidth={2}
                       dot={{ r: 6 }}
@@ -65,8 +65,8 @@ const Performance = () => {
                     />
                     <Line
                       type="monotone"
-                      dataKey="projectsCompleted"
-                      name="Projects"
+                      dataKey="endorsements"
+                      name="Endorsements"
                       stroke="hsl(var(--accent))"
                       strokeWidth={2}
                       dot={{ r: 6 }}
@@ -86,14 +86,7 @@ const Performance = () => {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Award className="h-5 w-5 text-primary" />
-                <span className="text-sm">SkillScore Gain</span>
-              </div>
-              <span className="text-lg font-bold text-primary">+124</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-accent" />
+                <Target className="h-5 w-5 text-primary" />
                 <span className="text-sm">Projects Completed</span>
               </div>
               <span className="text-lg font-bold">4</span>

@@ -268,31 +268,31 @@ const MySkills = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* SkillScore Overview */}
+          {/* Skills Overview */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Award className="h-5 w-5 text-primary" />
-                SkillScore
+                Skills Overview
               </CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="text-5xl font-bold text-primary mb-2">1,847</div>
+              <div className="text-5xl font-bold text-primary mb-2">23</div>
               <p className="text-sm text-muted-foreground mb-4">
-                Top 15% in your network
+                Skills in your profile
               </p>
               <div className="space-y-2 text-left">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Technical Skills</span>
-                  <span className="font-medium">620</span>
+                  <span className="font-medium">15</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Peer Endorsements</span>
-                  <span className="font-medium">427</span>
+                  <span className="text-muted-foreground">Soft Skills</span>
+                  <span className="font-medium">8</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Projects Completed</span>
-                  <span className="font-medium">800</span>
+                  <span className="text-muted-foreground">Verified</span>
+                  <span className="font-medium">12</span>
                 </div>
               </div>
             </CardContent>
