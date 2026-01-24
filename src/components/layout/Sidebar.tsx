@@ -3,7 +3,8 @@ import React from 'react';
 import { 
   Home, Users, Briefcase, GraduationCap, Trophy, 
   BarChart, Brain, Settings, ChevronRight, ChevronLeft, Sparkles,
-  Building2, TrendingUp, FileText, UserPlus, Star
+  Building2, TrendingUp, FileText, UserPlus, Star, Calendar,
+  ClipboardList, Mic, FileUser
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -58,14 +59,24 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       href: '/portfolio',
     },
     {
+      title: 'Applications',
+      icon: ClipboardList,
+      href: '/applications',
+    },
+    {
+      title: 'Interview Prep',
+      icon: Mic,
+      href: '/interview-simulator',
+    },
+    {
+      title: 'Resume Builder',
+      icon: FileUser,
+      href: '/resume-builder',
+    },
+    {
       title: 'Performance',
       icon: BarChart,
       href: '/performance',
-    },
-    {
-      title: 'Analysis',
-      icon: Brain,
-      href: '/analysis',
     },
     {
       title: 'Synconnect AI',
@@ -92,14 +103,19 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       href: '/my-company',
     },
     {
-      title: 'Train',
-      icon: GraduationCap,
-      href: '/train',
-    },
-    {
       title: 'Post a Job',
       icon: FileText,
       href: '/post-job',
+    },
+    {
+      title: 'Applicants',
+      icon: Users,
+      href: '/applicants',
+    },
+    {
+      title: 'Train',
+      icon: GraduationCap,
+      href: '/train',
     },
     {
       title: 'Talent Insights',
@@ -129,6 +145,16 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       title: 'My Portfolio',
       icon: Users,
       href: '/counsellor-dashboard',
+    },
+    {
+      title: 'Availability',
+      icon: Calendar,
+      href: '/counsellor-availability',
+    },
+    {
+      title: 'Sessions',
+      icon: ClipboardList,
+      href: '/counsellor-sessions',
     },
     {
       title: 'Settings',
