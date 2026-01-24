@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ThumbsUp, MessageCircle, Send } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ThumbsUp, MessageCircle, Send, Award } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -15,6 +15,12 @@ interface Comment {
   created_at: string;
   user_id: string;
   author_name?: string;
+}
+
+interface SkillEndorsement {
+  skill_name: string;
+  count: number;
+  endorsed_by_me: boolean;
 }
 
 interface PostCardProps {
@@ -34,8 +40,11 @@ export function PostCard({ id, content, skill_tags, created_at, author_name, use
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingLikes, setLoadingLikes] = useState(true);
+  const [skillEndorsements, setSkillEndorsements] = useState<Map<string, SkillEndorsement>>(new Map());
+  const [endorsingSkill, setEndorsingSkill] = useState<string | null>(null);
 
   const isLiked = currentUserId ? likes.includes(currentUserId) : false;
+  const isOwnPost = currentUserId === user_id;
 
   const getInitials = (name: string) => {
     return name
@@ -49,6 +58,9 @@ export function PostCard({ id, content, skill_tags, created_at, author_name, use
   useEffect(() => {
     fetchLikes();
     fetchComments();
+    if (skill_tags?.length > 0) {
+      fetchSkillEndorsements();
+    }
 
     // Subscribe to real-time likes updates
     const likesChannel = supabase
@@ -84,11 +96,31 @@ export function PostCard({ id, content, skill_tags, created_at, author_name, use
       )
       .subscribe();
 
+    // Subscribe to real-time endorsements updates for this user
+    const endorsementsChannel = supabase
+      .channel(`skill-endorsements-${user_id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'skill_endorsements',
+          filter: `user_id=eq.${user_id}`,
+        },
+        () => {
+          if (skill_tags?.length > 0) {
+            fetchSkillEndorsements();
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(likesChannel);
       supabase.removeChannel(commentsChannel);
+      supabase.removeChannel(endorsementsChannel);
     };
-  }, [id]);
+  }, [id, user_id, skill_tags]);
 
   const fetchLikes = async () => {
     try {
@@ -139,6 +171,47 @@ export function PostCard({ id, content, skill_tags, created_at, author_name, use
     }
   };
 
+  const fetchSkillEndorsements = async () => {
+    if (!skill_tags?.length) return;
+
+    try {
+      // Get all endorsements for the post author's skills that match the post's skill tags
+      const { data, error } = await supabase
+        .from('skill_endorsements')
+        .select('skill_name, endorser_id')
+        .eq('user_id', user_id)
+        .in('skill_name', skill_tags);
+
+      if (error) throw error;
+
+      const endorsementMap = new Map<string, SkillEndorsement>();
+      
+      // Initialize all skill tags
+      skill_tags.forEach(tag => {
+        endorsementMap.set(tag, {
+          skill_name: tag,
+          count: 0,
+          endorsed_by_me: false,
+        });
+      });
+
+      // Count endorsements
+      data?.forEach(endorsement => {
+        const existing = endorsementMap.get(endorsement.skill_name);
+        if (existing) {
+          existing.count++;
+          if (endorsement.endorser_id === currentUserId) {
+            existing.endorsed_by_me = true;
+          }
+        }
+      });
+
+      setSkillEndorsements(endorsementMap);
+    } catch (error) {
+      console.error('Error fetching skill endorsements:', error);
+    }
+  };
+
   const handleLike = async () => {
     if (!currentUserId) {
       toast.error('Please sign in to like posts');
@@ -166,6 +239,83 @@ export function PostCard({ id, content, skill_tags, created_at, author_name, use
     } catch (error: any) {
       console.error('Error toggling like:', error);
       toast.error('Failed to update like');
+    }
+  };
+
+  const handleEndorseSkill = async (skillName: string) => {
+    if (!currentUserId) {
+      toast.error('Please sign in to endorse skills');
+      return;
+    }
+
+    if (isOwnPost) {
+      toast.error("You can't endorse your own skills");
+      return;
+    }
+
+    const endorsement = skillEndorsements.get(skillName);
+    if (!endorsement) return;
+
+    setEndorsingSkill(skillName);
+    
+    try {
+      if (endorsement.endorsed_by_me) {
+        // Remove endorsement
+        const { error } = await supabase
+          .from('skill_endorsements')
+          .delete()
+          .eq('user_id', user_id)
+          .eq('endorser_id', currentUserId)
+          .eq('skill_name', skillName);
+
+        if (error) throw error;
+        
+        setSkillEndorsements(prev => {
+          const newMap = new Map(prev);
+          const existing = newMap.get(skillName);
+          if (existing) {
+            newMap.set(skillName, {
+              ...existing,
+              count: existing.count - 1,
+              endorsed_by_me: false,
+            });
+          }
+          return newMap;
+        });
+        
+        toast.success(`Removed endorsement for ${skillName}`);
+      } else {
+        // Add endorsement
+        const { error } = await supabase
+          .from('skill_endorsements')
+          .insert({
+            user_id: user_id,
+            endorser_id: currentUserId,
+            skill_name: skillName,
+          });
+
+        if (error) throw error;
+        
+        setSkillEndorsements(prev => {
+          const newMap = new Map(prev);
+          const existing = newMap.get(skillName);
+          if (existing) {
+            newMap.set(skillName, {
+              ...existing,
+              count: existing.count + 1,
+              endorsed_by_me: true,
+            });
+          }
+          return newMap;
+        });
+        
+        toast.success(`Endorsed ${author_name}'s ${skillName} skill!`);
+      }
+    } catch (error: any) {
+      console.error('Error toggling endorsement:', error);
+      toast.error('Failed to update endorsement');
+    } finally {
+      setEndorsingSkill(null);
     }
   };
 
@@ -225,11 +375,48 @@ export function PostCard({ id, content, skill_tags, created_at, author_name, use
         
         {skill_tags && skill_tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {skill_tags.map((tag) => (
-              <span key={tag} className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
-                #{tag}
-              </span>
-            ))}
+            {skill_tags.map((tag) => {
+              const endorsement = skillEndorsements.get(tag);
+              const isEndorsed = endorsement?.endorsed_by_me;
+              const endorseCount = endorsement?.count || 0;
+              const isEndorsing = endorsingSkill === tag;
+              
+              return (
+                <Tooltip key={tag}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => handleEndorseSkill(tag)}
+                      disabled={isOwnPost || isEndorsing}
+                      className={`
+                        inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-all
+                        ${isEndorsed 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-secondary text-secondary-foreground hover:bg-primary/20'
+                        }
+                        ${isOwnPost ? 'cursor-default' : 'cursor-pointer'}
+                        ${isEndorsing ? 'opacity-50' : ''}
+                      `}
+                    >
+                      <span>#{tag}</span>
+                      {endorseCount > 0 && (
+                        <span className="flex items-center gap-0.5">
+                          <Award className="h-3 w-3" />
+                          {endorseCount}
+                        </span>
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isOwnPost 
+                      ? "You can't endorse your own skills" 
+                      : isEndorsed 
+                        ? `Click to remove endorsement` 
+                        : `Click to endorse ${author_name}'s ${tag} skill`
+                    }
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
           </div>
         )}
 
