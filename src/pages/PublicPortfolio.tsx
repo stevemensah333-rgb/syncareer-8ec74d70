@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Star, ExternalLink, ArrowLeft, Github, Globe, Award } from 'lucide-react';
+import { Star, ArrowLeft, Github, Globe, Award, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
+import { RateProjectDialog } from '@/components/portfolio/RateProjectDialog';
 
 interface Project {
   id: string;
@@ -19,6 +20,8 @@ interface Project {
   tags: string[];
   is_verified: boolean;
   created_at: string;
+  avgRating?: number;
+  reviewCount?: number;
 }
 
 interface UserProfile {
@@ -41,67 +44,101 @@ export default function PublicPortfolio() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [endorsements, setEndorsements] = useState<SkillEndorsement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!userId) {
+  const fetchData = async () => {
+    if (!userId) {
+      navigate('/communities');
+      return;
+    }
+
+    try {
+      // Get current user
+      const { data: { session } } = await supabase.auth.getSession();
+      setCurrentUserId(session?.user?.id || null);
+
+      // Fetch user profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url, bio')
+        .eq('id', userId)
+        .single();
+
+      if (profileError || !profileData) {
+        toast.error('User not found');
         navigate('/communities');
         return;
       }
 
-      try {
-        // Fetch user profile
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, username, full_name, avatar_url, bio')
-          .eq('id', userId)
-          .single();
+      setProfile(profileData);
 
-        if (profileError || !profileData) {
-          toast.error('User not found');
-          navigate('/communities');
-          return;
-        }
+      // Fetch user's projects
+      const { data: projectsData } = await supabase
+        .from('portfolio_projects')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-        setProfile(profileData);
+      // Fetch reviews for all projects
+      const projectIds = (projectsData || []).map(p => p.id);
+      const { data: reviewsData } = await supabase
+        .from('portfolio_reviews')
+        .select('project_id, rating')
+        .in('project_id', projectIds);
 
-        // Fetch user's projects
-        const { data: projectsData } = await supabase
-          .from('portfolio_projects')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false });
+      // Calculate avg rating per project
+      const reviewsByProject: Record<string, number[]> = {};
+      (reviewsData || []).forEach(r => {
+        if (!reviewsByProject[r.project_id]) reviewsByProject[r.project_id] = [];
+        reviewsByProject[r.project_id].push(r.rating);
+      });
 
-        setProjects(projectsData || []);
+      const projectsWithRatings = (projectsData || []).map(p => ({
+        ...p,
+        avgRating: reviewsByProject[p.id] 
+          ? reviewsByProject[p.id].reduce((a, b) => a + b, 0) / reviewsByProject[p.id].length 
+          : 0,
+        reviewCount: reviewsByProject[p.id]?.length || 0,
+      }));
 
-        // Fetch endorsements
-        const { data: endorsementsData } = await supabase
-          .from('skill_endorsements')
-          .select('skill_name')
-          .eq('user_id', userId);
+      setProjects(projectsWithRatings);
 
-        // Count endorsements per skill
-        const endorsementCounts: Record<string, number> = {};
-        (endorsementsData || []).forEach(e => {
-          endorsementCounts[e.skill_name] = (endorsementCounts[e.skill_name] || 0) + 1;
-        });
+      // Fetch endorsements
+      const { data: endorsementsData } = await supabase
+        .from('skill_endorsements')
+        .select('skill_name')
+        .eq('user_id', userId);
 
-        const sortedEndorsements = Object.entries(endorsementCounts)
-          .map(([skill_name, count]) => ({ skill_name, count }))
-          .sort((a, b) => b.count - a.count);
+      // Count endorsements per skill
+      const endorsementCounts: Record<string, number> = {};
+      (endorsementsData || []).forEach(e => {
+        endorsementCounts[e.skill_name] = (endorsementCounts[e.skill_name] || 0) + 1;
+      });
 
-        setEndorsements(sortedEndorsements);
+      const sortedEndorsements = Object.entries(endorsementCounts)
+        .map(([skill_name, count]) => ({ skill_name, count }))
+        .sort((a, b) => b.count - a.count);
 
-      } catch (error) {
-        console.error('Error fetching portfolio:', error);
-        toast.error('Failed to load portfolio');
-      } finally {
-        setLoading(false);
-      }
-    };
+      setEndorsements(sortedEndorsements);
 
+    } catch (error) {
+      console.error('Error fetching portfolio:', error);
+      toast.error('Failed to load portfolio');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, [userId, navigate]);
+
+  const handleRateProject = (project: Project) => {
+    setSelectedProject(project);
+    setRatingDialogOpen(true);
+  };
 
   const getProjectEmoji = (tags: string[]) => {
     const tagLower = tags[0]?.toLowerCase() || '';
@@ -198,12 +235,21 @@ export default function PublicPortfolio() {
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="text-4xl mb-2">{getProjectEmoji(project.tags)}</div>
-                        {project.is_verified && (
-                          <Badge variant="secondary" className="gap-1">
-                            <Award className="h-3 w-3" />
-                            Verified
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {project.reviewCount > 0 && (
+                            <div className="flex items-center gap-1 text-sm">
+                              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                              <span className="font-medium">{project.avgRating?.toFixed(1)}</span>
+                              <span className="text-muted-foreground">({project.reviewCount})</span>
+                            </div>
+                          )}
+                          {project.is_verified && (
+                            <Badge variant="secondary" className="gap-1">
+                              <Award className="h-3 w-3" />
+                              Verified
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       <CardTitle className="text-lg">{project.title}</CardTitle>
                       <p className="text-sm text-muted-foreground line-clamp-2">
@@ -218,7 +264,7 @@ export default function PublicPortfolio() {
                           </Badge>
                         ))}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         {project.project_url && (
                           <Button 
                             size="sm" 
@@ -237,6 +283,17 @@ export default function PublicPortfolio() {
                           >
                             <Github className="h-4 w-4 mr-1" />
                             Code
+                          </Button>
+                        )}
+                        {/* Show rate button only if viewing another user's portfolio */}
+                        {currentUserId && currentUserId !== userId && (
+                          <Button 
+                            size="sm" 
+                            variant="secondary"
+                            onClick={() => handleRateProject(project)}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                            Rate
                           </Button>
                         )}
                       </div>
@@ -279,6 +336,17 @@ export default function PublicPortfolio() {
             )}
           </div>
         </div>
+
+        {/* Rating Dialog */}
+        {selectedProject && (
+          <RateProjectDialog
+            open={ratingDialogOpen}
+            onOpenChange={setRatingDialogOpen}
+            projectId={selectedProject.id}
+            projectTitle={selectedProject.title}
+            onRatingSubmitted={fetchData}
+          />
+        )}
       </div>
     </PageLayout>
   );
