@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +8,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { Navbar } from '@/components/layout/Navbar';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   User, Star, MapPin, Phone, DollarSign, Edit2, Save, X, 
-  Calendar, MessageSquare, Award, TrendingUp, Camera
+  Calendar, MessageSquare, Award, TrendingUp, Camera, ArrowLeft, Menu
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -46,6 +51,9 @@ interface Booking {
 
 const CounsellorDashboard = () => {
   const { profile } = useUserProfile();
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [counsellorDetails, setCounsellorDetails] = useState<CounsellorDetails | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -228,7 +236,43 @@ const CounsellorDashboard = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen flex flex-col">
+      <Navbar onMobileMenuClick={() => setIsMobileDrawerOpen(true)} />
+      
+      <div className="flex-1 flex">
+        {/* Desktop Sidebar */}
+        {!isMobile && (
+          <Sidebar isCollapsed={false} onToggle={() => {}} />
+        )}
+        
+        {/* Mobile Drawer */}
+        {isMobile && (
+          <Sheet open={isMobileDrawerOpen} onOpenChange={setIsMobileDrawerOpen}>
+            <SheetContent side="left" className="p-0 w-72">
+              <Sidebar 
+                isCollapsed={false} 
+                onToggle={() => setIsMobileDrawerOpen(false)} 
+                className="border-none"
+              />
+            </SheetContent>
+          </Sheet>
+        )}
+        
+        <main className="flex-1 transition-all duration-300">
+          {/* Mobile Header with Back Button */}
+          <div className="lg:hidden sticky top-0 z-20 bg-background border-b p-3 flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/communities')}
+              className="h-9 w-9"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="font-semibold">My Portfolio</h1>
+          </div>
+          
+          <div className="p-6 space-y-6">
       {/* Header Section - Portfolio Style */}
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-r from-primary/20 to-primary/5 h-32" />
@@ -514,6 +558,9 @@ const CounsellorDashboard = () => {
             </CardContent>
           </Card>
         </div>
+      </div>
+          </div>
+        </main>
       </div>
     </div>
   );
