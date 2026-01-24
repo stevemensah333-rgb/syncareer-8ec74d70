@@ -34,6 +34,11 @@ import ApplicantTracker from "./pages/employer/ApplicantTracker";
 import CounsellorDashboard from "./pages/counsellor/CounsellorDashboard";
 import CounsellorAvailability from "./pages/counsellor/CounsellorAvailability";
 import CounsellorSessions from "./pages/counsellor/CounsellorSessions";
+// Community pages
+import Communities from "./pages/Communities";
+import ExploreCommunities from "./pages/ExploreCommunities";
+import CreateCommunity from "./pages/CreateCommunity";
+import CommunityDetail from "./pages/CommunityDetail";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +77,11 @@ const App = () => (
             <Route path="/counsellor-dashboard" element={<CounsellorDashboard />} />
             <Route path="/counsellor-availability" element={<CounsellorAvailability />} />
             <Route path="/counsellor-sessions" element={<CounsellorSessions />} />
+            {/* Community routes */}
+            <Route path="/communities" element={<Communities />} />
+            <Route path="/communities/explore" element={<ExploreCommunities />} />
+            <Route path="/communities/create" element={<CreateCommunity />} />
+            <Route path="/communities/:slug" element={<CommunityDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
