@@ -3,12 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { ChallengeCard } from '@/components/skillbridge/ChallengeCard';
 import { StatsCard } from '@/components/ui/StatsCard';
 import { CreatePostDialog } from '@/components/feed/CreatePostDialog';
 import { PostCard } from '@/components/feed/PostCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, Users, Award, Zap, Trophy } from 'lucide-react';
+import { TrendingUp, Users, Award, Zap } from 'lucide-react';
 
 
 interface Post {
@@ -19,16 +18,6 @@ interface Post {
   created_at: string;
   author_name?: string;
   author_avatar?: string;
-}
-
-interface Challenge {
-  id: string;
-  title: string;
-  description: string;
-  deadline: string;
-  participants: number;
-  reward: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
 }
 
 interface TrendingSkill {
@@ -42,7 +31,6 @@ export function Feed() {
   const [user, setUser] = useState<any>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [trendingSkills, setTrendingSkills] = useState<TrendingSkill[]>([]);
   const [userStats, setUserStats] = useState({
     skillsVerified: 0,
@@ -164,48 +152,6 @@ export function Feed() {
     setIsSidebarCollapsed(prev => !prev);
   };
 
-  const fetchChallenges = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('weekly_challenges')
-        .select('*')
-        .eq('is_active', true)
-        .gte('deadline', new Date().toISOString())
-        .order('deadline', { ascending: true })
-        .limit(3);
-
-      if (error) throw error;
-
-      if (data) {
-        const challengesWithParticipants = await Promise.all(
-          data.map(async (challenge) => {
-            const { count } = await supabase
-              .from('challenge_participants')
-              .select('*', { count: 'exact', head: true })
-              .eq('challenge_id', challenge.id);
-
-            const now = new Date();
-            const deadline = new Date(challenge.deadline);
-            const diffDays = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-            
-            return {
-              id: challenge.id,
-              title: challenge.title,
-              description: challenge.description,
-              deadline: `${diffDays} days left`,
-              participants: count || 0,
-              reward: challenge.reward,
-              difficulty: (challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)) as 'Beginner' | 'Intermediate' | 'Advanced',
-            };
-          })
-        );
-        setChallenges(challengesWithParticipants);
-      }
-    } catch (error) {
-      console.error('Error fetching challenges:', error);
-    }
-  }, []);
-
   const fetchTrendingSkills = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -236,9 +182,8 @@ export function Feed() {
   }, []);
 
   useEffect(() => {
-    fetchChallenges();
     fetchTrendingSkills();
-  }, [fetchChallenges, fetchTrendingSkills]);
+  }, [fetchTrendingSkills]);
 
   if (!user) {
     return null;
@@ -253,8 +198,8 @@ export function Feed() {
         
         <main className="flex-1 transition-all duration-300">
           <div className="container max-w-full p-4 lg:p-6 animate-fade-in">
-            <h1 className="text-3xl font-bold mb-6">Networking</h1>
-            <p className="text-muted-foreground mb-6">Connect with peers, mentors, and alumni</p>
+            <h1 className="text-3xl font-bold mb-6">Feed</h1>
+            <p className="text-muted-foreground mb-6">See what's happening in your network</p>
             
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -314,17 +259,6 @@ export function Feed() {
 
               {/* Sidebar Content */}
               <div className="space-y-6">
-                {/* Weekly Challenges */}
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-primary" />
-                    Weekly Challenges
-                  </h2>
-                  {challenges.map((challenge, idx) => (
-                    <ChallengeCard key={idx} {...challenge} />
-                  ))}
-                </div>
-
                 {/* Trending Skills */}
                 <Card>
                   <CardHeader>

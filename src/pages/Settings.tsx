@@ -21,11 +21,6 @@ const Settings = () => {
   const initialTab = (searchParams.get('tab') as SettingsSection) || 'account';
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialTab);
   const { profile, studentDetails, employerDetails, loading: profileLoading } = useUserProfile();
-  const [professionalDetails, setProfessionalDetails] = useState<{
-    existing_role: string;
-    aspired_role: string;
-    years_of_experience: string;
-  } | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
@@ -38,37 +33,23 @@ const Settings = () => {
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
   const [selectedCountry, setSelectedCountry] = useState(() => localStorage.getItem('country') || 'ZA');
 
-  // Fetch user email and professional details
+  // Fetch user email
   useEffect(() => {
     const fetchUserData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUserEmail(session.user.email || '');
-        
-        // Fetch professional transition details if applicable
-        if (profile?.user_type === 'professional_transition') {
-          const { data } = await supabase
-            .from('professional_transition_details')
-            .select('existing_role, aspired_role, years_of_experience')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-          
-          if (data) {
-            setProfessionalDetails(data);
-          }
-        }
       }
     };
     
     fetchUserData();
-  }, [profile?.user_type]);
+  }, []);
 
   const getUserTypeLabel = (userType: string | null) => {
     switch (userType) {
       case 'student': return 'Student';
       case 'employer': return 'Employer / Recruiter';
       case 'career_counsellor': return 'Career Counsellor';
-      case 'professional_transition': return 'Professional in Transition';
       default: return 'Not specified';
     }
   };
@@ -337,40 +318,6 @@ const Settings = () => {
                       </div>
                     )}
 
-                    {profile?.user_type === 'professional_transition' && professionalDetails && (
-                      <div className="pt-4 border-t">
-                        <h3 className="text-lg font-medium mb-4">Career Transition Details</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium mb-1">Current Role</label>
-                            <input 
-                              type="text" 
-                              value={professionalDetails.existing_role}
-                              readOnly
-                              className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-1">Aspired Role</label>
-                            <input 
-                              type="text" 
-                              value={professionalDetails.aspired_role}
-                              readOnly
-                              className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-1">Years of Experience</label>
-                            <input 
-                              type="text" 
-                              value={professionalDetails.years_of_experience}
-                              readOnly
-                              className="w-full px-3 py-2 border border-border rounded-md bg-muted text-foreground cursor-not-allowed" 
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
 
                     <div className="pt-4 border-t">
                       <p className="text-sm text-muted-foreground mb-4">
