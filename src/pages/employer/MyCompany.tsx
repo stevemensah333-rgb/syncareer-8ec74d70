@@ -123,15 +123,21 @@ const MyCompany = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
                 <div className="flex items-center gap-2">
                   <Globe className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">www.company.com</span>
+                  <span className="text-sm">
+                    {employerDetails?.company_website || 'Website not set'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">hr@company.com</span>
+                  <span className="text-sm">
+                    {employerDetails?.company_email || 'Email not set'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">+1 234 567 890</span>
+                  <span className="text-sm">
+                    {employerDetails?.company_phone || 'Phone not set'}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -143,19 +149,22 @@ const MyCompany = () => {
               <CardTitle>About the Company</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Add a description about your company, its mission, values, and what makes it a great place to work.
-                This will be visible to job seekers browsing your job postings.
-              </p>
+              {employerDetails?.company_description ? (
+                <p className="text-muted-foreground whitespace-pre-wrap">
+                  {employerDetails.company_description}
+                </p>
+              ) : (
+                <p className="text-muted-foreground">
+                  Add a description about your company, its mission, values, and what makes it a great place to work.
+                  This will be visible to job seekers browsing your job postings.
+                </p>
+              )}
               <Button 
                 variant="outline" 
                 className="mt-4"
-                onClick={() => {
-                  setIsEditDialogOpen(true);
-                  toast.info('You can add company description in the edit dialog');
-                }}
+                onClick={() => setIsEditDialogOpen(true)}
               >
-                Add Company Description
+                {employerDetails?.company_description ? 'Edit Description' : 'Add Company Description'}
               </Button>
             </CardContent>
           </Card>

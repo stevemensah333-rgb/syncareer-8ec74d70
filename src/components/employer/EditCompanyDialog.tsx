@@ -54,6 +54,10 @@ interface EditCompanyDialogProps {
     industry: string | null;
     company_size: string | null;
     job_title: string | null;
+    company_website: string | null;
+    company_email: string | null;
+    company_phone: string | null;
+    company_description: string | null;
   } | null;
   onSave: () => void;
 }
@@ -65,6 +69,10 @@ export function EditCompanyDialog({ open, onOpenChange, companyData, onSave }: E
     industry: '',
     company_size: '',
     job_title: '',
+    company_website: '',
+    company_email: '',
+    company_phone: '',
+    company_description: '',
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -76,6 +84,10 @@ export function EditCompanyDialog({ open, onOpenChange, companyData, onSave }: E
         industry: companyData.industry || '',
         company_size: companyData.company_size || '',
         job_title: companyData.job_title || '',
+        company_website: companyData.company_website || '',
+        company_email: companyData.company_email || '',
+        company_phone: companyData.company_phone || '',
+        company_description: companyData.company_description || '',
       });
     }
   }, [companyData]);
@@ -102,6 +114,10 @@ export function EditCompanyDialog({ open, onOpenChange, companyData, onSave }: E
           industry: formData.industry || null,
           company_size: formData.company_size || null,
           job_title: formData.job_title || null,
+          company_website: formData.company_website || null,
+          company_email: formData.company_email || null,
+          company_phone: formData.company_phone || null,
+          company_description: formData.company_description || null,
         })
         .eq('user_id', session.user.id);
 
@@ -124,7 +140,7 @@ export function EditCompanyDialog({ open, onOpenChange, companyData, onSave }: E
         <DialogHeader>
           <DialogTitle>Edit Company Profile</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
+        <div className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto pr-2">
           <div className="space-y-2">
             <Label>Company Name *</Label>
             <Input
@@ -188,6 +204,52 @@ export function EditCompanyDialog({ open, onOpenChange, companyData, onSave }: E
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="border-t pt-4 mt-4">
+            <p className="text-sm font-medium mb-3">Contact Information</p>
+            
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label>Company Website</Label>
+                <Input
+                  value={formData.company_website}
+                  onChange={(e) => setFormData({ ...formData, company_website: e.target.value })}
+                  placeholder="https://www.yourcompany.com"
+                  type="url"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Company Email</Label>
+                <Input
+                  value={formData.company_email}
+                  onChange={(e) => setFormData({ ...formData, company_email: e.target.value })}
+                  placeholder="hr@yourcompany.com"
+                  type="email"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Company Phone</Label>
+                <Input
+                  value={formData.company_phone}
+                  onChange={(e) => setFormData({ ...formData, company_phone: e.target.value })}
+                  placeholder="+1 234 567 890"
+                  type="tel"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Company Description</Label>
+            <Textarea
+              value={formData.company_description}
+              onChange={(e) => setFormData({ ...formData, company_description: e.target.value })}
+              placeholder="Tell job seekers about your company's mission, values, and culture..."
+              rows={4}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
