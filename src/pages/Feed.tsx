@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserProfile } from '@/contexts/UserProfileContext';
-import { getMajorContent } from '@/utils/majorContent';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { ChallengeCard } from '@/components/skillbridge/ChallengeCard';
@@ -10,7 +8,7 @@ import { StatsCard } from '@/components/ui/StatsCard';
 import { CreatePostDialog } from '@/components/feed/CreatePostDialog';
 import { PostCard } from '@/components/feed/PostCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, TrendingUp, Users, Award, Target, Zap } from 'lucide-react';
+import { Trophy, TrendingUp, Users, Award, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface Post {
@@ -23,22 +21,35 @@ interface Post {
   author_avatar?: string;
 }
 
+interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  deadline: string;
+  participants: number;
+  reward: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+}
+
+interface TrendingSkill {
+  name: string;
+  count: number;
+}
+
 export function Feed() {
   const navigate = useNavigate();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [trendingSkills, setTrendingSkills] = useState<TrendingSkill[]>([]);
   const [userStats, setUserStats] = useState({
     skillScore: 0,
     skillsVerified: 0,
     networkCount: 0,
     endorsements: 0,
   });
-  const { profile, studentDetails, loading: profileLoading } = useUserProfile();
-
-  // Get personalized content based on major
-  const majorContent = getMajorContent(studentDetails?.major);
 
   const fetchPosts = useCallback(async () => {
     setLoadingPosts(true);
@@ -155,40 +166,81 @@ export function Feed() {
     setIsSidebarCollapsed(prev => !prev);
   };
 
+  const fetchChallenges = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('weekly_challenges')
+        .select('*')
+        .eq('is_active', true)
+        .gte('deadline', new Date().toISOString())
+        .order('deadline', { ascending: true })
+        .limit(3);
 
-  // Mock data for challenges - personalized
-  const challenges = [
-    {
-      title: `${majorContent.skills[0]} Challenge`,
-      description: `Demonstrate your ${majorContent.skills[0]} abilities in this week's challenge.`,
-      deadline: '5 days left',
-      participants: 127,
-      reward: 'Top 10 Featured',
-      difficulty: 'Intermediate' as const,
-    },
-    {
-      title: `${majorContent.skills[1]} Project`,
-      description: `Build a real-world project using ${majorContent.skills[1]}.`,
-      deadline: '3 days left',
-      participants: 89,
-      reward: 'SkillScore +50',
-      difficulty: 'Advanced' as const,
-    },
-  ];
+      if (error) throw error;
 
-  // Trending skills from major content
-  const trendingSkills = majorContent.skills.slice(0, 3).map((skill, idx) => ({
-    name: skill,
-    growth: ['+25%', '+18%', '+22%'][idx],
-    icon: [Zap, Target, TrendingUp][idx],
-  }));
+      if (data) {
+        const challengesWithParticipants = await Promise.all(
+          data.map(async (challenge) => {
+            const { count } = await supabase
+              .from('challenge_participants')
+              .select('*', { count: 'exact', head: true })
+              .eq('challenge_id', challenge.id);
 
-  // Mock leaderboard
-  const leaderboard = [
-    { name: 'Sarah Johnson', score: 2850, badge: '🏆' },
-    { name: 'Mike Chen', score: 2720, badge: '🥈' },
-    { name: 'Emma Wilson', score: 2680, badge: '🥉' },
-  ];
+            const now = new Date();
+            const deadline = new Date(challenge.deadline);
+            const diffDays = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            
+            return {
+              id: challenge.id,
+              title: challenge.title,
+              description: challenge.description,
+              deadline: `${diffDays} days left`,
+              participants: count || 0,
+              reward: challenge.reward,
+              difficulty: (challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)) as 'Beginner' | 'Intermediate' | 'Advanced',
+            };
+          })
+        );
+        setChallenges(challengesWithParticipants);
+      }
+    } catch (error) {
+      console.error('Error fetching challenges:', error);
+    }
+  }, []);
+
+  const fetchTrendingSkills = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('skill_tags')
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+      if (error) throw error;
+
+      if (data) {
+        const tagCounts: Record<string, number> = {};
+        data.forEach(post => {
+          post.skill_tags?.forEach((tag: string) => {
+            tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+          });
+        });
+
+        const sorted = Object.entries(tagCounts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 5)
+          .map(([name, count]) => ({ name, count }));
+
+        setTrendingSkills(sorted);
+      }
+    } catch (error) {
+      console.error('Error fetching trending skills:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchChallenges();
+    fetchTrendingSkills();
+  }, [fetchChallenges, fetchTrendingSkills]);
 
   if (!user) {
     return null;
@@ -287,37 +339,21 @@ export function Feed() {
                     <CardTitle className="text-lg">Trending Skills</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {trendingSkills.map((skill, idx) => (
-                      <div key={idx} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <skill.icon className="h-4 w-4 text-primary" />
-                          <span className="font-medium">{skill.name}</span>
+                    {trendingSkills.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No trending skills yet. Start posting!</p>
+                    ) : (
+                      trendingSkills.map((skill, idx) => (
+                        <div key={idx} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-primary" />
+                            <span className="font-medium">{skill.name}</span>
+                          </div>
+                          <Badge variant="secondary">
+                            {skill.count} posts
+                          </Badge>
                         </div>
-                        <Badge variant="secondary" className="text-success">
-                          {skill.growth}
-                        </Badge>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-
-                {/* Leaderboard */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Top Learners</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {leaderboard.map((user, idx) => (
-                      <div key={idx} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{user.badge}</span>
-                          <span className="font-medium">{user.name}</span>
-                        </div>
-                        <span className="text-sm font-semibold text-primary">
-                          {user.score}
-                        </span>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </CardContent>
                 </Card>
               </div>
