@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,11 +30,17 @@ import { format } from 'date-fns';
 import { 
   Users, Briefcase, Search, Filter, Calendar, Clock, 
   Mail, Phone, FileText, Star, ChevronRight, Video,
-  CheckCircle, XCircle, MessageSquare, ArrowRight
+  CheckCircle, XCircle, MessageSquare, ArrowRight, ExternalLink
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
+interface ApplicantProfile {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+}
 
 interface Application {
   id: string;
@@ -49,6 +56,7 @@ interface Application {
     location: string;
     department: string | null;
   };
+  applicant?: ApplicantProfile;
 }
 
 interface Interview {
@@ -71,6 +79,7 @@ const PIPELINE_STAGES = [
 ];
 
 const ApplicantTracker = () => {
+  const navigate = useNavigate();
   const [applications, setApplications] = useState<Application[]>([]);
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,12 +118,20 @@ const ApplicantTracker = () => {
           .order('created_at', { ascending: false });
 
         if (apps) {
-          // Map job details to applications
-          const appsWithJobs = apps.map(app => ({
+          // Fetch applicant profiles
+          const applicantIds = [...new Set(apps.map(a => a.applicant_id))];
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url')
+            .in('id', applicantIds);
+
+          // Map job and profile details to applications
+          const appsWithDetails = apps.map(app => ({
             ...app,
-            job: jobs.find(j => j.id === app.job_id)
+            job: jobs.find(j => j.id === app.job_id),
+            applicant: profiles?.find(p => p.id === app.applicant_id)
           }));
-          setApplications(appsWithJobs);
+          setApplications(appsWithDetails);
 
           // Fetch interviews
           const appIds = apps.map(a => a.id);
@@ -280,16 +297,17 @@ const ApplicantTracker = () => {
                         <div
                           key={app.id}
                           className="p-3 bg-muted/50 rounded-lg space-y-2 hover:bg-muted transition-colors cursor-pointer"
+                          onClick={() => navigate(`/portfolio/${app.applicant_id}`)}
                         >
                           <div className="flex items-center gap-2">
                             <Avatar className="h-8 w-8">
                               <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                                {app.applicant_id.substring(0, 2).toUpperCase()}
+                                {app.applicant?.full_name?.substring(0, 2).toUpperCase() || 'AP'}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">
-                                Applicant
+                                {app.applicant?.full_name || 'Applicant'}
                               </p>
                               <p className="text-xs text-muted-foreground truncate">
                                 {app.job?.title}
@@ -297,13 +315,26 @@ const ApplicantTracker = () => {
                             </div>
                           </div>
                           <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs flex-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/portfolio/${app.applicant_id}`);
+                              }}
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              Portfolio
+                            </Button>
                             {stage.id !== 'rejected' && stage.id !== 'offered' && (
                               <>
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-7 text-xs flex-1"
-                                  onClick={() => {
+                                  className="h-7 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     const nextStage = PIPELINE_STAGES[
                                       PIPELINE_STAGES.findIndex(s => s.id === stage.id) + 1
                                     ];
@@ -319,7 +350,8 @@ const ApplicantTracker = () => {
                                     size="sm"
                                     variant="ghost"
                                     className="h-7 text-xs"
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       setSelectedApplication(app);
                                       setScheduleDialogOpen(true);
                                     }}
@@ -350,22 +382,37 @@ const ApplicantTracker = () => {
                 ) : (
                   <div className="space-y-3">
                     {filteredApplications.map((app) => (
-                      <div key={app.id} className="p-4 border rounded-lg hover:border-primary/50 transition-colors">
+                      <div 
+                        key={app.id} 
+                        className="p-4 border rounded-lg hover:border-primary/50 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/portfolio/${app.applicant_id}`)}
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <Avatar className="h-10 w-10">
                               <AvatarFallback className="bg-primary/10 text-primary">
-                                {app.applicant_id.substring(0, 2).toUpperCase()}
+                                {app.applicant?.full_name?.substring(0, 2).toUpperCase() || 'AP'}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium">Applicant</p>
+                              <p className="font-medium">{app.applicant?.full_name || 'Applicant'}</p>
                               <p className="text-sm text-muted-foreground">
                                 Applied for: {app.job?.title}
                               </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/portfolio/${app.applicant_id}`);
+                              }}
+                            >
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              View Portfolio
+                            </Button>
                             <Badge className={
                               PIPELINE_STAGES.find(s => s.id === app.status)?.color
                             }>
