@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { CommunityPost } from '@/types/community';
 import { cn } from '@/lib/utils';
+import { UserProfileLink } from './UserProfileLink';
 
 interface CommunityPostCardProps {
   post: CommunityPost;
@@ -67,12 +68,11 @@ export function CommunityPostCard({
               {post.author?.username?.substring(0, 2).toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
-          <Link 
-            to={`/portfolio/${post.author_id}`}
+          <UserProfileLink 
+            userId={post.author_id}
+            displayName={post.author?.username || post.author?.full_name || 'Anonymous'}
             className="font-medium text-foreground hover:underline"
-          >
-            {post.author?.username || post.author?.full_name || 'Anonymous'}
-          </Link>
+          />
           
           {post.user_role && post.user_role !== 'member' && (
             <Badge variant="secondary" className="text-xs capitalize">

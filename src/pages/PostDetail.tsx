@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { CommunitySidebar } from '@/components/communities/CommunitySidebar';
 import { TrendingCommunitiesSidebar } from '@/components/communities/TrendingCommunitiesSidebar';
+import { UserProfileLink } from '@/components/communities/UserProfileLink';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -379,12 +380,11 @@ export default function PostDetail() {
                   {post.author?.username?.substring(0, 2).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
-              <Link 
-                to={`/portfolio/${post.author_id}`}
+              <UserProfileLink 
+                userId={post.author_id}
+                displayName={post.author?.username || post.author?.full_name || 'Anonymous'}
                 className="font-medium text-foreground hover:underline"
-              >
-                {post.author?.username || post.author?.full_name || 'Anonymous'}
-              </Link>
+              />
               <span>in</span>
               <Link 
                 to={`/communities/${post.community?.slug}`}
@@ -500,12 +500,11 @@ export default function PostDetail() {
                             {comment.author?.username?.substring(0, 2).toUpperCase() || 'U'}
                           </AvatarFallback>
                         </Avatar>
-                        <Link 
-                          to={`/portfolio/${comment.author_id}`}
+                        <UserProfileLink 
+                          userId={comment.author_id}
+                          displayName={comment.author?.username || comment.author?.full_name || 'Anonymous'}
                           className="font-medium text-sm hover:underline"
-                        >
-                          {comment.author?.username || comment.author?.full_name || 'Anonymous'}
-                        </Link>
+                        />
                         <span className="text-xs text-muted-foreground">
                           {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                         </span>
