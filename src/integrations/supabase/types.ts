@@ -560,6 +560,69 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_goals: {
+        Row: {
+          created_at: string
+          current_count: number
+          goal_type: string
+          id: string
+          target_count: number
+          updated_at: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          current_count?: number
+          goal_type: string
+          id?: string
+          target_count?: number
+          updated_at?: string
+          user_id: string
+          week_start?: string
+        }
+        Update: {
+          created_at?: string
+          current_count?: number
+          goal_type?: string
+          id?: string
+          target_count?: number
+          updated_at?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
+      learning_paths: {
+        Row: {
+          completed_modules: number
+          created_at: string
+          id: string
+          path_title: string
+          total_modules: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_modules?: number
+          created_at?: string
+          id?: string
+          path_title: string
+          total_modules?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_modules?: number
+          created_at?: string
+          id?: string
+          path_title?: string
+          total_modules?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       learning_streaks: {
         Row: {
           created_at: string
@@ -673,6 +736,83 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      portfolio_projects: {
+        Row: {
+          created_at: string
+          description: string
+          github_url: string | null
+          id: string
+          is_verified: boolean | null
+          project_url: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          github_url?: string | null
+          id?: string
+          is_verified?: boolean | null
+          project_url?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          github_url?: string | null
+          id?: string
+          is_verified?: boolean | null
+          project_url?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      portfolio_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          project_id: string
+          rating: number
+          reviewer_id: string
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          project_id: string
+          rating: number
+          reviewer_id: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          project_id?: string
+          rating?: number
+          reviewer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_reviews_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "portfolio_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       post_comments: {
         Row: {

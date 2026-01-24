@@ -10,9 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Upload, X, Link } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UploadProjectDialogProps {
   onProjectUploaded?: () => void;
@@ -62,15 +62,32 @@ export function UploadProjectDialog({ onProjectUploaded }: UploadProjectDialogPr
 
     setIsSubmitting(true);
     try {
-      // In a real app, this would save to the database
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast.error('Please sign in to upload projects');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('portfolio_projects')
+        .insert({
+          user_id: session.user.id,
+          title: formData.title.trim(),
+          description: formData.description.trim(),
+          project_url: formData.projectUrl.trim() || null,
+          github_url: formData.githubUrl.trim() || null,
+          tags: tags,
+        });
+
+      if (error) throw error;
       
-      toast.success('Project uploaded successfully! It will be reviewed for AI verification.');
+      toast.success('Project uploaded successfully!');
       setFormData({ title: '', description: '', projectUrl: '', githubUrl: '' });
       setTags([]);
       setOpen(false);
       onProjectUploaded?.();
     } catch (error: any) {
+      console.error('Error uploading project:', error);
       toast.error(error.message || 'Failed to upload project');
     } finally {
       setIsSubmitting(false);
@@ -157,7 +174,7 @@ export function UploadProjectDialog({ onProjectUploaded }: UploadProjectDialogPr
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
                 {tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="gap-1">
+                  <span key={tag} className="inline-flex items-center gap-1 text-sm bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
                     {tag}
                     <button
                       onClick={() => handleRemoveTag(tag)}
@@ -165,15 +182,11 @@ export function UploadProjectDialog({ onProjectUploaded }: UploadProjectDialogPr
                     >
                       <X className="h-3 w-3" />
                     </button>
-                  </Badge>
+                  </span>
                 ))}
               </div>
             )}
           </div>
-
-          <p className="text-sm text-muted-foreground">
-            Your project will be reviewed by our AI system for skill verification. High-quality projects may receive an "AI Verified" badge.
-          </p>
 
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={() => setOpen(false)}>
