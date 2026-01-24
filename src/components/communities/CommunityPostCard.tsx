@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { 
@@ -6,7 +5,6 @@ import {
   ArrowBigDown, 
   MessageSquare, 
   Share2, 
-  Bookmark,
   MoreHorizontal,
   Trash2,
   Pin
@@ -38,9 +36,8 @@ export function CommunityPostCard({
   onDelete,
   showCommunity = true 
 }: CommunityPostCardProps) {
-  const [isBookmarked, setIsBookmarked] = useState(false);
-
   const score = post.upvotes - post.downvotes;
+
   const canModerate = post.user_role === 'admin' || post.user_role === 'moderator';
 
   const handleShare = async () => {
@@ -179,15 +176,6 @@ export function CommunityPostCard({
           {/* Share */}
           <Button variant="ghost" size="sm" onClick={handleShare}>
             <Share2 className="h-4 w-4" />
-          </Button>
-
-          {/* Bookmark */}
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => setIsBookmarked(!isBookmarked)}
-          >
-            <Bookmark className={cn("h-4 w-4", isBookmarked && "fill-current")} />
           </Button>
 
           {/* More options */}

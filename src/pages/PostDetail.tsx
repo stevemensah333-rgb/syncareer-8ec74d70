@@ -6,7 +6,6 @@ import {
   ArrowBigDown, 
   MessageSquare, 
   Share2, 
-  Bookmark,
   ArrowLeft,
   Send,
   MoreHorizontal,
@@ -54,7 +53,6 @@ export default function PostDetail() {
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -102,14 +100,6 @@ export default function PostDetail() {
           .single();
         userVote = vote?.vote_type || null;
 
-        // Check bookmark
-        const { data: bookmark } = await supabase
-          .from('community_post_bookmarks')
-          .select('id')
-          .eq('post_id', postId)
-          .eq('user_id', session.user.id)
-          .single();
-        setIsBookmarked(!!bookmark);
       }
 
       setPost({
@@ -245,29 +235,6 @@ export default function PostDetail() {
       toast.success('Link copied to clipboard!');
     } catch {
       toast.error('Failed to copy link');
-    }
-  };
-
-  const handleBookmark = async () => {
-    if (!currentUserId || !post) {
-      toast.error('Please sign in to bookmark');
-      return;
-    }
-
-    if (isBookmarked) {
-      await supabase
-        .from('community_post_bookmarks')
-        .delete()
-        .eq('post_id', post.id)
-        .eq('user_id', currentUserId);
-      setIsBookmarked(false);
-      toast.success('Bookmark removed');
-    } else {
-      await supabase
-        .from('community_post_bookmarks')
-        .insert({ post_id: post.id, user_id: currentUserId });
-      setIsBookmarked(true);
-      toast.success('Post bookmarked!');
     }
   };
 
@@ -457,10 +424,6 @@ export default function PostDetail() {
 
               <Button variant="ghost" size="sm" onClick={handleShare}>
                 <Share2 className="h-4 w-4" />
-              </Button>
-
-              <Button variant="ghost" size="sm" onClick={handleBookmark}>
-                <Bookmark className={cn("h-4 w-4", isBookmarked && "fill-current")} />
               </Button>
             </div>
 
