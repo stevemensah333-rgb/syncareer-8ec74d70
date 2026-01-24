@@ -43,10 +43,16 @@ export function CommunityPostCard({
   const canModerate = post.user_role === 'admin' || post.user_role === 'moderator';
 
   const handleShare = async () => {
+    const url = window.location.origin + `/communities/post/${post.id}`;
     try {
-      await navigator.clipboard.writeText(window.location.origin + `/communities/post/${post.id}`);
+      await navigator.clipboard.writeText(url);
+      // Show feedback via toast
+      const { toast } = await import('sonner');
+      toast.success('Link copied to clipboard!');
     } catch (e) {
       console.error('Failed to copy link');
+      const { toast } = await import('sonner');
+      toast.error('Failed to copy link');
     }
   };
 

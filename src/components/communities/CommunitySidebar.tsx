@@ -51,17 +51,15 @@ export function CommunitySidebar() {
 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-1">
-          {!isOnMainCommunities && (
-            <button
-              onClick={() => navigate('/communities')}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors w-full text-left mb-2"
-            >
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Home className="h-4 w-4 text-primary" />
-              </div>
-              <span className="font-medium">Back to Communities</span>
-            </button>
-          )}
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors w-full text-left mb-2"
+          >
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Home className="h-4 w-4 text-primary" />
+            </div>
+            <span className="font-medium">Back to Syncareer</span>
+          </button>
           
           <Link
             to="/communities"

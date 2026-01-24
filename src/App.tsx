@@ -39,6 +39,7 @@ import Communities from "./pages/Communities";
 import ExploreCommunities from "./pages/ExploreCommunities";
 import CreateCommunity from "./pages/CreateCommunity";
 import CommunityDetail from "./pages/CommunityDetail";
+import PostDetail from "./pages/PostDetail";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,7 @@ const App = () => (
             <Route path="/communities/explore" element={<ExploreCommunities />} />
             <Route path="/communities/create" element={<CreateCommunity />} />
             <Route path="/communities/:slug" element={<CommunityDetail />} />
+            <Route path="/communities/post/:postId" element={<PostDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
