@@ -564,9 +564,13 @@ export type Database = {
       }
       employer_details: {
         Row: {
+          company_description: string | null
+          company_email: string | null
           company_location: string | null
           company_name: string
+          company_phone: string | null
           company_size: string | null
+          company_website: string | null
           created_at: string | null
           id: string
           industry: string | null
@@ -575,9 +579,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_description?: string | null
+          company_email?: string | null
           company_location?: string | null
           company_name: string
+          company_phone?: string | null
           company_size?: string | null
+          company_website?: string | null
           created_at?: string | null
           id?: string
           industry?: string | null
@@ -586,9 +594,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_description?: string | null
+          company_email?: string | null
           company_location?: string | null
           company_name?: string
+          company_phone?: string | null
           company_size?: string | null
+          company_website?: string | null
           created_at?: string | null
           id?: string
           industry?: string | null

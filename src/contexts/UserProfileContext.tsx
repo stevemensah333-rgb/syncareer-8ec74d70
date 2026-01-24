@@ -15,6 +15,10 @@ interface EmployerDetails {
   industry: string | null;
   company_size: string | null;
   job_title: string | null;
+  company_website: string | null;
+  company_email: string | null;
+  company_phone: string | null;
+  company_description: string | null;
 }
 
 interface UserProfile {
