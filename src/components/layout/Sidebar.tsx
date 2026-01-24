@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { 
-  Home, Users, Briefcase, GraduationCap, Trophy, 
-  BarChart, Brain, Settings, ChevronRight, ChevronLeft, Sparkles,
+  Users, Briefcase, GraduationCap, 
+  BarChart, Settings, ChevronRight, ChevronLeft, Sparkles,
   Building2, TrendingUp, FileText, UserPlus, Star, Calendar,
   ClipboardList, Mic, FileUser
 } from 'lucide-react';
@@ -40,7 +40,7 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
     },
     {
       title: 'My Skills',
-      icon: Trophy,
+      icon: Star,
       href: '/skills',
     },
     {

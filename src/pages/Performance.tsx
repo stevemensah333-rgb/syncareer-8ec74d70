@@ -6,12 +6,6 @@ import { TrendingUp, Target, Zap, Briefcase, Award, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 
-interface LearningActivity {
-  activity_date: string;
-  activity_type: string;
-  duration_minutes: number;
-}
-
 interface LearningStreak {
   current_streak: number;
   longest_streak: number;
@@ -58,8 +52,6 @@ const Performance = () => {
         .select('*', { count: 'exact', head: true })
         .eq('applicant_id', userId)
         .eq('status', 'interview');
-
-      // Fetch endorsements received
 
       // Fetch endorsements received
       const { count: endorsementsCount } = await supabase

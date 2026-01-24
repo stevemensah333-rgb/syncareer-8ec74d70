@@ -76,7 +76,7 @@ export default function ExploreCommunities() {
             onClick={() => navigate('/communities')}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Feed
+            Back to Communities
           </Button>
           <h1 className="text-3xl font-bold">Explore Communities</h1>
           <p className="text-muted-foreground mt-2">
