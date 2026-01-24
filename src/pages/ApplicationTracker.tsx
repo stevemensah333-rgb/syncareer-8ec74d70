@@ -297,24 +297,16 @@ const ApplicationTracker = () => {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <Select
-                          value={app.status}
-                          onValueChange={(value) => updateApplicationStatus(app.id, value)}
-                        >
-                          <SelectTrigger className="w-32 h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="reviewing">Reviewing</SelectItem>
-                            <SelectItem value="shortlisted">Shortlisted</SelectItem>
-                            <SelectItem value="interview">Interview</SelectItem>
-                            <SelectItem value="offered">Offered</SelectItem>
-                            <SelectItem value="hired">Hired</SelectItem>
-                            <SelectItem value="rejected">Rejected</SelectItem>
-                            <SelectItem value="withdrawn">Withdrawn</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        {app.status === 'pending' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-muted-foreground"
+                            onClick={() => updateApplicationStatus(app.id, 'withdrawn')}
+                          >
+                            Withdraw
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"

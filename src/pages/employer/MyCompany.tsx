@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,11 +7,73 @@ import { Building2, MapPin, Users, Megaphone, ShoppingCart, Edit, Globe, Mail, P
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { EditCompanyDialog } from '@/components/employer/EditCompanyDialog';
 import { AddEmployeeDialog } from '@/components/employer/AddEmployeeDialog';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+interface CompanyStats {
+  activeJobPosts: number;
+  totalApplications: number;
+  employees: number;
+}
 
 const MyCompany = () => {
   const { employerDetails, loading, refreshProfile } = useUserProfile();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [stats, setStats] = useState<CompanyStats>({
+    activeJobPosts: 0,
+    totalApplications: 0,
+    employees: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCompanyStats();
+  }, []);
+
+  const fetchCompanyStats = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Fetch active job posts count
+      const { count: jobPostsCount, error: jobsError } = await supabase
+        .from('job_postings')
+        .select('*', { count: 'exact', head: true })
+        .eq('employer_id', session.user.id)
+        .eq('status', 'active');
+
+      if (jobsError) throw jobsError;
+
+      // Fetch total applications for employer's jobs
+      const { data: jobIds, error: jobIdsError } = await supabase
+        .from('job_postings')
+        .select('id')
+        .eq('employer_id', session.user.id);
+
+      if (jobIdsError) throw jobIdsError;
+
+      let applicationsCount = 0;
+      if (jobIds && jobIds.length > 0) {
+        const { count, error: appsError } = await supabase
+          .from('job_applications')
+          .select('*', { count: 'exact', head: true })
+          .in('job_id', jobIds.map(j => j.id));
+
+        if (appsError) throw appsError;
+        applicationsCount = count || 0;
+      }
+
+      setStats({
+        activeJobPosts: jobPostsCount || 0,
+        totalApplications: applicationsCount,
+        employees: 0, // Will be updated when employee management is implemented
+      });
+    } catch (error) {
+      console.error('Error fetching company stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -129,19 +191,21 @@ const MyCompany = () => {
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Active Job Posts</span>
-                <span className="font-bold text-lg">0</span>
+                <span className="font-bold text-lg">
+                  {statsLoading ? '...' : stats.activeJobPosts}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Total Applications</span>
-                <span className="font-bold text-lg">0</span>
+                <span className="font-bold text-lg">
+                  {statsLoading ? '...' : stats.totalApplications}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Employees</span>
-                <span className="font-bold text-lg">0</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Profile Views</span>
-                <span className="font-bold text-lg">0</span>
+                <span className="font-bold text-lg">
+                  {statsLoading ? '...' : stats.employees}
+                </span>
               </div>
             </CardContent>
           </Card>
