@@ -194,6 +194,18 @@ const ApplicantTracker = () => {
       // Update application status to interviewing
       await updateApplicationStatus(selectedApplication.id, 'interviewing');
 
+      // Send notification to applicant
+      const formattedDate = format(scheduledAt, 'PPp');
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: selectedApplication.applicant_id,
+          title: 'Interview Scheduled',
+          message: `Your interview for "${selectedApplication.job?.title}" has been scheduled for ${formattedDate}. Interview type: ${interviewType}.`,
+          type: 'interview_scheduled',
+          link: '/applications',
+        });
+
       toast.success('Interview scheduled successfully!');
       setScheduleDialogOpen(false);
       setSelectedApplication(null);
