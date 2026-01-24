@@ -166,33 +166,6 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
 
   const navItems = getNavItems();
 
-  const getProgressText = () => {
-    if (isEmployer) {
-      return (
-        <>
-          <p className="font-medium">Employer Dashboard</p>
-          <p>3 active job posts</p>
-          <p className="text-[10px]">12 new applications</p>
-        </>
-      );
-    }
-    if (isCounsellor) {
-      return (
-        <>
-          <p className="font-medium">Counsellor Dashboard</p>
-          <p>Your profile is live</p>
-          <p className="text-[10px]">Check your bookings</p>
-        </>
-      );
-    }
-    return (
-      <>
-        <p className="font-medium">Your Progress</p>
-        <p>5-day streak 🔥</p>
-        <p className="text-[10px]">Keep learning!</p>
-      </>
-    );
-  };
 
   return (
     <aside className={cn(
@@ -248,14 +221,6 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
         </nav>
       </ScrollArea>
       
-      <div className="p-4 border-t border-sidebar-border">
-        <div className={cn(
-          "transition-opacity duration-200 rounded-md bg-sidebar-accent/50 p-2 text-xs text-sidebar-accent-foreground",
-          isCollapsed ? "opacity-0" : "opacity-100"
-        )}>
-          {getProgressText()}
-        </div>
-      </div>
     </aside>
   );
 }
