@@ -1,27 +1,80 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { getMajorContent } from '@/utils/majorContent';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { SkillPost } from '@/components/skillbridge/SkillPost';
 import { ChallengeCard } from '@/components/skillbridge/ChallengeCard';
 import { StatsCard } from '@/components/ui/StatsCard';
 import { CreatePostDialog } from '@/components/feed/CreatePostDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, TrendingUp, Users, Award, Target, Zap, BookOpen, Briefcase, Plus } from 'lucide-react';
+import { Trophy, TrendingUp, Users, Award, Target, Zap, MessageCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { formatDistanceToNow } from 'date-fns';
+
+interface Post {
+  id: string;
+  user_id: string;
+  content: string;
+  skill_tags: string[];
+  created_at: string;
+  author_name?: string;
+  author_avatar?: string;
+}
 
 export function Feed() {
   const navigate = useNavigate();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
   const { profile, studentDetails, loading: profileLoading } = useUserProfile();
 
   // Get personalized content based on major
   const majorContent = getMajorContent(studentDetails?.major);
+
+  const fetchPosts = useCallback(async () => {
+    setLoadingPosts(true);
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      // Fetch author profiles for posts
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map(post => post.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+        const postsWithAuthors = data.map(post => {
+          const authorProfile = profileMap.get(post.user_id);
+          return {
+            ...post,
+            author_name: authorProfile?.full_name || 'Anonymous',
+            author_avatar: authorProfile?.avatar_url,
+          };
+        });
+
+        setPosts(postsWithAuthors);
+      } else {
+        setPosts([]);
+      }
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    } finally {
+      setLoadingPosts(false);
+    }
+  }, []);
 
   useEffect(() => {
     // Check authentication
@@ -30,6 +83,7 @@ export function Feed() {
         navigate('/auth');
       } else {
         setUser(session.user);
+        fetchPosts();
       }
     });
 
@@ -42,45 +96,20 @@ export function Feed() {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, fetchPosts]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(prev => !prev);
   };
 
-  // Mock data for skill posts - can be personalized based on major
-  const skillPosts = [
-    {
-      user: 'Maria Chen',
-      avatar: 'MC',
-      skill: majorContent.skills[0] || 'Modern UI Design System',
-      tags: majorContent.skills.slice(0, 3).map(s => s.replace(/\s+/g, '_')),
-      rating: 4.8,
-      description: `Demonstrated expertise in ${majorContent.skills[0]} with practical applications.`,
-      endorsements: 24,
-      comments: 8,
-    },
-    {
-      user: 'Alex Kumar',
-      avatar: 'AK',
-      skill: majorContent.skills[1] || 'Python Data Analysis',
-      tags: majorContent.skills.slice(1, 4).map(s => s.replace(/\s+/g, '_')),
-      rating: 4.6,
-      description: `Built an impressive project showcasing ${majorContent.skills[1]} skills.`,
-      endorsements: 18,
-      comments: 5,
-    },
-    {
-      user: 'Jordan Lee',
-      avatar: 'JL',
-      skill: majorContent.skills[2] || 'React Component Library',
-      tags: majorContent.skills.slice(2, 5).map(s => s.replace(/\s+/g, '_')),
-      rating: 4.9,
-      description: `Advanced ${majorContent.skills[2]} implementation with best practices.`,
-      endorsements: 31,
-      comments: 12,
-    },
-  ];
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   // Mock data for challenges - personalized
   const challenges = [
@@ -171,11 +200,57 @@ export function Feed() {
                     <TrendingUp className="h-5 w-5" />
                     Recent Activity
                   </h2>
-                  <CreatePostDialog />
+                  <CreatePostDialog onPostCreated={fetchPosts} />
                 </div>
-                {skillPosts.map((post, idx) => (
-                  <SkillPost key={idx} {...post} />
-                ))}
+                {loadingPosts ? (
+                  <Card className="p-8 text-center">
+                    <p className="text-muted-foreground">Loading posts...</p>
+                  </Card>
+                ) : posts.length === 0 ? (
+                  <Card className="p-8 text-center">
+                    <p className="text-muted-foreground">No posts yet. Be the first to share something!</p>
+                  </Card>
+                ) : (
+                  posts.map((post) => (
+                    <Card key={post.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarFallback className="bg-primary/10 text-primary">
+                                {getInitials(post.author_name || 'A')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h3 className="font-semibold">{post.author_name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <p className="text-sm whitespace-pre-wrap">{post.content}</p>
+                        {post.skill_tags && post.skill_tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {post.skill_tags.map((tag) => (
+                              <Badge key={tag} variant="secondary" className="text-xs">
+                                #{tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-4 pt-2 border-t">
+                          <button className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                            <MessageCircle className="h-4 w-4" />
+                            <span className="text-sm">Comment</span>
+                          </button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
 
               {/* Sidebar Content */}
