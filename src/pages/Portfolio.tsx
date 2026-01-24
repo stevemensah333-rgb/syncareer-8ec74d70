@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Upload, Star, MessageSquare, ThumbsUp, ExternalLink } from 'lucide-react';
 import { UploadProjectDialog } from '@/components/portfolio/UploadProjectDialog';
 import { toast } from 'sonner';
@@ -118,9 +117,9 @@ const Portfolio = () => {
                   <div className="flex items-start justify-between">
                     <div className="text-5xl mb-3">{project.image}</div>
                     {project.verified && (
-                      <Badge className="bg-primary">
+                      <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
                         ✓ AI Verified
-                      </Badge>
+                      </span>
                     )}
                   </div>
                   <CardTitle className="text-lg">{project.title}</CardTitle>
@@ -131,9 +130,9 @@ const Portfolio = () => {
                 <CardContent className="space-y-3">
                   <div className="flex flex-wrap gap-2">
                     {project.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary">
+                      <span key={tag} className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
                         {tag}
-                      </Badge>
+                      </span>
                     ))}
                   </div>
                   <div className="flex items-center justify-between text-sm">
@@ -233,28 +232,11 @@ const Portfolio = () => {
               ].map((item) => (
                 <div key={item.skill} className="flex justify-between items-center">
                   <span className="text-sm">{item.skill}</span>
-                  <Badge variant="secondary">{item.projects} projects</Badge>
+                  <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
+                    {item.projects} projects
+                  </span>
                 </div>
               ))}
-            </CardContent>
-          </Card>
-
-          {/* Badges Earned */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Badges Earned</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-3">
-                {['🏆', '⭐', '🔥', '💎', '🎯', '⚡'].map((badge, idx) => (
-                  <div
-                    key={idx}
-                    className="aspect-square flex items-center justify-center text-3xl bg-muted rounded-lg"
-                  >
-                    {badge}
-                  </div>
-                ))}
-              </div>
             </CardContent>
           </Card>
 

@@ -9,7 +9,7 @@ import { CreatePostDialog } from '@/components/feed/CreatePostDialog';
 import { PostCard } from '@/components/feed/PostCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, Users, Award, Zap, Trophy } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+
 
 interface Post {
   id: string;
@@ -340,9 +340,9 @@ export function Feed() {
                             <Zap className="h-4 w-4 text-primary" />
                             <span className="font-medium">{skill.name}</span>
                           </div>
-                          <Badge variant="secondary">
+                          <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-full">
                             {skill.count} posts
-                          </Badge>
+                          </span>
                         </div>
                       ))
                     )}
