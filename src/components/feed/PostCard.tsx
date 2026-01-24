@@ -49,6 +49,45 @@ export function PostCard({ id, content, skill_tags, created_at, author_name, use
   useEffect(() => {
     fetchLikes();
     fetchComments();
+
+    // Subscribe to real-time likes updates
+    const likesChannel = supabase
+      .channel(`post-likes-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'post_likes',
+          filter: `post_id=eq.${id}`,
+        },
+        () => {
+          fetchLikes();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to real-time comments updates
+    const commentsChannel = supabase
+      .channel(`post-comments-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'post_comments',
+          filter: `post_id=eq.${id}`,
+        },
+        () => {
+          fetchComments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(likesChannel);
+      supabase.removeChannel(commentsChannel);
+    };
   }, [id]);
 
   const fetchLikes = async () => {
