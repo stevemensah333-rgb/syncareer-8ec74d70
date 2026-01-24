@@ -45,7 +45,7 @@ export default function HireWithAI() {
         return;
       }
 
-      const systemContext = `You are an AI hiring assistant for employers on Synconnect. Help employers with:
+      const systemContext = `You are an AI hiring assistant for employers on Syncareer. Help employers with:
 - Finding and screening candidates based on skills and requirements
 - Writing compelling job descriptions
 - Providing market insights on salary benchmarks and talent availability

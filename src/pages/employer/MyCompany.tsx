@@ -156,7 +156,7 @@ const MyCompany = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Promote your brand to thousands of skilled professionals on Synconnect.
+                Promote your brand to thousands of skilled professionals on Syncareer.
               </p>
               <Button 
                 className="w-full"

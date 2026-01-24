@@ -17,7 +17,7 @@ export default function AICoach() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "👋 Hi! I'm Synconnect AI, your career counsellor. I'm here to help you with career guidance, skill development, CV tips, interview prep, and connecting your skills to opportunities. How can I assist you today?"
+      content: "👋 Hi! I'm Syncareer AI, your career counsellor. I'm here to help you with career guidance, skill development, CV tips, interview prep, and connecting your skills to opportunities. How can I assist you today?"
     }
   ]);
   const [input, setInput] = useState("");
@@ -151,7 +151,7 @@ export default function AICoach() {
   };
 
   return (
-    <PageLayout title="Synconnect AI">
+    <PageLayout title="Syncareer AI">
       <div className="h-[calc(100vh-12rem)] flex flex-col">
         <Card className="flex-1 flex flex-col p-4 bg-card">
           <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
