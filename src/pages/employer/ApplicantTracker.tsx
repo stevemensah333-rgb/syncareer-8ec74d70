@@ -371,6 +371,18 @@ const ApplicantTracker = () => {
                                     <Calendar className="h-3 w-3" />
                                   </Button>
                                 )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateApplicationStatus(app.id, 'rejected');
+                                  }}
+                                  title="Reject applicant"
+                                >
+                                  <XCircle className="h-3 w-3" />
+                                </Button>
                               </>
                             )}
                           </div>
@@ -425,6 +437,20 @@ const ApplicantTracker = () => {
                               <ExternalLink className="h-4 w-4 mr-1" />
                               View Portfolio
                             </Button>
+                            {app.status !== 'rejected' && app.status !== 'offered' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-destructive border-destructive/50 hover:bg-destructive/10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  updateApplicationStatus(app.id, 'rejected');
+                                }}
+                              >
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Reject
+                              </Button>
+                            )}
                             <Badge className={
                               PIPELINE_STAGES.find(s => s.id === app.status)?.color
                             }>

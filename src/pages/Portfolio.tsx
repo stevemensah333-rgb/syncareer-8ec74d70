@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Star, MessageSquare, ThumbsUp, ExternalLink, Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Upload, Star, MessageSquare, ThumbsUp, ExternalLink, Trash2, Linkedin, Save } from 'lucide-react';
 import { UploadProjectDialog } from '@/components/portfolio/UploadProjectDialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
-
 interface Project {
   id: string;
   title: string;
@@ -37,6 +37,8 @@ const Portfolio = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [savingLinkedin, setSavingLinkedin] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -45,15 +47,29 @@ const Portfolio = () => {
   const fetchData = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setCurrentUserId(session.user.id);
+      if (!session?.user) {
+        setLoading(false);
+        return;
+      }
+      
+      setCurrentUserId(session.user.id);
+
+      // Fetch user's profile for LinkedIn URL
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('linkedin_url')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      
+      if (profileData?.linkedin_url) {
+        setLinkedinUrl(profileData.linkedin_url);
       }
 
       // Fetch user's projects
       const { data: projectsData, error: projectsError } = await supabase
         .from('portfolio_projects')
         .select('*')
-        .eq('user_id', session?.user?.id || '')
+        .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
 
       if (projectsError) throw projectsError;
@@ -101,6 +117,26 @@ const Portfolio = () => {
     } catch (error) {
       console.error('Error deleting project:', error);
       toast.error('Failed to delete project');
+    }
+  };
+
+  const saveLinkedinUrl = async () => {
+    if (!currentUserId) return;
+    
+    setSavingLinkedin(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ linkedin_url: linkedinUrl || null })
+        .eq('id', currentUserId);
+
+      if (error) throw error;
+      toast.success('LinkedIn profile updated!');
+    } catch (error) {
+      console.error('Error saving LinkedIn URL:', error);
+      toast.error('Failed to save LinkedIn URL');
+    } finally {
+      setSavingLinkedin(false);
     }
   };
 
@@ -161,6 +197,35 @@ const Portfolio = () => {
                   </p>
                 </div>
                 <UploadProjectDialog onProjectUploaded={fetchData} />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* LinkedIn Section */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <Linkedin className="h-10 w-10 text-[#0A66C2]" />
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">LinkedIn Profile</h3>
+                  <div className="flex gap-2">
+                    <Input
+                      type="url"
+                      placeholder="https://linkedin.com/in/your-profile"
+                      value={linkedinUrl}
+                      onChange={(e) => setLinkedinUrl(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button 
+                      onClick={saveLinkedinUrl} 
+                      disabled={savingLinkedin}
+                      size="sm"
+                    >
+                      <Save className="h-4 w-4 mr-1" />
+                      Save
+                    </Button>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
