@@ -36,7 +36,7 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
     {
       title: 'My Communities',
       icon: Users,
-      href: '/',
+      href: '/communities',
     },
     {
       title: 'My Skills',
@@ -95,7 +95,7 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
     {
       title: 'My Communities',
       icon: Users,
-      href: '/',
+      href: '/communities',
     },
     {
       title: 'My Company',
@@ -139,7 +139,7 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
     {
       title: 'My Communities',
       icon: Users,
-      href: '/',
+      href: '/communities',
     },
     {
       title: 'My Portfolio',
