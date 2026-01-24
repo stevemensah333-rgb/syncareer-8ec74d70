@@ -51,8 +51,9 @@ export default function Communities() {
         </aside>
 
         {/* Main Feed */}
-        <main className="min-h-screen border-r">
-          <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 p-4 border-b">
+        <main className="min-h-screen lg:border-r">
+          {/* Desktop header - hidden on mobile since we have the mobile header above */}
+          <div className="hidden lg:block sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 p-4 border-b">
             <div className="flex items-center justify-between">
               <h1 className="text-xl font-semibold">My Communities</h1>
               <div className="flex items-center gap-2">
@@ -78,6 +79,31 @@ export default function Communities() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Mobile controls bar */}
+          <div className="lg:hidden sticky top-[53px] z-10 bg-background border-b p-3 flex items-center justify-between gap-2">
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+              <SelectTrigger className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="trending">Trending</SelectItem>
+                <SelectItem value="new">New</SelectItem>
+                <SelectItem value="hot">Hot</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <CreatePostDialog
+              trigger={
+                <Button size="sm" className="gap-2">
+                  <PenSquare className="h-4 w-4" />
+                  <span className="hidden sm:inline">Create Post</span>
+                  <span className="sm:hidden">Post</span>
+                </Button>
+              }
+              onSubmit={createPost}
+            />
           </div>
 
           <div className="p-4 space-y-4">
