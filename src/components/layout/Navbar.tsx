@@ -136,7 +136,29 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Mobile Search Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden h-9 w-9"
+              onClick={() => {/* Could open a search modal */}}
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+
+            {/* Mobile Ask Counsellor Button - Only for students */}
+            {!isEmployer && !isCounsellor && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden h-9 w-9"
+                onClick={() => setAskCounsellorOpen(true)}
+              >
+                <MessageCircle className="h-5 w-5" />
+              </Button>
+            )}
+
             <NotificationsDropdown />
             
             <DropdownMenu>
@@ -147,7 +169,7 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate('/settings?tab=profile')} className="cursor-pointer">
@@ -160,7 +182,7 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
                     <HelpCircle className="h-4 w-4 mr-2" />
                     Contact Support
                   </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="bg-popover">
+                  <DropdownMenuSubContent className="bg-popover z-50">
                     <div className="px-3 py-2 space-y-2">
                       <a 
                         href="tel:+233555156128" 
