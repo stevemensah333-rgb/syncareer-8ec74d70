@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Star, MapPin, DollarSign, ChevronRight, ArrowLeft, User, MessageSquare } from 'lucide-react';
+import { Star, MapPin, DollarSign, ChevronRight, ArrowLeft, User, MessageSquare, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -54,6 +54,7 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
   // Form state
   const [userName, setUserName] = useState('');
   const [userContact, setUserContact] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (open && step === 'list') {
@@ -68,6 +69,7 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
       setUserName('');
       setUserContact('');
       setSelectedCounsellor(null);
+      setSearchQuery('');
     }
   }, [open]);
 
@@ -231,19 +233,39 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
 
           {/* Step 2: Counsellor List */}
           {step === 'list' && (
-            <ScrollArea className="h-[400px] pr-4">
-              {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : counsellors.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No counsellors available at the moment.</p>
-                </div>
-              ) : (
-                <div className="space-y-3 py-2">
-                  {counsellors.map((counsellor) => (
+            <div className="flex flex-col h-[400px]">
+              {/* Search Bar */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or specialization..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              
+              <ScrollArea className="flex-1 pr-4">
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : counsellors.filter(c => 
+                    c.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (c.specialization?.toLowerCase().includes(searchQuery.toLowerCase()))
+                  ).length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>{searchQuery ? 'No counsellors match your search.' : 'No counsellors available at the moment.'}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 py-2">
+                    {counsellors
+                      .filter(c => 
+                        c.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (c.specialization?.toLowerCase().includes(searchQuery.toLowerCase()))
+                      )
+                      .map((counsellor) => (
                     <Card
                       key={counsellor.id}
                       className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -280,10 +302,11 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
           )}
 
           {/* Step 3: Counsellor Profile */}

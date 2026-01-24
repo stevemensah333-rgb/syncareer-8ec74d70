@@ -39,9 +39,6 @@ import ExploreCommunities from "./pages/ExploreCommunities";
 import CreateCommunity from "./pages/CreateCommunity";
 import CommunityDetail from "./pages/CommunityDetail";
 import PostDetail from "./pages/PostDetail";
-// Public profile pages
-import PublicCounsellorProfile from "./pages/PublicCounsellorProfile";
-import PublicCompanyProfile from "./pages/PublicCompanyProfile";
 
 const queryClient = new QueryClient();
 
@@ -61,8 +58,6 @@ const App = () => (
             <Route path="/opportunities" element={<Markets />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/portfolio/:userId" element={<PublicPortfolio />} />
-            <Route path="/counsellor/:counsellorId" element={<PublicCounsellorProfile />} />
-            <Route path="/company/:employerId" element={<PublicCompanyProfile />} />
             <Route path="/performance" element={<Performance />} />
             <Route path="/analysis" element={<Analysis />} />
             
