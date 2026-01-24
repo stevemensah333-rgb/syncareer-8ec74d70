@@ -28,10 +28,13 @@ interface Session {
 
 interface Booking {
   id: string;
+  user_id: string;
   user_name: string;
   user_contact: string;
   status: string;
   created_at: string;
+  scheduled_date: string | null;
+  scheduled_time: string | null;
 }
 
 interface SessionsManagerProps {
@@ -87,12 +90,36 @@ export function SessionsManager({ counsellorId }: SessionsManagerProps) {
 
   const updateBookingStatus = async (bookingId: string, status: string) => {
     try {
+      // Find the booking to get user_id for notification
+      const booking = bookings.find(b => b.id === bookingId);
+      
       const { error } = await supabase
         .from('counsellor_bookings')
         .update({ status })
         .eq('id', bookingId);
 
       if (error) throw error;
+
+      // Send notification to the user when their request is accepted
+      if (status === 'confirmed' && booking) {
+        const { data: counsellorData } = await supabase
+          .from('counsellor_details')
+          .select('full_name')
+          .eq('id', counsellorId)
+          .single();
+
+        const counsellorName = counsellorData?.full_name || 'A counsellor';
+        
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: (booking as any).user_id,
+            type: 'booking_accepted',
+            title: 'Booking Request Accepted!',
+            message: `${counsellorName} has accepted your session request. Check your bookings for details.`,
+            link: '/portfolio',
+          });
+      }
 
       setBookings(prev => prev.map(b => 
         b.id === bookingId ? { ...b, status } : b
@@ -167,7 +194,7 @@ export function SessionsManager({ counsellorId }: SessionsManagerProps) {
             </p>
           ) : (
             <div className="space-y-3">
-              {pendingBookings.map((booking) => (
+                {pendingBookings.map((booking) => (
                 <div key={booking.id} className="p-4 border rounded-lg bg-accent/30">
                   <div className="flex items-start justify-between">
                     <div>
@@ -178,6 +205,12 @@ export function SessionsManager({ counsellorId }: SessionsManagerProps) {
                       <p className="text-sm text-muted-foreground mt-1">
                         {booking.user_contact}
                       </p>
+                      {booking.scheduled_date && booking.scheduled_time && (
+                        <p className="text-sm text-primary font-medium mt-1">
+                          <Clock className="h-3 w-3 inline mr-1" />
+                          {new Date(booking.scheduled_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {booking.scheduled_time.slice(0, 5)}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
                         Requested: {new Date(booking.created_at).toLocaleDateString()}
                       </p>
@@ -231,6 +264,12 @@ export function SessionsManager({ counsellorId }: SessionsManagerProps) {
                         <span className="font-medium">{booking.user_name}</span>
                         {getStatusBadge(booking.status)}
                       </div>
+                      {booking.scheduled_date && booking.scheduled_time && (
+                        <p className="text-sm text-primary font-medium mt-1">
+                          <Clock className="h-3 w-3 inline mr-1" />
+                          {new Date(booking.scheduled_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at {booking.scheduled_time.slice(0, 5)}
+                        </p>
+                      )}
                       <p className="text-sm text-muted-foreground mt-1">
                         Contact: {booking.user_contact}
                       </p>
