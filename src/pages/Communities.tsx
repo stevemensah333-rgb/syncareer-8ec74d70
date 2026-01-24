@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { PenSquare } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { PenSquare, ArrowLeft, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -14,15 +15,35 @@ import { TrendingCommunitiesSidebar } from '@/components/communities/TrendingCom
 import { CommunityPostCard } from '@/components/communities/CommunityPostCard';
 import { CreatePostDialog } from '@/components/communities/CreatePostDialog';
 import { useCommunityPosts } from '@/hooks/useCommunityPosts';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 type SortOption = 'trending' | 'new' | 'hot';
 
 export default function Communities() {
   const [sortBy, setSortBy] = useState<SortOption>('trending');
   const { posts, loading, createPost, votePost, deletePost } = useCommunityPosts(undefined, sortBy);
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Mobile Header */}
+      <div className="lg:hidden sticky top-0 z-20 bg-background border-b p-3 flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/portfolio')}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="font-semibold flex-1">Communities</h1>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-80">
+            <CommunitySidebar />
+          </SheetContent>
+        </Sheet>
+      </div>
+
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-0">
         {/* Left Sidebar - My Communities */}
         <aside className="hidden lg:block border-r min-h-screen sticky top-0">
