@@ -96,7 +96,7 @@ const Portfolio = () => {
                 <div className="flex-1">
                   <h3 className="text-xl font-bold">Showcase Your Work</h3>
                   <p className="text-muted-foreground">
-                    Upload projects to get peer ratings and boost your SkillScore
+                    Upload projects to get peer ratings and build your portfolio
                   </p>
                 </div>
                 <UploadProjectDialog />

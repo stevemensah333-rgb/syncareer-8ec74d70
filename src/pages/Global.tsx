@@ -6,55 +6,6 @@ import { Avatar } from '@/components/ui/avatar';
 import { Globe, Trophy, TrendingUp, Star, Award } from 'lucide-react';
 
 const Global = () => {
-  // Global leaderboard
-  const globalLeaders = [
-    {
-      rank: 1,
-      name: 'Sarah Johnson',
-      country: 'United States',
-      skillScore: 2850,
-      avatar: 'SJ',
-      badge: '🏆',
-      specialty: 'Full-Stack Dev',
-    },
-    {
-      rank: 2,
-      name: 'Mike Chen',
-      country: 'China',
-      skillScore: 2720,
-      avatar: 'MC',
-      badge: '🥈',
-      specialty: 'AI/ML Engineer',
-    },
-    {
-      rank: 3,
-      name: 'Emma Wilson',
-      country: 'United Kingdom',
-      skillScore: 2680,
-      avatar: 'EW',
-      badge: '🥉',
-      specialty: 'UI/UX Designer',
-    },
-    {
-      rank: 4,
-      name: 'Carlos Rodriguez',
-      country: 'Spain',
-      skillScore: 2640,
-      avatar: 'CR',
-      badge: '4️⃣',
-      specialty: 'DevOps Engineer',
-    },
-    {
-      rank: 5,
-      name: 'Priya Patel',
-      country: 'India',
-      skillScore: 2590,
-      avatar: 'PP',
-      badge: '5️⃣',
-      specialty: 'Data Scientist',
-    },
-  ];
-
   // Top portfolios globally
   const topPortfolios = [
     {
@@ -82,11 +33,11 @@ const Global = () => {
 
   // Regional stats
   const regionalStats = [
-    { region: 'North America', users: '45.2K', avgScore: 1820, growth: '+12%' },
-    { region: 'Europe', users: '38.7K', avgScore: 1765, growth: '+15%' },
-    { region: 'Asia-Pacific', users: '62.3K', avgScore: 1790, growth: '+22%' },
-    { region: 'Latin America', users: '18.5K', avgScore: 1650, growth: '+18%' },
-    { region: 'Africa', users: '12.1K', avgScore: 1580, growth: '+25%' },
+    { region: 'North America', users: '45.2K', growth: '+12%' },
+    { region: 'Europe', users: '38.7K', growth: '+15%' },
+    { region: 'Asia-Pacific', users: '62.3K', growth: '+22%' },
+    { region: 'Latin America', users: '18.5K', growth: '+18%' },
+    { region: 'Africa', users: '12.1K', growth: '+25%' },
   ];
 
   // Trending skills globally
@@ -119,39 +70,30 @@ const Global = () => {
           </Card>
         </div>
 
-        {/* Global Leaderboard */}
+        {/* Trending Skills */}
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-primary" />
-                Global Leaderboard
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Trending Skills Globally
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {globalLeaders.map((leader) => (
+              {trendingSkills.map((skill) => (
                 <div
-                  key={leader.rank}
+                  key={skill.skill}
                   className="flex items-center gap-3 p-3 border rounded-lg hover:border-primary/50 transition-colors"
                 >
-                  <div className="text-2xl">{leader.badge}</div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold">{leader.name}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {leader.country}
-                      </Badge>
-                    </div>
+                    <span className="font-semibold">{skill.skill}</span>
                     <p className="text-xs text-muted-foreground">
-                      {leader.specialty}
+                      {skill.users} learners
                     </p>
                   </div>
-                  <div className="text-right">
-                    <div className="font-bold text-primary">
-                      {leader.skillScore.toLocaleString()}
-                    </div>
-                    <p className="text-xs text-muted-foreground">SkillScore</p>
-                  </div>
+                  <Badge variant="secondary" className="text-success">
+                    {skill.growth}
+                  </Badge>
                 </div>
               ))}
             </CardContent>
@@ -172,9 +114,8 @@ const Global = () => {
                     {stat.growth}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground">
                   <span>{stat.users} users</span>
-                  <span>Avg: {stat.avgScore}</span>
                 </div>
               </div>
             ))}

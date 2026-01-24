@@ -8,7 +8,7 @@ import { StatsCard } from '@/components/ui/StatsCard';
 import { CreatePostDialog } from '@/components/feed/CreatePostDialog';
 import { PostCard } from '@/components/feed/PostCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, TrendingUp, Users, Award, Zap } from 'lucide-react';
+import { TrendingUp, Users, Award, Zap, Trophy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface Post {
@@ -45,7 +45,6 @@ export function Feed() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [trendingSkills, setTrendingSkills] = useState<TrendingSkill[]>([]);
   const [userStats, setUserStats] = useState({
-    skillScore: 0,
     skillsVerified: 0,
     networkCount: 0,
     endorsements: 0,
@@ -105,7 +104,7 @@ export function Feed() {
         // No stats exist, create them
         const { data: newStats, error: insertError } = await supabase
           .from('user_stats')
-          .insert({ user_id: userId, skill_score: 100 })
+          .insert({ user_id: userId })
           .select()
           .single();
 
@@ -128,7 +127,6 @@ export function Feed() {
         .eq('user_id', userId);
 
       setUserStats({
-        skillScore: stats?.skill_score || 100,
         skillsVerified: stats?.skills_verified || 0,
         networkCount: networkCount || 0,
         endorsements: endorsementsCount || 0,
@@ -259,13 +257,7 @@ export function Feed() {
             <p className="text-muted-foreground mb-6">Connect with peers, mentors, and alumni</p>
             
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <StatsCard
-                title="Your SkillScore"
-                value={userStats.skillScore.toLocaleString()}
-                icon={<Trophy className="h-4 w-4" />}
-                description="Keep learning!"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <StatsCard
                 title="Skills Verified"
                 value={userStats.skillsVerified.toString()}
