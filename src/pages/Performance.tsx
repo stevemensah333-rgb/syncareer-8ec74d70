@@ -24,7 +24,6 @@ const Performance = () => {
   const [stats, setStats] = useState({
     applicationsThisMonth: 0,
     interviewsScheduled: 0,
-    challengesCompleted: 0,
     endorsementsReceived: 0,
     postsCreated: 0,
     connectionsCount: 0,
@@ -60,12 +59,7 @@ const Performance = () => {
         .eq('applicant_id', userId)
         .eq('status', 'interview');
 
-      // Fetch challenges completed
-      const { count: challengesCount } = await supabase
-        .from('challenge_participants')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .not('completed_at', 'is', null);
+      // Fetch endorsements received
 
       // Fetch endorsements received
       const { count: endorsementsCount } = await supabase
@@ -165,7 +159,6 @@ const Performance = () => {
       setStats({
         applicationsThisMonth: appsCount || 0,
         interviewsScheduled: interviewsCount || 0,
-        challengesCompleted: challengesCount || 0,
         endorsementsReceived: endorsementsCount || 0,
         postsCreated: postsCount || 0,
         connectionsCount: connectionsCount || 0,
@@ -235,8 +228,8 @@ const Performance = () => {
                   <Award className="h-5 w-5 text-secondary-foreground" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{stats.challengesCompleted}</p>
-                  <p className="text-xs text-muted-foreground">Challenges Completed</p>
+                  <p className="text-2xl font-bold">{stats.endorsementsReceived}</p>
+                  <p className="text-xs text-muted-foreground">Endorsements Received</p>
                 </div>
               </div>
             </CardContent>

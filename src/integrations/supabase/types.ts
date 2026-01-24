@@ -65,41 +65,6 @@ export type Database = {
           },
         ]
       }
-      challenge_participants: {
-        Row: {
-          challenge_id: string
-          completed_at: string | null
-          id: string
-          joined_at: string
-          submission_url: string | null
-          user_id: string
-        }
-        Insert: {
-          challenge_id: string
-          completed_at?: string | null
-          id?: string
-          joined_at?: string
-          submission_url?: string | null
-          user_id: string
-        }
-        Update: {
-          challenge_id?: string
-          completed_at?: string | null
-          id?: string
-          joined_at?: string
-          submission_url?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "challenge_participants_challenge_id_fkey"
-            columns: ["challenge_id"]
-            isOneToOne: false
-            referencedRelation: "weekly_challenges"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       communities: {
         Row: {
           banner_url: string | null
@@ -1150,36 +1115,6 @@ export type Database = {
         }
         Relationships: []
       }
-      professional_transition_details: {
-        Row: {
-          aspired_role: string
-          created_at: string
-          existing_role: string
-          id: string
-          updated_at: string
-          user_id: string
-          years_of_experience: string
-        }
-        Insert: {
-          aspired_role: string
-          created_at?: string
-          existing_role: string
-          id?: string
-          updated_at?: string
-          user_id: string
-          years_of_experience: string
-        }
-        Update: {
-          aspired_role?: string
-          created_at?: string
-          existing_role?: string
-          id?: string
-          updated_at?: string
-          user_id?: string
-          years_of_experience?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1480,48 +1415,6 @@ export type Database = {
           skills_verified?: number
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      weekly_challenges: {
-        Row: {
-          created_at: string
-          deadline: string
-          description: string
-          difficulty: string
-          id: string
-          is_active: boolean
-          max_participants: number | null
-          reward: string
-          skill_category: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          deadline: string
-          description: string
-          difficulty?: string
-          id?: string
-          is_active?: boolean
-          max_participants?: number | null
-          reward?: string
-          skill_category: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          deadline?: string
-          description?: string
-          difficulty?: string
-          id?: string
-          is_active?: boolean
-          max_participants?: number | null
-          reward?: string
-          skill_category?: string
-          title?: string
-          updated_at?: string
         }
         Relationships: []
       }
