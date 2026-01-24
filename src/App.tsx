@@ -29,8 +29,11 @@ import TalentInsights from "./pages/employer/TalentInsights";
 import PostJob from "./pages/employer/PostJob";
 import TrainEmployees from "./pages/employer/TrainEmployees";
 import HireWithAI from "./pages/employer/HireWithAI";
+import ApplicantTracker from "./pages/employer/ApplicantTracker";
 // Counsellor pages
 import CounsellorDashboard from "./pages/counsellor/CounsellorDashboard";
+import CounsellorAvailability from "./pages/counsellor/CounsellorAvailability";
+import CounsellorSessions from "./pages/counsellor/CounsellorSessions";
 
 const queryClient = new QueryClient();
 
@@ -64,8 +67,11 @@ const App = () => (
             <Route path="/post-job" element={<PostJob />} />
             <Route path="/train" element={<TrainEmployees />} />
             <Route path="/hire-ai" element={<HireWithAI />} />
+            <Route path="/applicants" element={<ApplicantTracker />} />
             {/* Counsellor routes */}
             <Route path="/counsellor-dashboard" element={<CounsellorDashboard />} />
+            <Route path="/counsellor-availability" element={<CounsellorAvailability />} />
+            <Route path="/counsellor-sessions" element={<CounsellorSessions />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, Briefcase, Users, LogOut, MessageCircle, Menu, HelpCircle, Phone, Mail } from 'lucide-react';
+import { Search, User, Briefcase, Users, LogOut, MessageCircle, Menu, HelpCircle, Phone, Mail } from 'lucide-react';
 import skillbridgeLogo from '@/assets/skillbridge-logo.png';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import AskCounsellorDialog from '@/components/counsellor/AskCounsellorDialog';
+import { NotificationsDropdown } from '@/components/notifications/NotificationsDropdown';
 
 interface NavbarProps {
   className?: string;
@@ -136,14 +137,7 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
           </div>
           
           <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="relative h-9 w-9"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary animate-pulse" />
-            </Button>
+            <NotificationsDropdown />
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
