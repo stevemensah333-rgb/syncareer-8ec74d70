@@ -32,9 +32,9 @@ export async function getUserRoute(userId: string): Promise<string> {
 function getRouteForType(userId: string, userType: string | null): string {
   switch (userType) {
     case 'career_counsellor':
-      return `/counsellor/${userId}`;
+      return `/counsellor-dashboard`;
     case 'employer':
-      return `/company/${userId}`;
+      return `/my-company`;
     default:
       return `/portfolio/${userId}`;
   }
