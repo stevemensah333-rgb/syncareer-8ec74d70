@@ -55,7 +55,7 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
     },
     {
       title: 'Portfolio',
-      icon: BarChart,
+      icon: Briefcase,
       href: '/portfolio',
     },
     {

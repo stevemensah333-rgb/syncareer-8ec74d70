@@ -37,7 +37,7 @@ export interface CommunityPost {
   comment_count: number;
   created_at: string;
   updated_at: string;
-  community?: Community;
+  community?: Partial<Community> & Pick<Community, 'id' | 'name' | 'slug'>;
   author?: {
     username: string | null;
     full_name: string | null;
