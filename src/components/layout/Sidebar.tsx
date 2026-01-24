@@ -50,12 +50,12 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
     },
     {
       title: 'Opportunities',
-      icon: Briefcase,
+      icon: TrendingUp,
       href: '/opportunities',
     },
     {
       title: 'Portfolio',
-      icon: Briefcase,
+      icon: Star,
       href: '/portfolio',
     },
     {

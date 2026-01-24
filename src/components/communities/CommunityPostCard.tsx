@@ -68,7 +68,7 @@ export function CommunityPostCard({
             </AvatarFallback>
           </Avatar>
           <Link 
-            to={`/profile/${post.author_id}`}
+            to={`/portfolio/${post.author_id}`}
             className="font-medium text-foreground hover:underline"
           >
             {post.author?.username || post.author?.full_name || 'Anonymous'}

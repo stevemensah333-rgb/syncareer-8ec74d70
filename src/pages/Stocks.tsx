@@ -75,16 +75,16 @@ const MySkills = () => {
 
       const userId = session.user.id;
 
-      // Fetch skills from user's posts (skill_tags)
+      // Fetch skills from user's community posts (tags)
       const { data: posts } = await supabase
-        .from('posts')
-        .select('skill_tags')
-        .eq('user_id', userId);
+        .from('community_posts')
+        .select('tags')
+        .eq('author_id', userId);
 
       // Count skill occurrences
       const skillCounts: Record<string, number> = {};
       (posts || []).forEach(post => {
-        (post.skill_tags || []).forEach((tag: string) => {
+        (post.tags || []).forEach((tag: string) => {
           skillCounts[tag] = (skillCounts[tag] || 0) + 1;
         });
       });
