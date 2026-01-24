@@ -5,24 +5,39 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mic, Play, CheckCircle, ArrowRight, RotateCcw, Trophy, Clock, Target, MessageSquare } from 'lucide-react';
+import { Mic, Play, CheckCircle, ArrowRight, RotateCcw, Trophy, Clock, Target, MessageSquare, Lightbulb, AlertCircle, ThumbsUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 
-interface Question {
-  question: string;
-  type: string;
-  expectedPoints: string[];
+interface Feedback {
+  verdict: string;
+  score: number;
+  feedback: string;
+  improvedAnswer: string;
+  tip: string;
 }
 
-interface Answer {
+interface AnswerRecord {
+  question: string;
   answer: string;
   feedback: string;
   score: number;
+  verdict: string;
+  improvedAnswer?: string;
+  tip?: string;
+}
+
+interface OverallResults {
+  overallScore: number;
+  overallVerdict: string;
+  assessment: string;
+  strengths: string[];
+  weaknesses: string[];
+  priorities: string[];
+  readiness: string;
 }
 
 const InterviewSimulator = () => {
@@ -31,15 +46,20 @@ const InterviewSimulator = () => {
   const [jobRole, setJobRole] = useState('');
   const [industry, setIndustry] = useState('');
   const [difficulty, setDifficulty] = useState('intermediate');
+  const [interviewType, setInterviewType] = useState('mixed');
+  const [resumeText, setResumeText] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
   const [interviewId, setInterviewId] = useState<string | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Answer[]>([]);
+  const [currentQuestion, setCurrentQuestion] = useState('');
+  const [questionNumber, setQuestionNumber] = useState(1);
+  const [conversationHistory, setConversationHistory] = useState<Array<{ role: string; content: string }>>([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
-  const [feedback, setFeedback] = useState<{feedback: string; score: number} | null>(null);
-  const [overallResults, setOverallResults] = useState<any>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [answers, setAnswers] = useState<AnswerRecord[]>([]);
+  const [overallResults, setOverallResults] = useState<OverallResults | null>(null);
+  const [isComplete, setIsComplete] = useState(false);
 
   // Pre-populate based on student major
   useEffect(() => {
@@ -88,23 +108,30 @@ const InterviewSimulator = () => {
           jobRole,
           industry,
           difficulty,
+          interviewType,
+          resumeText,
+          jobDescription,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to start interview');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to start interview');
       }
 
       const data = await response.json();
       setInterviewId(data.interview.id);
-      setQuestions(data.questions);
+      setCurrentQuestion(data.currentQuestion);
+      setQuestionNumber(1);
+      setConversationHistory([
+        { role: 'assistant', content: data.currentQuestion }
+      ]);
       setAnswers([]);
-      setCurrentQuestionIndex(0);
       setStep('interview');
       toast.success('Interview started! Good luck!');
     } catch (error) {
       console.error('Error starting interview:', error);
-      toast.error('Failed to start interview');
+      toast.error(error instanceof Error ? error.message : 'Failed to start interview');
     } finally {
       setIsLoading(false);
     }
@@ -129,21 +156,35 @@ const InterviewSimulator = () => {
         body: JSON.stringify({
           action: 'answer',
           interviewId,
-          questionIndex: currentQuestionIndex,
           answer: currentAnswer,
+          interviewType,
+          conversationHistory,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit answer');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to submit answer');
       }
 
       const data = await response.json();
       setFeedback(data.feedback);
-      setAnswers(prev => [...prev, { answer: currentAnswer, ...data.feedback }]);
+      setIsComplete(data.isComplete);
+      
+      // Update conversation history
+      setConversationHistory(prev => [
+        ...prev,
+        { role: 'user', content: currentAnswer },
+        ...(data.nextQuestion ? [{ role: 'assistant', content: data.nextQuestion }] : [])
+      ]);
+
+      if (data.nextQuestion) {
+        setCurrentQuestion(data.nextQuestion);
+        setQuestionNumber(data.questionNumber);
+      }
     } catch (error) {
       console.error('Error submitting answer:', error);
-      toast.error('Failed to get feedback');
+      toast.error(error instanceof Error ? error.message : 'Failed to get feedback');
     } finally {
       setIsLoading(false);
     }
@@ -152,9 +193,8 @@ const InterviewSimulator = () => {
   const nextQuestion = () => {
     setFeedback(null);
     setCurrentAnswer('');
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-    } else {
+    
+    if (isComplete) {
       finishInterview();
     }
   };
@@ -177,16 +217,18 @@ const InterviewSimulator = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get results');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get results');
       }
 
       const data = await response.json();
       setOverallResults(data.overallFeedback);
+      setAnswers(data.answers || []);
       setStep('results');
       toast.success('Interview completed!');
     } catch (error) {
       console.error('Error finishing interview:', error);
-      toast.error('Failed to get final results');
+      toast.error(error instanceof Error ? error.message : 'Failed to get final results');
     } finally {
       setIsLoading(false);
     }
@@ -195,12 +237,32 @@ const InterviewSimulator = () => {
   const resetInterview = () => {
     setStep('setup');
     setInterviewId(null);
-    setQuestions([]);
-    setAnswers([]);
-    setCurrentQuestionIndex(0);
+    setCurrentQuestion('');
+    setQuestionNumber(1);
+    setConversationHistory([]);
     setCurrentAnswer('');
     setFeedback(null);
+    setAnswers([]);
     setOverallResults(null);
+    setIsComplete(false);
+  };
+
+  const getVerdictColor = (verdict: string) => {
+    switch (verdict.toLowerCase()) {
+      case 'strong': return 'text-green-600 bg-green-100';
+      case 'average': return 'text-yellow-600 bg-yellow-100';
+      case 'weak': return 'text-red-600 bg-red-100';
+      default: return 'text-muted-foreground bg-muted';
+    }
+  };
+
+  const getReadinessColor = (readiness: string) => {
+    switch (readiness.toLowerCase()) {
+      case 'high': return 'text-green-600';
+      case 'medium': return 'text-yellow-600';
+      case 'low': return 'text-red-600';
+      default: return 'text-muted-foreground';
+    }
   };
 
   return (
@@ -216,7 +278,7 @@ const InterviewSimulator = () => {
                 <div>
                   <h2 className="text-2xl font-bold">AI Mock Interview</h2>
                   <p className="text-muted-foreground">
-                    Practice with AI-generated questions and get real-time feedback
+                    Practice with a realistic AI interviewer and get honest, actionable feedback
                   </p>
                 </div>
               </div>
@@ -231,38 +293,78 @@ const InterviewSimulator = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="jobRole">Target Job Role *</Label>
+                  <Input
+                    id="jobRole"
+                    value={jobRole}
+                    onChange={(e) => setJobRole(e.target.value)}
+                    placeholder="e.g., Software Developer"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="industry">Industry</Label>
+                  <Input
+                    id="industry"
+                    value={industry}
+                    onChange={(e) => setIndustry(e.target.value)}
+                    placeholder="e.g., Technology"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="difficulty">Seniority Level</Label>
+                  <Select value={difficulty} onValueChange={setDifficulty}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">Entry-level / Internship</SelectItem>
+                      <SelectItem value="intermediate">Mid-level (2-5 years)</SelectItem>
+                      <SelectItem value="advanced">Senior level</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="interviewType">Interview Type</Label>
+                  <Select value={interviewType} onValueChange={setInterviewType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="behavioral">Behavioral</SelectItem>
+                      <SelectItem value="technical">Technical</SelectItem>
+                      <SelectItem value="mixed">Mixed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="jobRole">Target Job Role *</Label>
-                <Input
-                  id="jobRole"
-                  value={jobRole}
-                  onChange={(e) => setJobRole(e.target.value)}
-                  placeholder="e.g., Software Developer, Marketing Manager"
+                <Label htmlFor="resumeText">Resume / Experience Summary (Optional)</Label>
+                <Textarea
+                  id="resumeText"
+                  value={resumeText}
+                  onChange={(e) => setResumeText(e.target.value)}
+                  placeholder="Paste your resume text or key experiences here for more personalized questions..."
+                  rows={3}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="industry">Industry</Label>
-                <Input
-                  id="industry"
-                  value={industry}
-                  onChange={(e) => setIndustry(e.target.value)}
-                  placeholder="e.g., Technology, Finance, Healthcare"
+                <Label htmlFor="jobDescription">Job Description (Optional)</Label>
+                <Textarea
+                  id="jobDescription"
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  placeholder="Paste the job description for role-specific questions..."
+                  rows={3}
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="difficulty">Difficulty Level</Label>
-                <Select value={difficulty} onValueChange={setDifficulty}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="beginner">Beginner (Entry-level)</SelectItem>
-                    <SelectItem value="intermediate">Intermediate (2-5 years)</SelectItem>
-                    <SelectItem value="advanced">Advanced (Senior level)</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
               <Button 
@@ -272,7 +374,7 @@ const InterviewSimulator = () => {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <>Preparing Questions...</>
+                  <>Preparing Interview...</>
                 ) : (
                   <>
                     <Play className="h-4 w-4 mr-2" />
@@ -285,25 +387,25 @@ const InterviewSimulator = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Tips for Success</CardTitle>
+              <CardTitle className="text-lg">How It Works</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                  Use the STAR method (Situation, Task, Action, Result)
+                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  AI asks realistic, role-specific questions one at a time
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                  Include specific numbers and achievements
+                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  Get honest feedback: Strong, Average, or Weak verdict
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                  Keep answers concise but comprehensive
+                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  See improved example answers and actionable tips
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                  Practice out loud before typing your answer
+                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  Receive overall readiness assessment at the end
                 </li>
               </ul>
             </CardContent>
@@ -311,38 +413,46 @@ const InterviewSimulator = () => {
         </div>
       )}
 
-      {step === 'interview' && questions.length > 0 && (
+      {step === 'interview' && (
         <div className="max-w-3xl mx-auto space-y-6">
           {/* Progress */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">
-                  Question {currentQuestionIndex + 1} of {questions.length}
+                  Question {questionNumber} of 5
                 </span>
-                <Badge variant="outline">{difficulty}</Badge>
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  interviewType === 'behavioral' ? 'bg-blue-100 text-blue-700' :
+                  interviewType === 'technical' ? 'bg-purple-100 text-purple-700' :
+                  'bg-green-100 text-green-700'
+                }`}>
+                  {interviewType.charAt(0).toUpperCase() + interviewType.slice(1)}
+                </span>
               </div>
-              <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} />
+              <Progress value={(questionNumber / 5) * 100} />
             </CardContent>
           </Card>
 
           {/* Current Question */}
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-2">
-                <Badge>{questions[currentQuestionIndex]?.type || 'General'}</Badge>
-              </div>
-              <CardTitle className="text-xl mt-2">
-                {questions[currentQuestionIndex]?.question}
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                Interviewer
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="p-4 bg-muted rounded-lg whitespace-pre-wrap">
+                {currentQuestion}
+              </div>
+
               {!feedback ? (
                 <>
                   <Textarea
                     value={currentAnswer}
                     onChange={(e) => setCurrentAnswer(e.target.value)}
-                    placeholder="Type your answer here... Be specific and use examples."
+                    placeholder="Type your answer here... Be specific and use the STAR method when applicable."
                     rows={6}
                     disabled={isLoading}
                   />
@@ -357,33 +467,60 @@ const InterviewSimulator = () => {
                 </>
               ) : (
                 <div className="space-y-4">
-                  <div className="p-4 bg-muted rounded-lg">
-                    <h4 className="font-medium mb-2">Your Answer:</h4>
-                    <p className="text-sm text-muted-foreground">{currentAnswer}</p>
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <h4 className="font-medium mb-2 text-sm text-muted-foreground">Your Answer:</h4>
+                    <p className="text-sm">{currentAnswer}</p>
                   </div>
                   
-                  <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium flex items-center gap-2">
-                        <MessageSquare className="h-4 w-4" />
-                        AI Feedback
-                      </h4>
-                      <Badge variant={feedback.score >= 7 ? 'default' : 'secondary'}>
-                        Score: {feedback.score}/10
-                      </Badge>
-                    </div>
+                  {/* Verdict and Score */}
+                  <div className="flex items-center gap-4">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getVerdictColor(feedback.verdict)}`}>
+                      {feedback.verdict}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      Score: <strong>{feedback.score}/10</strong>
+                    </span>
+                  </div>
+
+                  {/* Feedback */}
+                  <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
+                    <h4 className="font-medium flex items-center gap-2 mb-2">
+                      <AlertCircle className="h-4 w-4 text-primary" />
+                      Feedback
+                    </h4>
                     <p className="text-sm">{feedback.feedback}</p>
                   </div>
 
+                  {/* Improved Answer */}
+                  {feedback.improvedAnswer && (
+                    <div className="p-4 bg-green-50 rounded-lg border border-green-100">
+                      <h4 className="font-medium flex items-center gap-2 mb-2 text-green-700">
+                        <ThumbsUp className="h-4 w-4" />
+                        Better Answer Example
+                      </h4>
+                      <p className="text-sm text-green-800">{feedback.improvedAnswer}</p>
+                    </div>
+                  )}
+
+                  {/* Tip */}
+                  {feedback.tip && (
+                    <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                      <p className="text-sm text-yellow-800 flex items-start gap-2">
+                        <Lightbulb className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <span><strong>Tip:</strong> {feedback.tip}</span>
+                      </p>
+                    </div>
+                  )}
+
                   <Button onClick={nextQuestion} className="w-full">
-                    {currentQuestionIndex < questions.length - 1 ? (
+                    {!isComplete ? (
                       <>
                         Next Question
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </>
                     ) : (
                       <>
-                        Finish Interview
+                        View Final Results
                         <Trophy className="h-4 w-4 ml-2" />
                       </>
                     )}
@@ -402,7 +539,7 @@ const InterviewSimulator = () => {
               <Trophy className="h-16 w-16 mx-auto text-primary mb-4" />
               <h2 className="text-3xl font-bold mb-2">Interview Complete!</h2>
               <p className="text-muted-foreground">
-                Great job practicing for your {jobRole} interview
+                Here's your performance assessment for the {jobRole} role
               </p>
             </CardContent>
           </Card>
@@ -418,58 +555,104 @@ const InterviewSimulator = () => {
             <Card>
               <CardContent className="pt-6 text-center">
                 <MessageSquare className="h-8 w-8 mx-auto text-primary mb-2" />
-                <div className="text-3xl font-bold">{questions.length}</div>
+                <div className="text-3xl font-bold">{answers.length}</div>
                 <p className="text-sm text-muted-foreground">Questions Answered</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6 text-center">
                 <Clock className="h-8 w-8 mx-auto text-primary mb-2" />
-                <div className="text-3xl font-bold">{difficulty}</div>
-                <p className="text-sm text-muted-foreground">Difficulty Level</p>
+                <div className={`text-3xl font-bold ${getReadinessColor(overallResults.readiness)}`}>
+                  {overallResults.readiness}
+                </div>
+                <p className="text-sm text-muted-foreground">Interview Readiness</p>
               </CardContent>
             </Card>
           </div>
 
+          {/* Assessment */}
           <Card>
             <CardHeader>
-              <CardTitle>Detailed Feedback</CardTitle>
+              <CardTitle>Overall Assessment</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h4 className="font-medium text-green-600 mb-2">Strengths</h4>
-                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                  {overallResults.strengths?.map((s: string, i: number) => (
-                    <li key={i}>{s}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-medium text-orange-600 mb-2">Areas to Improve</h4>
-                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                  {overallResults.improvements?.map((s: string, i: number) => (
-                    <li key={i}>{s}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-medium text-blue-600 mb-2">Pro Tips</h4>
-                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                  {overallResults.tips?.map((s: string, i: number) => (
-                    <li key={i}>{s}</li>
-                  ))}
-                </ul>
-              </div>
+            <CardContent>
+              <p className="text-muted-foreground">{overallResults.assessment}</p>
             </CardContent>
           </Card>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Strengths */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-green-600 flex items-center gap-2">
+                  <ThumbsUp className="h-5 w-5" />
+                  Strengths
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {overallResults.strengths?.map((s, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* Weaknesses */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-orange-600 flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  Areas to Improve
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {overallResults.weaknesses?.map((w, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                      {w}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Top Priorities */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-primary" />
+                Top 3 Improvement Priorities
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ol className="space-y-3">
+                {overallResults.priorities?.map((p, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium flex-shrink-0">
+                      {i + 1}
+                    </span>
+                    <span className="text-sm">{p}</span>
+                  </li>
+                ))}
+              </ol>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
           <div className="flex gap-4">
-            <Button variant="outline" onClick={resetInterview} className="flex-1">
+            <Button onClick={resetInterview} variant="outline" className="flex-1">
               <RotateCcw className="h-4 w-4 mr-2" />
               Practice Again
             </Button>
-            <Button className="flex-1" onClick={() => window.location.href = '/learn'}>
-              Continue Learning
+            <Button onClick={() => window.location.href = '/resume-builder'} className="flex-1">
+              Improve Resume
+              <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
         </div>
