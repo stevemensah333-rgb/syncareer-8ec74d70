@@ -8,11 +8,10 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { ChallengeCard } from '@/components/skillbridge/ChallengeCard';
 import { StatsCard } from '@/components/ui/StatsCard';
 import { CreatePostDialog } from '@/components/feed/CreatePostDialog';
+import { PostCard } from '@/components/feed/PostCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, TrendingUp, Users, Award, Target, Zap, MessageCircle } from 'lucide-react';
+import { Trophy, TrendingUp, Users, Award, Target, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { formatDistanceToNow } from 'date-fns';
 
 interface Post {
   id: string;
@@ -102,14 +101,6 @@ export function Feed() {
     setIsSidebarCollapsed(prev => !prev);
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   // Mock data for challenges - personalized
   const challenges = [
@@ -212,43 +203,16 @@ export function Feed() {
                   </Card>
                 ) : (
                   posts.map((post) => (
-                    <Card key={post.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarFallback className="bg-primary/10 text-primary">
-                                {getInitials(post.author_name || 'A')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <h3 className="font-semibold">{post.author_name}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <p className="text-sm whitespace-pre-wrap">{post.content}</p>
-                        {post.skill_tags && post.skill_tags.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {post.skill_tags.map((tag) => (
-                              <Badge key={tag} variant="secondary" className="text-xs">
-                                #{tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-4 pt-2 border-t">
-                          <button className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
-                            <MessageCircle className="h-4 w-4" />
-                            <span className="text-sm">Comment</span>
-                          </button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <PostCard
+                      key={post.id}
+                      id={post.id}
+                      content={post.content}
+                      skill_tags={post.skill_tags || []}
+                      created_at={post.created_at}
+                      author_name={post.author_name || 'Anonymous'}
+                      user_id={post.user_id}
+                      currentUserId={user?.id}
+                    />
                   ))
                 )}
               </div>
