@@ -21,7 +21,6 @@ import AICoach from "./pages/AICoach";
 import Onboarding from "./pages/Onboarding";
 // New feature pages
 import InterviewSimulator from "./pages/InterviewSimulator";
-import ResumeBuilder from "./pages/ResumeBuilder";
 import ApplicationTracker from "./pages/ApplicationTracker";
 // Employer pages
 import MyCompany from "./pages/employer/MyCompany";
@@ -66,7 +65,6 @@ const App = () => (
             <Route path="/ai-coach" element={<AICoach />} />
             {/* New feature routes */}
             <Route path="/interview-simulator" element={<InterviewSimulator />} />
-            <Route path="/resume-builder" element={<ResumeBuilder />} />
             <Route path="/applications" element={<ApplicationTracker />} />
             {/* Employer routes */}
             <Route path="/my-company" element={<MyCompany />} />
