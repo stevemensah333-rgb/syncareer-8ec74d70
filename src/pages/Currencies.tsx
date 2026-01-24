@@ -125,15 +125,35 @@ const Learn = () => {
     ];
   };
 
+  // Course URL mappings for each provider
+  const getCourseUrl = (course: string, provider: string): string => {
+    const searchQuery = encodeURIComponent(course);
+    const providerUrls: Record<string, string> = {
+      'Coursera': `https://www.coursera.org/search?query=${searchQuery}`,
+      'Udemy': `https://www.udemy.com/courses/search/?q=${searchQuery}`,
+      'edX': `https://www.edx.org/search?q=${searchQuery}`,
+      'FreeCodeCamp': `https://www.freecodecamp.org/news/search/?query=${searchQuery}`,
+      'DataCamp': `https://www.datacamp.com/search?q=${searchQuery}`,
+      'WorldQuant': `https://www.wqu.edu/programs`,
+      'LinkedIn Learning': `https://www.linkedin.com/learning/search?keywords=${searchQuery}`,
+    };
+    return providerUrls[provider] || `https://www.google.com/search?q=${searchQuery}+online+course`;
+  };
+
   // Generate recommended courses based on major
   const getRecommendedCourses = () => {
-    return majorContent.suggestedCourses.map((course, index) => ({
-      title: course,
-      provider: ['FreeCodeCamp', 'Coursera', 'Udemy', 'edX'][index % 4],
-      duration: ['12 hours', '8 weeks', '15 hours', '6 weeks'][index % 4],
-      rating: [4.8, 4.9, 4.7, 4.8][index % 4],
-      type: ['Video', 'Course', 'Video', 'Course'][index % 4],
-    }));
+    const providers = ['Coursera', 'DataCamp', 'Udemy', 'edX', 'LinkedIn Learning', 'WorldQuant'];
+    return majorContent.suggestedCourses.map((course, index) => {
+      const provider = providers[index % providers.length];
+      return {
+        title: course,
+        provider,
+        duration: ['12 hours', '8 weeks', '15 hours', '6 weeks', '10 hours', '4 weeks'][index % 6],
+        rating: [4.8, 4.9, 4.7, 4.8, 4.6, 4.9][index % 6],
+        type: ['Video', 'Course', 'Video', 'Course', 'Course', 'Program'][index % 6],
+        url: getCourseUrl(course, provider),
+      };
+    });
   };
 
   const learningPaths = getLearningPaths();
@@ -260,9 +280,13 @@ const Learn = () => {
             <CardContent>
               <div className="space-y-3">
                 {recommendedCourses.map((course) => (
-                  <div
+                  <a
                     key={course.title}
-                    className="p-4 border rounded-lg hover:border-primary/50 transition-colors"
+                    href={course.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block p-4 border rounded-lg hover:border-primary/50 hover:bg-accent/50 transition-colors cursor-pointer"
+                    onClick={() => recordActivity('course')}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -281,13 +305,12 @@ const Learn = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => recordActivity('course')}
                         disabled={recordingActivity}
                       >
-                        Start
+                        Start →
                       </Button>
                     </div>
-                  </div>
+                  </a>
                 ))}
               </div>
             </CardContent>

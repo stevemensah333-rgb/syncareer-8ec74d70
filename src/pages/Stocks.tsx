@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AnalysisDialog } from '@/components/skillbridge/AnalysisDialog';
 
 const MySkills = () => {
+  const navigate = useNavigate();
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const { toast } = useToast();
   const cvInputRef = useRef<HTMLInputElement>(null);
@@ -318,7 +320,11 @@ const MySkills = () => {
                   </div>
                 ))}
               </div>
-              <Button variant="outline" className="w-full mt-4">
+              <Button 
+                variant="outline" 
+                className="w-full mt-4"
+                onClick={() => navigate('/learn')}
+              >
                 View Learning Paths
               </Button>
             </CardContent>
