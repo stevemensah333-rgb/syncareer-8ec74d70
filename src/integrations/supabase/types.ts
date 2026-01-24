@@ -886,6 +886,30 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_endorsements: {
+        Row: {
+          created_at: string
+          endorser_id: string
+          id: string
+          skill_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endorser_id: string
+          id?: string
+          skill_name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          endorser_id?: string
+          id?: string
+          skill_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       skills_assessments: {
         Row: {
           created_at: string
@@ -961,6 +985,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_connections: {
+        Row: {
+          connected_user_id: string
+          created_at: string
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          connected_user_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          connected_user_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -978,6 +1026,39 @@ export type Database = {
           created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          created_at: string
+          endorsements_received: number
+          id: string
+          network_count: number
+          skill_score: number
+          skills_verified: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endorsements_received?: number
+          id?: string
+          network_count?: number
+          skill_score?: number
+          skills_verified?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          endorsements_received?: number
+          id?: string
+          network_count?: number
+          skill_score?: number
+          skills_verified?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

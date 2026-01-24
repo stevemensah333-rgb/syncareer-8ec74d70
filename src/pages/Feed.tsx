@@ -29,6 +29,12 @@ export function Feed() {
   const [user, setUser] = useState<any>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
+  const [userStats, setUserStats] = useState({
+    skillScore: 0,
+    skillsVerified: 0,
+    networkCount: 0,
+    endorsements: 0,
+  });
   const { profile, studentDetails, loading: profileLoading } = useUserProfile();
 
   // Get personalized content based on major
@@ -75,6 +81,52 @@ export function Feed() {
     }
   }, []);
 
+  const fetchUserStats = useCallback(async (userId: string) => {
+    try {
+      // Fetch or create user stats
+      let { data: stats, error } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        // No stats exist, create them
+        const { data: newStats, error: insertError } = await supabase
+          .from('user_stats')
+          .insert({ user_id: userId, skill_score: 100 })
+          .select()
+          .single();
+
+        if (!insertError) {
+          stats = newStats;
+        }
+      }
+
+      // Fetch network count (accepted connections)
+      const { count: networkCount } = await supabase
+        .from('user_connections')
+        .select('*', { count: 'exact', head: true })
+        .or(`user_id.eq.${userId},connected_user_id.eq.${userId}`)
+        .eq('status', 'accepted');
+
+      // Fetch endorsements received
+      const { count: endorsementsCount } = await supabase
+        .from('skill_endorsements')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+      setUserStats({
+        skillScore: stats?.skill_score || 100,
+        skillsVerified: stats?.skills_verified || 0,
+        networkCount: networkCount || 0,
+        endorsements: endorsementsCount || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+    }
+  }, []);
+
   useEffect(() => {
     // Check authentication
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -83,6 +135,7 @@ export function Feed() {
       } else {
         setUser(session.user);
         fetchPosts();
+        fetchUserStats(session.user.id);
       }
     });
 
@@ -91,11 +144,12 @@ export function Feed() {
         navigate('/auth');
       } else {
         setUser(session.user);
+        fetchUserStats(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, fetchPosts]);
+  }, [navigate, fetchPosts, fetchUserStats]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(prev => !prev);
@@ -156,30 +210,27 @@ export function Feed() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <StatsCard
                 title="Your SkillScore"
-                value="1,847"
+                value={userStats.skillScore.toLocaleString()}
                 icon={<Trophy className="h-4 w-4" />}
-                trend={12}
                 description="Keep learning!"
               />
               <StatsCard
                 title="Skills Verified"
-                value="23"
+                value={userStats.skillsVerified.toString()}
                 icon={<Award className="h-4 w-4" />}
-                trend={3}
-                description="This month"
+                description="Verified skills"
               />
               <StatsCard
                 title="Network"
-                value="342"
+                value={userStats.networkCount.toString()}
                 icon={<Users className="h-4 w-4" />}
                 description="Connections"
               />
               <StatsCard
                 title="Endorsements"
-                value="67"
+                value={userStats.endorsements.toString()}
                 icon={<TrendingUp className="h-4 w-4" />}
-                trend={8}
-                description="This week"
+                description="From peers"
               />
             </div>
 
