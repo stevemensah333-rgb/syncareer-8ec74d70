@@ -129,7 +129,8 @@ export function Feed() {
         
         <main className="flex-1 transition-all duration-300">
           <div className="container max-w-full p-4 lg:p-6 animate-fade-in">
-            <h1 className="text-3xl font-bold mb-6">Social Skill Network</h1>
+            <h1 className="text-3xl font-bold mb-6">Networking</h1>
+            <p className="text-muted-foreground mb-6">Connect with peers, mentors, and alumni</p>
             
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
