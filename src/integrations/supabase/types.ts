@@ -498,6 +498,66 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_activities: {
+        Row: {
+          activity_date: string
+          activity_type: string
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          activity_date?: string
+          activity_type: string
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          activity_date?: string
+          activity_type?: string
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      learning_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_activity_date: string | null
+          longest_streak: number
+          total_learning_days: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number
+          total_learning_days?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number
+          total_learning_days?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mock_interviews: {
         Row: {
           answers: Json

@@ -1,15 +1,102 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Video, FileText, Mic, Target, Clock, Star } from 'lucide-react';
+import { BookOpen, Video, FileText, Target, Clock, Star, Flame, CheckCircle } from 'lucide-react';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { getMajorContent } from '@/utils/majorContent';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface LearningStreak {
+  current_streak: number;
+  longest_streak: number;
+  last_activity_date: string | null;
+  total_learning_days: number;
+}
+
+interface LearningActivity {
+  activity_date: string;
+}
 
 const Learn = () => {
   const { studentDetails, loading } = useUserProfile();
   const majorContent = getMajorContent(studentDetails?.major);
+  const [streak, setStreak] = useState<LearningStreak | null>(null);
+  const [recentActivities, setRecentActivities] = useState<LearningActivity[]>([]);
+  const [streakLoading, setStreakLoading] = useState(true);
+  const [recordingActivity, setRecordingActivity] = useState(false);
+
+  useEffect(() => {
+    fetchStreakData();
+  }, []);
+
+  const fetchStreakData = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      // Fetch streak data
+      const { data: streakData } = await supabase
+        .from('learning_streaks')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (streakData) {
+        setStreak(streakData);
+      }
+
+      // Fetch last 28 days of activities for the grid
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 28);
+
+      const { data: activities } = await supabase
+        .from('learning_activities')
+        .select('activity_date')
+        .eq('user_id', session.user.id)
+        .gte('activity_date', thirtyDaysAgo.toISOString().split('T')[0])
+        .order('activity_date', { ascending: false });
+
+      if (activities) {
+        setRecentActivities(activities);
+      }
+    } catch (error) {
+      console.error('Error fetching streak:', error);
+    } finally {
+      setStreakLoading(false);
+    }
+  };
+
+  const recordActivity = async (activityType: string) => {
+    setRecordingActivity(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast.error('Please sign in to track your learning');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('learning_activities')
+        .insert({
+          user_id: session.user.id,
+          activity_type: activityType,
+          duration_minutes: 15, // Default duration
+        });
+
+      if (error) throw error;
+
+      toast.success('Activity recorded! Keep learning! 🔥');
+      fetchStreakData(); // Refresh streak data
+    } catch (error: any) {
+      console.error('Error recording activity:', error);
+      toast.error('Failed to record activity');
+    } finally {
+      setRecordingActivity(false);
+    }
+  };
 
   // Generate learning paths based on major
   const getLearningPaths = () => {
@@ -49,58 +136,31 @@ const Learn = () => {
     }));
   };
 
-  // Interview prep based on major
-  const getInterviewPrep = () => {
-    const major = studentDetails?.major;
-    
-    if (major === 'Computer Science' || major === 'Data Science' || major === 'Information Technology') {
-      return [
-        { topic: 'Technical Fundamentals', completed: 15, total: 30 },
-        { topic: 'System Design', completed: 5, total: 15 },
-        { topic: 'Behavioral Questions', completed: 8, total: 20 },
-        { topic: 'Mock Interviews', completed: 3, total: 10 },
-      ];
-    } else if (major === 'Business Administration' || major === 'Finance' || major === 'Marketing') {
-      return [
-        { topic: 'Case Studies', completed: 10, total: 25 },
-        { topic: 'Financial Analysis', completed: 8, total: 15 },
-        { topic: 'Behavioral Questions', completed: 12, total: 20 },
-        { topic: 'Mock Interviews', completed: 4, total: 10 },
-      ];
-    } else if (major === 'Law') {
-      return [
-        { topic: 'Legal Case Analysis', completed: 12, total: 25 },
-        { topic: 'Contract Review', completed: 6, total: 15 },
-        { topic: 'Behavioral Questions', completed: 10, total: 20 },
-        { topic: 'Mock Interviews', completed: 3, total: 10 },
-      ];
-    } else if (major === 'Medicine' || major === 'Nursing' || major === 'Pharmacy') {
-      return [
-        { topic: 'Clinical Scenarios', completed: 15, total: 30 },
-        { topic: 'Patient Communication', completed: 8, total: 15 },
-        { topic: 'Ethics Questions', completed: 6, total: 20 },
-        { topic: 'Mock Interviews', completed: 2, total: 10 },
-      ];
-    } else if (major === 'Electrical Engineering' || major === 'Mechanical Engineering' || major === 'Civil Engineering') {
-      return [
-        { topic: 'Technical Problems', completed: 12, total: 30 },
-        { topic: 'Design Challenges', completed: 5, total: 15 },
-        { topic: 'Behavioral Questions', completed: 8, total: 20 },
-        { topic: 'Mock Interviews', completed: 3, total: 10 },
-      ];
-    }
-    
-    return [
-      { topic: 'Industry Knowledge', completed: 10, total: 25 },
-      { topic: 'Professional Skills', completed: 8, total: 20 },
-      { topic: 'Behavioral Questions', completed: 12, total: 20 },
-      { topic: 'Mock Interviews', completed: 4, total: 10 },
-    ];
-  };
-
   const learningPaths = getLearningPaths();
   const recommendedCourses = getRecommendedCourses();
-  const interviewPrep = getInterviewPrep();
+
+  // Generate streak grid for last 28 days
+  const getStreakGrid = () => {
+    const grid = [];
+    const today = new Date();
+    const activityDates = new Set(recentActivities.map(a => a.activity_date));
+
+    for (let i = 27; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      grid.push({
+        date: dateStr,
+        hasActivity: activityDates.has(dateStr),
+      });
+    }
+    return grid;
+  };
+
+  const streakGrid = getStreakGrid();
+  const todayHasActivity = recentActivities.some(
+    a => a.activity_date === new Date().toISOString().split('T')[0]
+  );
 
   if (loading) {
     return (
@@ -176,7 +236,13 @@ const Learn = () => {
                         />
                       </div>
                     </div>
-                    <Button className="w-full mt-3">Continue Learning</Button>
+                    <Button 
+                      className="w-full mt-3"
+                      onClick={() => recordActivity('lesson')}
+                      disabled={recordingActivity}
+                    >
+                      Continue Learning
+                    </Button>
                   </div>
                 );
               })}
@@ -212,51 +278,17 @@ const Learn = () => {
                           </div>
                         </div>
                       </div>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => recordActivity('course')}
+                        disabled={recordingActivity}
+                      >
                         Start
                       </Button>
                     </div>
                   </div>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Interview Prep Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mic className="h-5 w-5 text-primary" />
-                Interview Preparation
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                {interviewPrep.map((item) => (
-                  <div key={item.topic}>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="font-medium">{item.topic}</span>
-                      <span className="text-muted-foreground">
-                        {item.completed}/{item.total} completed
-                      </span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-accent h-2 rounded-full transition-all"
-                        style={{ width: `${(item.completed / item.total) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-3 mt-4">
-                <Button variant="default" className="flex-1">
-                  <Mic className="h-4 w-4 mr-2" />
-                  Start Mock Interview
-                </Button>
-                <Button variant="outline" className="flex-1">
-                  Practice Questions
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -267,26 +299,68 @@ const Learn = () => {
           {/* Learning Streak */}
           <Card>
             <CardHeader>
-              <CardTitle>Learning Streak</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Flame className="h-5 w-5 text-orange-500" />
+                Learning Streak
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center">
-                <div className="text-5xl font-bold text-primary mb-2">🔥</div>
-                <div className="text-3xl font-bold mb-1">24 Days</div>
-                <p className="text-sm text-muted-foreground">Keep it going!</p>
-              </div>
-              <div className="grid grid-cols-7 gap-1 mt-4">
-                {Array.from({ length: 28 }, (_, i) => (
-                  <div
-                    key={i}
-                    className={`aspect-square rounded ${
-                      i < 24
-                        ? 'bg-primary'
-                        : 'bg-muted'
-                    }`}
-                  />
-                ))}
-              </div>
+              {streakLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                </div>
+              ) : (
+                <>
+                  <div className="text-center mb-4">
+                    <div className="text-5xl mb-2">🔥</div>
+                    <div className="text-3xl font-bold text-primary mb-1">
+                      {streak?.current_streak || 0} Days
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {streak?.current_streak 
+                        ? "Keep it going!" 
+                        : "Start your streak today!"}
+                    </p>
+                    {streak?.longest_streak ? (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Best: {streak.longest_streak} days
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {/* Activity Grid */}
+                  <div className="grid grid-cols-7 gap-1 mb-4">
+                    {streakGrid.map((day, i) => (
+                      <div
+                        key={i}
+                        className={`aspect-square rounded transition-colors ${
+                          day.hasActivity
+                            ? 'bg-primary'
+                            : 'bg-muted'
+                        }`}
+                        title={day.date}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Today's status */}
+                  {todayHasActivity ? (
+                    <div className="flex items-center justify-center gap-2 text-sm text-primary">
+                      <CheckCircle className="h-4 w-4" />
+                      <span>You've learned today!</span>
+                    </div>
+                  ) : (
+                    <Button 
+                      className="w-full" 
+                      size="sm"
+                      onClick={() => recordActivity('lesson')}
+                      disabled={recordingActivity}
+                    >
+                      {recordingActivity ? 'Recording...' : 'Log Today\'s Learning'}
+                    </Button>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -317,11 +391,21 @@ const Learn = () => {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => recordActivity('video')}
+                disabled={recordingActivity}
+              >
                 <Video className="h-4 w-4 mr-2" />
                 Watch Daily Lesson
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => recordActivity('quiz')}
+                disabled={recordingActivity}
+              >
                 <FileText className="h-4 w-4 mr-2" />
                 Take Quiz
               </Button>
