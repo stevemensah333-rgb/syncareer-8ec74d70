@@ -167,6 +167,31 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
   const navItems = getNavItems();
 
 
+  // Group navigation items by section
+  const getGroupedNavItems = () => {
+    if (isEmployer) {
+      return [
+        { label: 'Main', items: employerNavItems.slice(0, 4) },
+        { label: 'Tools', items: employerNavItems.slice(4, 7) },
+        { label: 'Account', items: employerNavItems.slice(7) },
+      ];
+    }
+    if (isCounsellor) {
+      return [
+        { label: 'Main', items: counsellorNavItems.slice(0, 2) },
+        { label: 'Schedule', items: counsellorNavItems.slice(2, 4) },
+        { label: 'Account', items: counsellorNavItems.slice(4) },
+      ];
+    }
+    return [
+      { label: 'Main', items: jobSeekerNavItems.slice(0, 4) },
+      { label: 'Growth', items: jobSeekerNavItems.slice(4, 8) },
+      { label: 'Account', items: jobSeekerNavItems.slice(8) },
+    ];
+  };
+
+  const groupedNav = getGroupedNavItems();
+
   return (
     <aside className={cn(
       "bg-sidebar text-sidebar-foreground relative transition-all duration-300 ease-in-out flex flex-col border-r border-sidebar-border",
@@ -175,7 +200,7 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
     )}>
       <div className="flex h-16 items-center justify-center border-b border-sidebar-border">
         <h2 className={cn(
-          "font-semibold tracking-tight transition-opacity duration-200",
+          "font-semibold tracking-tight transition-opacity duration-200 text-sidebar-foreground",
           isCollapsed ? "opacity-0" : "opacity-100"
         )}>
           Syncareer
@@ -186,7 +211,7 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
           size="icon"
           onClick={onToggle}
           className={cn(
-            "absolute right-2 text-sidebar-foreground h-8 w-8",
+            "absolute right-2 text-sidebar-foreground hover:bg-sidebar-accent h-8 w-8",
             isCollapsed ? "right-2" : "right-4"
           )}
         >
@@ -195,29 +220,40 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       </div>
       
       <ScrollArea className="flex-1 py-4">
-        <nav className="grid gap-1 px-2">
-          {navItems.map((item, index) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <Link
-                key={index}
-                to={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                  isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground",
-                  isCollapsed && "justify-center px-0"
-                )}
-              >
-                <item.icon className={cn("h-5 w-5 shrink-0")} />
-                <span className={cn(
-                  "text-sm font-medium transition-opacity duration-200",
-                  isCollapsed ? "opacity-0 w-0" : "opacity-100"
-                )}>
-                  {item.title}
-                </span>
-              </Link>
-            );
-          })}
+        <nav className="grid gap-6 px-2">
+          {groupedNav.map((group, groupIndex) => (
+            <div key={groupIndex}>
+              {!isCollapsed && (
+                <p className="px-3 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  {group.label}
+                </p>
+              )}
+              <div className="grid gap-1">
+                {group.items.map((item, index) => {
+                  const isActive = location.pathname === item.href;
+                  return (
+                    <Link
+                      key={index}
+                      to={item.href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-sidebar-accent",
+                        isActive ? "bg-sidebar-accent text-primary font-medium" : "text-sidebar-foreground",
+                        isCollapsed && "justify-center px-0"
+                      )}
+                    >
+                      <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-primary")} />
+                      <span className={cn(
+                        "text-sm transition-opacity duration-200",
+                        isCollapsed ? "opacity-0 w-0" : "opacity-100"
+                      )}>
+                        {item.title}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
       </ScrollArea>
       

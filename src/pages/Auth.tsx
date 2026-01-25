@@ -226,11 +226,10 @@ const Auth = () => {
             <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-accent/20 to-primary/20 rounded-full blur-3xl animate-pulse delay-1000" />
           </div>
           
-          {/* Welcome Text */}
-          <div className="relative z-10 px-16">
-            <h2 className="text-6xl font-bold text-white leading-tight">
-              {isSignUp ? 'Welcome!' : 'Welcome Back!'}
-            </h2>
+          {/* Decorative 3D-style floating elements */}
+          <div className="relative z-10 flex items-center justify-center">
+            <div className="w-32 h-32 bg-gradient-to-br from-primary to-accent rounded-3xl rotate-12 opacity-80" />
+            <div className="w-24 h-24 bg-gradient-to-br from-accent to-primary rounded-2xl -rotate-12 -ml-8 mt-12 opacity-60" />
           </div>
         </div>
 
