@@ -58,7 +58,7 @@ export function CommunitySidebar() {
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
               <Home className="h-4 w-4 text-primary" />
             </div>
-            <span className="font-medium">Back to Syncareer</span>
+            <span className="font-medium">Home</span>
           </button>
           
           <Link
