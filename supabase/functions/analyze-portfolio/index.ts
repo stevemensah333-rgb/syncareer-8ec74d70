@@ -108,7 +108,6 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    console.log('Authenticated user:', userId);
 
     // Parse and validate request body
     let requestBody: unknown;
