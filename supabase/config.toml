@@ -9,5 +9,5 @@ verify_jwt = false
 [functions.mock-interview]
 verify_jwt = false
 
-[functions.generate-resume]
+[functions.realtime-interview]
 verify_jwt = false
