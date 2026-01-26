@@ -45,8 +45,6 @@ export default function CreateCommunity() {
   const [submitting, setSubmitting] = useState(false);
   const [iconFile, setIconFile] = useState<File | null>(null);
   const [iconPreview, setIconPreview] = useState<string | null>(null);
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
 
   const form = useForm<CommunityFormData>({
     resolver: zodResolver(communitySchema),
@@ -70,28 +68,10 @@ export default function CreateCommunity() {
     }
   };
 
-  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ title: 'Banner must be less than 5MB', variant: 'destructive' });
-        return;
-      }
-      setBannerFile(file);
-      setBannerPreview(URL.createObjectURL(file));
-    }
-  };
-
   const removeIcon = () => {
     setIconFile(null);
     if (iconPreview) URL.revokeObjectURL(iconPreview);
     setIconPreview(null);
-  };
-
-  const removeBanner = () => {
-    setBannerFile(null);
-    if (bannerPreview) URL.revokeObjectURL(bannerPreview);
-    setBannerPreview(null);
   };
 
   const uploadFile = async (file: File, path: string): Promise<string | null> => {
@@ -124,7 +104,6 @@ export default function CreateCommunity() {
       const timestamp = Date.now();
       
       let iconUrl: string | null = null;
-      let bannerUrl: string | null = null;
 
       if (iconFile) {
         const iconPath = `${userId}/icons/${timestamp}-${iconFile.name}`;
@@ -135,22 +114,13 @@ export default function CreateCommunity() {
         }
       }
 
-      if (bannerFile) {
-        const bannerPath = `${userId}/banners/${timestamp}-${bannerFile.name}`;
-        bannerUrl = await uploadFile(bannerFile, bannerPath);
-        if (!bannerUrl) {
-          toast({ title: 'Failed to upload banner', variant: 'destructive' });
-          return;
-        }
-      }
-
       const community = await createCommunity({
         name: data.name,
         description: data.description || null,
         category: data.category,
         rules: data.rules || null,
         icon_url: iconUrl,
-        banner_url: bannerUrl,
+        banner_url: null,
       });
 
       if (community) {
@@ -303,43 +273,6 @@ export default function CreateCommunity() {
                           accept="image/png,image/jpeg,image/webp"
                           className="hidden" 
                           onChange={handleIconChange}
-                        />
-                      </label>
-                    )}
-                  </div>
-                </FormItem>
-
-                {/* Banner Upload */}
-                <FormItem>
-                  <FormLabel>Community Banner</FormLabel>
-                  <div className="space-y-3">
-                    {bannerPreview ? (
-                      <div className="relative">
-                        <img 
-                          src={bannerPreview} 
-                          alt="Banner preview" 
-                          className="w-full h-32 object-cover rounded-lg border border-border"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2 h-6 w-6"
-                          onClick={removeBanner}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
-                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                        <p className="text-sm font-medium">Upload banner</p>
-                        <p className="text-xs text-muted-foreground">PNG, JPG up to 5MB (recommended: 1200x300)</p>
-                        <input 
-                          type="file" 
-                          accept="image/png,image/jpeg,image/webp"
-                          className="hidden" 
-                          onChange={handleBannerChange}
                         />
                       </label>
                     )}
