@@ -54,7 +54,9 @@ export function useVoiceInterview({ jobRole, resumeContext }: UseVoiceInterviewO
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const interviewIdRef = useRef<string | null>(null);
   const questionCountRef = useRef(0);
+  const conversationHistoryRef = useRef<Array<{ role: string; content: string }>>([]);
 
   const speakText = useCallback(async (text: string) => {
     setIsSpeaking(true);
@@ -106,28 +108,6 @@ export function useVoiceInterview({ jobRole, resumeContext }: UseVoiceInterviewO
       toast({ title: 'Audio Error', description: 'Failed to play audio', variant: 'destructive' });
     }
   }, [toast]);
-
-  const getAIResponse = useCallback(async (userMessage: string): Promise<string> => {
-    const conversationHistory = messages.map(m => ({
-      role: m.role,
-      content: m.content
-    }));
-
-    const { data, error } = await supabase.functions.invoke('mock-interview', {
-      body: {
-        messages: [
-          ...conversationHistory,
-          { role: 'user', content: userMessage }
-        ],
-        jobRole,
-        resumeContext,
-        questionCount: questionCountRef.current,
-      }
-    });
-
-    if (error) throw error;
-    return data.response;
-  }, [messages, jobRole, resumeContext]);
 
   const startListening = useCallback(() => {
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -204,39 +184,97 @@ export function useVoiceInterview({ jobRole, resumeContext }: UseVoiceInterviewO
     setCurrentTranscript('');
     setIsLoading(true);
 
+    // Update conversation history
+    conversationHistoryRef.current.push({ role: 'user', content: userText });
+
     try {
+      const { data, error } = await supabase.functions.invoke('mock-interview', {
+        body: {
+          action: 'answer',
+          interviewId: interviewIdRef.current,
+          answer: userText,
+          conversationHistory: conversationHistoryRef.current,
+        }
+      });
+
+      if (error) throw error;
+
       questionCountRef.current++;
-      const aiResponse = await getAIResponse(userText);
       
-      // Add AI message
+      // Add feedback as assistant message
+      let responseText = '';
+      if (data.feedback) {
+        responseText = `${data.feedback.verdict}: ${data.feedback.feedback}`;
+        if (data.feedback.tip) {
+          responseText += ` Tip: ${data.feedback.tip}`;
+        }
+      }
+      
+      if (!data.isComplete && data.nextQuestion) {
+        responseText = data.nextQuestion;
+        conversationHistoryRef.current.push({ role: 'assistant', content: data.nextQuestion });
+      } else if (data.isComplete) {
+        responseText = "Great job! You've completed all 5 questions. Let me prepare your overall feedback...";
+        
+        // Get final feedback
+        const { data: feedbackData } = await supabase.functions.invoke('mock-interview', {
+          body: {
+            action: 'feedback',
+            interviewId: interviewIdRef.current,
+          }
+        });
+        
+        if (feedbackData?.overallFeedback) {
+          const fb = feedbackData.overallFeedback;
+          responseText = `Interview Complete! Your score: ${fb.overallScore}/100. ${fb.assessment}. Key strengths: ${fb.strengths?.join(', ')}. Areas to improve: ${fb.weaknesses?.join(', ')}.`;
+        }
+      }
+
       const aiMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: aiResponse,
+        content: responseText,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, aiMessage]);
 
       // Speak the response
-      await speakText(aiResponse);
+      await speakText(responseText);
     } catch (error) {
       console.error('AI response error:', error);
       toast({ title: 'Error', description: 'Failed to get response', variant: 'destructive' });
-      startListening(); // Resume listening on error
+      startListening();
     } finally {
       setIsLoading(false);
     }
-  }, [getAIResponse, speakText, stopListening, startListening, toast]);
+  }, [speakText, stopListening, startListening, toast]);
 
   const start = useCallback(async () => {
     setIsActive(true);
     setMessages([]);
     questionCountRef.current = 0;
+    conversationHistoryRef.current = [];
     setIsLoading(true);
 
     try {
-      // Get initial greeting from AI
-      const greeting = await getAIResponse("Start the interview with a professional greeting and ask the first question.");
+      // Start interview with mock-interview edge function
+      const { data, error } = await supabase.functions.invoke('mock-interview', {
+        body: {
+          action: 'start',
+          jobRole,
+          resumeText: resumeContext,
+          difficulty: 'intermediate',
+          interviewType: 'mixed',
+        }
+      });
+
+      if (error) throw error;
+
+      interviewIdRef.current = data.interview?.id;
+      const greeting = data.currentQuestion;
+      
+      // Add to conversation history
+      conversationHistoryRef.current.push({ role: 'assistant', content: greeting });
       
       const greetingMessage: Message = {
         id: crypto.randomUUID(),
@@ -255,7 +293,7 @@ export function useVoiceInterview({ jobRole, resumeContext }: UseVoiceInterviewO
     } finally {
       setIsLoading(false);
     }
-  }, [getAIResponse, speakText, toast]);
+  }, [jobRole, resumeContext, speakText, toast]);
 
   const stop = useCallback(() => {
     stopListening();
@@ -266,6 +304,7 @@ export function useVoiceInterview({ jobRole, resumeContext }: UseVoiceInterviewO
     setIsActive(false);
     setIsSpeaking(false);
     setCurrentTranscript('');
+    interviewIdRef.current = null;
   }, [stopListening]);
 
   return {
