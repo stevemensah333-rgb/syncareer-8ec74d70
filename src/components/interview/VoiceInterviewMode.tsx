@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX } from 'lucide-react';
+import { Mic, Phone, PhoneOff, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -23,10 +22,7 @@ export function VoiceInterviewMode({ jobRole, resumeText, onEnd }: VoiceIntervie
     currentTranscript,
     connect,
     disconnect
-  } = useRealtimeInterview({
-    jobRole,
-    resumeContext: resumeText
-  });
+  } = useRealtimeInterview({ jobRole, resumeContext: resumeText });
 
   const handleEnd = () => {
     disconnect();
@@ -55,25 +51,21 @@ export function VoiceInterviewMode({ jobRole, resumeText, onEnd }: VoiceIntervie
               </div>
               <div>
                 <h3 className="font-semibold">
-                  {isSpeaking ? 'Interviewer is speaking...' : 
-                   isListening ? 'Listening to you...' : 
+                  {isSpeaking ? 'Interviewer speaking...' : 
+                   isListening ? 'Listening...' : 
                    isConnected ? 'Ready' : 'Disconnected'}
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  Voice Interview for {jobRole}
-                </p>
+                <p className="text-sm text-muted-foreground">{jobRole}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant={isConnected ? 'default' : 'secondary'}>
-                {isConnected ? 'Connected' : isConnecting ? 'Connecting...' : 'Offline'}
-              </Badge>
-            </div>
+            <Badge variant={isConnected ? 'default' : 'secondary'}>
+              {isConnected ? 'Live' : isConnecting ? 'Connecting...' : 'Offline'}
+            </Badge>
           </div>
         </CardContent>
       </Card>
 
-      {/* Transcript Area */}
+      {/* Transcript */}
       <Card className="h-[400px]">
         <CardHeader className="py-3">
           <CardTitle className="text-base">Conversation</CardTitle>
@@ -81,45 +73,32 @@ export function VoiceInterviewMode({ jobRole, resumeText, onEnd }: VoiceIntervie
         <CardContent className="p-0">
           <ScrollArea className="h-[320px] px-4">
             <div className="space-y-4 pb-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn(
-                    "flex",
-                    message.role === 'user' ? 'justify-end' : 'justify-start'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "max-w-[80%] rounded-lg px-4 py-2",
-                      message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    )}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+              {messages.map((msg) => (
+                <div key={msg.id} className={cn("flex", msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+                  <div className={cn(
+                    "max-w-[80%] rounded-lg px-4 py-2",
+                    msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                  )}>
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     <span className="text-[10px] opacity-60 mt-1 block">
-                      {message.timestamp.toLocaleTimeString()}
+                      {msg.timestamp.toLocaleTimeString()}
                     </span>
                   </div>
                 </div>
               ))}
 
-              {/* Current transcript (live) */}
               {currentTranscript && (
                 <div className="flex justify-start">
                   <div className="max-w-[80%] rounded-lg px-4 py-2 bg-muted/50 border border-dashed">
-                    <p className="text-sm text-muted-foreground italic">
-                      {currentTranscript}
-                    </p>
+                    <p className="text-sm text-muted-foreground italic">{currentTranscript}</p>
                   </div>
                 </div>
               )}
 
               {messages.length === 0 && !currentTranscript && isConnected && (
-                <div className="text-center text-muted-foreground py-8">
-                  <p>The interviewer will start speaking shortly...</p>
-                </div>
+                <p className="text-center text-muted-foreground py-8">
+                  Waiting for interviewer...
+                </p>
               )}
             </div>
           </ScrollArea>
@@ -131,71 +110,30 @@ export function VoiceInterviewMode({ jobRole, resumeText, onEnd }: VoiceIntervie
         <CardContent className="py-4">
           <div className="flex items-center justify-center gap-4">
             {!isConnected ? (
-              <Button
-                size="lg"
-                onClick={connect}
-                disabled={isConnecting}
-                className="gap-2"
-              >
+              <Button size="lg" onClick={connect} disabled={isConnecting} className="gap-2">
                 <Phone className="h-5 w-5" />
                 {isConnecting ? 'Connecting...' : 'Start Voice Interview'}
               </Button>
             ) : (
               <>
                 <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "h-3 w-3 rounded-full",
-                    isListening ? "bg-green-500 animate-pulse" : "bg-muted-foreground"
-                  )} />
-                  <span className="text-sm text-muted-foreground">
-                    {isListening ? 'Mic Active' : 'Mic Standby'}
-                  </span>
+                  <div className={cn("h-3 w-3 rounded-full", isListening ? "bg-green-500 animate-pulse" : "bg-muted-foreground")} />
+                  <span className="text-sm text-muted-foreground">{isListening ? 'Mic Active' : 'Standby'}</span>
                 </div>
-                <Button
-                  size="lg"
-                  variant="destructive"
-                  onClick={handleEnd}
-                  className="gap-2"
-                >
+                <Button size="lg" variant="destructive" onClick={handleEnd} className="gap-2">
                   <PhoneOff className="h-5 w-5" />
                   End Interview
                 </Button>
               </>
             )}
           </div>
-
           {!isConnected && (
             <p className="text-center text-xs text-muted-foreground mt-4">
-              Microphone access is required for voice interviews
+              Microphone access required
             </p>
           )}
         </CardContent>
       </Card>
-
-      {/* Instructions */}
-      {!isConnected && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Voice Interview Tips</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <Mic className="h-4 w-4 mt-0.5 text-primary" />
-                Speak naturally - the AI will wait for you to finish
-              </li>
-              <li className="flex items-start gap-2">
-                <Volume2 className="h-4 w-4 mt-0.5 text-primary" />
-                The interviewer will speak questions aloud
-              </li>
-              <li className="flex items-start gap-2">
-                <PhoneOff className="h-4 w-4 mt-0.5 text-primary" />
-                End the interview anytime to return to setup
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
