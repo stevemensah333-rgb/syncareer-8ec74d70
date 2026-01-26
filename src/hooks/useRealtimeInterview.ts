@@ -101,19 +101,29 @@ export function useRealtimeInterview({ jobRole, resumeContext }: UseRealtimeInte
     const audioData = audioQueueRef.current.shift()!;
 
     try {
-      if (!audioContextRef.current) {
+      if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
         audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+      }
+      
+      // Resume AudioContext if suspended (browser autoplay policy)
+      if (audioContextRef.current.state === 'suspended') {
+        console.log('Resuming AudioContext...');
+        await audioContextRef.current.resume();
       }
 
       const wavData = createWavFromPCM(audioData);
       const arrayBuffer = wavData.buffer.slice(wavData.byteOffset, wavData.byteOffset + wavData.byteLength) as ArrayBuffer;
-      const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
+      
+      // Clone the buffer to avoid detached ArrayBuffer issues
+      const clonedBuffer = arrayBuffer.slice(0);
+      const audioBuffer = await audioContextRef.current.decodeAudioData(clonedBuffer);
       
       const source = audioContextRef.current.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(audioContextRef.current.destination);
       source.onended = () => playNextAudio();
       source.start(0);
+      console.log('Playing audio chunk, queue size:', audioQueueRef.current.length);
     } catch (error) {
       console.error('Error playing audio:', error);
       playNextAudio();
@@ -198,6 +208,15 @@ export function useRealtimeInterview({ jobRole, resumeContext }: UseRealtimeInte
     try {
       // Request microphone permission first
       await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Pre-initialize AudioContext with user gesture to avoid autoplay issues
+      if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+        audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+      }
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+        console.log('AudioContext resumed during connect');
+      }
 
       const params = new URLSearchParams({
         jobRole,
@@ -224,12 +243,19 @@ export function useRealtimeInterview({ jobRole, resumeContext }: UseRealtimeInte
           switch (data.type) {
             case 'response.audio.delta':
               // Decode and queue audio
-              const binaryString = atob(data.delta);
-              const bytes = new Uint8Array(binaryString.length);
-              for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
+              if (data.delta) {
+                console.log('Received audio delta, length:', data.delta.length);
+                try {
+                  const binaryString = atob(data.delta);
+                  const bytes = new Uint8Array(binaryString.length);
+                  for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                  }
+                  queueAudio(bytes);
+                } catch (e) {
+                  console.error('Error decoding audio delta:', e);
+                }
               }
-              queueAudio(bytes);
               break;
 
             case 'response.audio_transcript.delta':

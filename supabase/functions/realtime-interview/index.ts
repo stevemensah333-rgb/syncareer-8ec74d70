@@ -53,7 +53,15 @@ serve(async (req) => {
     openAISocket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('OpenAI event:', data.type);
+        
+        // Log more details for audio events
+        if (data.type === 'response.audio.delta') {
+          console.log('OpenAI event: response.audio.delta, delta length:', data.delta?.length);
+        } else if (data.type === 'error') {
+          console.error('OpenAI error:', JSON.stringify(data.error));
+        } else {
+          console.log('OpenAI event:', data.type);
+        }
 
         // Configure session after receiving session.created
         if (data.type === 'session.created' && !sessionConfigured) {
@@ -108,7 +116,7 @@ Important:
           console.log('Sending session config to OpenAI');
           openAISocket?.send(JSON.stringify(sessionConfig));
 
-          // Start the interview with a greeting
+          // Start the interview with a greeting after session is configured
           setTimeout(() => {
             const startInterview = {
               type: 'response.create',
@@ -117,8 +125,8 @@ Important:
                 instructions: 'Greet the candidate warmly and ask them to briefly introduce themselves. Keep it natural and conversational.'
               }
             };
+            console.log('Sending initial greeting request with modalities:', JSON.stringify(startInterview));
             openAISocket?.send(JSON.stringify(startInterview));
-            console.log('Sent initial greeting request');
           }, 500);
         }
 
