@@ -7,12 +7,10 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Check for WebSocket upgrade
   const upgradeHeader = req.headers.get('upgrade');
   if (upgradeHeader?.toLowerCase() !== 'websocket') {
     return new Response('Expected WebSocket upgrade', { status: 426, headers: corsHeaders });
@@ -24,72 +22,50 @@ serve(async (req) => {
     return new Response('Server configuration error', { status: 500, headers: corsHeaders });
   }
 
-  // Get job role and resume from query params
   const url = new URL(req.url);
   const jobRole = url.searchParams.get('jobRole') || 'Software Developer';
   const resumeContext = url.searchParams.get('resume') || '';
 
-  console.log('Starting realtime interview session for role:', jobRole);
+  console.log('Starting realtime interview for role:', jobRole);
 
-  // Upgrade to WebSocket
   const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
 
   let openAISocket: WebSocket | null = null;
   let sessionConfigured = false;
 
   clientSocket.onopen = () => {
-    console.log('Client connected, connecting to OpenAI...');
+    console.log('Client connected');
     
-    // Connect to OpenAI Realtime API
     openAISocket = new WebSocket(
       'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01',
       ['realtime', `openai-insecure-api-key.${OPENAI_API_KEY}`, 'openai-beta.realtime-v1']
     );
 
     openAISocket.onopen = () => {
-      console.log('Connected to OpenAI Realtime API');
+      console.log('Connected to OpenAI');
     };
 
     openAISocket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         
-        // Log more details for audio events
+        // Log audio deltas specially
         if (data.type === 'response.audio.delta') {
-          console.log('OpenAI event: response.audio.delta, delta length:', data.delta?.length);
+          console.log('Audio delta received, length:', data.delta?.length || 0);
         } else if (data.type === 'error') {
           console.error('OpenAI error:', JSON.stringify(data.error));
-        } else {
-          console.log('OpenAI event:', data.type);
+        } else if (data.type.includes('audio') || data.type.includes('response') || data.type.includes('session')) {
+          console.log('Event:', data.type);
         }
 
-        // Configure session after receiving session.created
+        // Configure session on session.created
         if (data.type === 'session.created' && !sessionConfigured) {
           sessionConfigured = true;
           
-          const systemPrompt = `You are a professional job interviewer conducting a realistic mock interview for a ${jobRole} position. 
-
-Your behavior:
-- Act as a real human interviewer with a warm but professional demeanor
-- Ask ONE question at a time and wait for the candidate's response
-- Listen carefully to answers and ask relevant follow-up questions
-- Provide brief, constructive feedback after each answer
-- Keep track of which areas you've covered
-
-Interview structure:
-1. Start with a brief greeting and ask the candidate to introduce themselves
-2. Ask about their experience and background
-3. Ask technical or role-specific questions
-4. Ask behavioral/situational questions
-5. After 5 questions, provide a brief overall assessment
-
-${resumeContext ? `The candidate's resume context: ${resumeContext}` : ''}
-
-Important:
-- Speak naturally as if in a real interview
-- Keep responses concise (30-60 seconds of speech)
-- Be encouraging but honest in feedback
-- If the candidate seems nervous, help them relax`;
+          const systemPrompt = `You are a professional interviewer for a ${jobRole} position. 
+Be warm and professional. Ask ONE question at a time. Keep responses to 30-60 seconds.
+${resumeContext ? `Candidate context: ${resumeContext}` : ''}
+Start with a greeting and ask them to introduce themselves.`;
 
           const sessionConfig = {
             type: 'session.update',
@@ -99,9 +75,7 @@ Important:
               voice: 'alloy',
               input_audio_format: 'pcm16',
               output_audio_format: 'pcm16',
-              input_audio_transcription: {
-                model: 'whisper-1'
-              },
+              input_audio_transcription: { model: 'whisper-1' },
               turn_detection: {
                 type: 'server_vad',
                 threshold: 0.5,
@@ -113,41 +87,37 @@ Important:
             }
           };
 
-          console.log('Sending session config to OpenAI');
+          console.log('Configuring session');
           openAISocket?.send(JSON.stringify(sessionConfig));
 
-          // Start the interview with a greeting after session is configured
+          // Trigger initial greeting
           setTimeout(() => {
-            const startInterview = {
+            openAISocket?.send(JSON.stringify({
               type: 'response.create',
               response: {
                 modalities: ['text', 'audio'],
-                instructions: 'Greet the candidate warmly and ask them to briefly introduce themselves. Keep it natural and conversational.'
+                instructions: 'Greet the candidate warmly and ask them to introduce themselves.'
               }
-            };
-            console.log('Sending initial greeting request with modalities:', JSON.stringify(startInterview));
-            openAISocket?.send(JSON.stringify(startInterview));
-          }, 500);
+            }));
+            console.log('Greeting requested');
+          }, 300);
         }
 
-        // Forward relevant events to client
+        // Forward to client
         if (clientSocket.readyState === WebSocket.OPEN) {
           clientSocket.send(event.data);
         }
       } catch (error) {
-        console.error('Error processing OpenAI message:', error);
+        console.error('Parse error:', error);
       }
     };
 
     openAISocket.onerror = (error) => {
-      console.error('OpenAI WebSocket error:', error);
-      if (clientSocket.readyState === WebSocket.OPEN) {
-        clientSocket.send(JSON.stringify({ type: 'error', message: 'OpenAI connection error' }));
-      }
+      console.error('OpenAI error:', error);
     };
 
     openAISocket.onclose = (event) => {
-      console.log('OpenAI connection closed:', event.code, event.reason);
+      console.log('OpenAI closed:', event.code);
       if (clientSocket.readyState === WebSocket.OPEN) {
         clientSocket.close();
       }
@@ -155,21 +125,14 @@ Important:
   };
 
   clientSocket.onmessage = (event) => {
-    // Forward messages from client to OpenAI
     if (openAISocket?.readyState === WebSocket.OPEN) {
       openAISocket.send(event.data);
     }
   };
 
-  clientSocket.onerror = (error) => {
-    console.error('Client WebSocket error:', error);
-  };
-
   clientSocket.onclose = () => {
     console.log('Client disconnected');
-    if (openAISocket?.readyState === WebSocket.OPEN) {
-      openAISocket.close();
-    }
+    openAISocket?.close();
   };
 
   return response;
