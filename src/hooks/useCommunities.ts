@@ -73,7 +73,7 @@ export function useCommunities() {
 
   const fetchTrendingCommunities = async () => {
     try {
-      // Get communities with member counts
+      // Get communities with member counts in a single query using count aggregation
       const { data: communitiesData, error } = await supabase
         .from('communities')
         .select('*')
@@ -82,18 +82,30 @@ export function useCommunities() {
 
       if (error) throw error;
 
-      // Get member counts for each community
-      const withCounts = await Promise.all(
-        (communitiesData || []).map(async (c) => {
-          const { count } = await supabase
-            .from('community_members')
-            .select('*', { count: 'exact', head: true })
-            .eq('community_id', c.id);
-          return { ...c, member_count: count || 0 };
-        })
-      );
+      if (!communitiesData || communitiesData.length === 0) {
+        setTrendingCommunities([]);
+        return;
+      }
 
-      // Sort by member count
+      // Batch query: Get all member counts at once
+      const communityIds = communitiesData.map(c => c.id);
+      const { data: memberData } = await supabase
+        .from('community_members')
+        .select('community_id')
+        .in('community_id', communityIds);
+
+      // Count members per community using reduce
+      const memberCounts = (memberData || []).reduce((acc, m) => {
+        acc[m.community_id] = (acc[m.community_id] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      // Attach counts and sort
+      const withCounts = communitiesData.map(c => ({
+        ...c,
+        member_count: memberCounts[c.id] || 0,
+      }));
+      
       withCounts.sort((a, b) => (b.member_count || 0) - (a.member_count || 0));
       setTrendingCommunities(withCounts);
     } catch (error) {

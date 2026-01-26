@@ -29,60 +29,44 @@ export function useCommunityPosts(communityId?: string, sortBy: SortOption = 'tr
       } else if (sortBy === 'hot') {
         query = query.order('comment_count', { ascending: false });
       } else {
-        // trending = upvotes - downvotes, but we'll use upvotes for now
         query = query.order('upvotes', { ascending: false });
       }
 
       const { data: postsData, error } = await query.limit(50);
       if (error) throw error;
 
-      // Fetch additional data for each post
-      const enrichedPosts = await Promise.all(
-        (postsData || []).map(async (post) => {
-          // Get community info
-          const { data: community } = await supabase
-            .from('communities')
-            .select('id, name, slug, icon_url')
-            .eq('id', post.community_id)
-            .single();
+      if (!postsData || postsData.length === 0) {
+        setPosts([]);
+        return;
+      }
 
-          // Get author info
-          const { data: author } = await supabase
-            .from('profiles')
-            .select('username, full_name, avatar_url')
-            .eq('id', post.author_id)
-            .single();
+      // Batch fetch: Get unique IDs
+      const communityIds = [...new Set(postsData.map(p => p.community_id))];
+      const authorIds = [...new Set(postsData.map(p => p.author_id))];
+      const postIds = postsData.map(p => p.id);
 
-          // Get user's vote if logged in
-          let user_vote = null;
-          let user_role = null;
-          if (user) {
-            const { data: vote } = await supabase
-              .from('community_post_votes')
-              .select('vote_type')
-              .eq('post_id', post.id)
-              .eq('user_id', user.id)
-              .single();
-            user_vote = vote?.vote_type || null;
+      // Parallel batch queries instead of N+1
+      const [communitiesRes, authorsRes, votesRes, membershipsRes] = await Promise.all([
+        supabase.from('communities').select('id, name, slug, icon_url').in('id', communityIds),
+        supabase.from('profiles').select('id, username, full_name, avatar_url').in('id', authorIds),
+        user ? supabase.from('community_post_votes').select('post_id, vote_type').in('post_id', postIds).eq('user_id', user.id) : Promise.resolve({ data: [] }),
+        user ? supabase.from('community_members').select('community_id, role').in('community_id', communityIds).eq('user_id', user.id) : Promise.resolve({ data: [] }),
+      ]);
 
-            const { data: membership } = await supabase
-              .from('community_members')
-              .select('role')
-              .eq('community_id', post.community_id)
-              .eq('user_id', user.id)
-              .single();
-            user_role = membership?.role || null;
-          }
+      // Create lookup maps for O(1) access
+      const communitiesMap = new Map((communitiesRes.data || []).map(c => [c.id, c]));
+      const authorsMap = new Map((authorsRes.data || []).map(a => [a.id, { username: a.username, full_name: a.full_name, avatar_url: a.avatar_url }]));
+      const votesMap = new Map((votesRes.data || []).map(v => [v.post_id, v.vote_type]));
+      const membershipsMap = new Map((membershipsRes.data || []).map(m => [m.community_id, m.role]));
 
-          return {
-            ...post,
-            community,
-            author,
-            user_vote,
-            user_role,
-          } as CommunityPost;
-        })
-      );
+      // Enrich posts using maps (no additional queries)
+      const enrichedPosts = postsData.map(post => ({
+        ...post,
+        community: communitiesMap.get(post.community_id) || null,
+        author: authorsMap.get(post.author_id) || null,
+        user_vote: votesMap.get(post.id) || null,
+        user_role: membershipsMap.get(post.community_id) || null,
+      } as CommunityPost));
 
       setPosts(enrichedPosts);
     } catch (error) {
