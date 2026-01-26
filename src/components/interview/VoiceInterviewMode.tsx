@@ -1,10 +1,10 @@
-import { Mic, Phone, PhoneOff, Volume2, VolumeX } from 'lucide-react';
+import { Mic, Phone, PhoneOff, Volume2, VolumeX, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useRealtimeInterview } from '@/hooks/useRealtimeInterview';
+import { useVoiceInterview } from '@/hooks/useVoiceInterview';
 
 interface VoiceInterviewModeProps {
   jobRole: string;
@@ -14,18 +14,18 @@ interface VoiceInterviewModeProps {
 
 export function VoiceInterviewMode({ jobRole, resumeText, onEnd }: VoiceInterviewModeProps) {
   const {
-    isConnected,
-    isConnecting,
+    isActive,
+    isLoading,
     isSpeaking,
     isListening,
     messages,
     currentTranscript,
-    connect,
-    disconnect
-  } = useRealtimeInterview({ jobRole, resumeContext: resumeText });
+    start,
+    stop
+  } = useVoiceInterview({ jobRole, resumeContext: resumeText });
 
   const handleEnd = () => {
-    disconnect();
+    stop();
     onEnd();
   };
 
@@ -38,10 +38,13 @@ export function VoiceInterviewMode({ jobRole, resumeText, onEnd }: VoiceIntervie
             <div className="flex items-center gap-3">
               <div className={cn(
                 "h-12 w-12 rounded-full flex items-center justify-center transition-all",
+                isLoading ? "bg-yellow-500/20" :
                 isSpeaking ? "bg-primary/20 animate-pulse" : 
                 isListening ? "bg-green-500/20" : "bg-muted"
               )}>
-                {isSpeaking ? (
+                {isLoading ? (
+                  <Loader2 className="h-6 w-6 text-yellow-500 animate-spin" />
+                ) : isSpeaking ? (
                   <Volume2 className="h-6 w-6 text-primary" />
                 ) : isListening ? (
                   <Mic className="h-6 w-6 text-green-500" />
@@ -51,15 +54,16 @@ export function VoiceInterviewMode({ jobRole, resumeText, onEnd }: VoiceIntervie
               </div>
               <div>
                 <h3 className="font-semibold">
-                  {isSpeaking ? 'Interviewer speaking...' : 
-                   isListening ? 'Listening...' : 
-                   isConnected ? 'Ready' : 'Disconnected'}
+                  {isLoading ? 'Thinking...' :
+                   isSpeaking ? 'Interviewer speaking...' : 
+                   isListening ? 'Listening to you...' : 
+                   isActive ? 'Ready' : 'Disconnected'}
                 </h3>
                 <p className="text-sm text-muted-foreground">{jobRole}</p>
               </div>
             </div>
-            <Badge variant={isConnected ? 'default' : 'secondary'}>
-              {isConnected ? 'Live' : isConnecting ? 'Connecting...' : 'Offline'}
+            <Badge variant={isActive ? 'default' : 'secondary'}>
+              {isActive ? 'Live' : 'Offline'}
             </Badge>
           </div>
         </CardContent>
@@ -88,16 +92,22 @@ export function VoiceInterviewMode({ jobRole, resumeText, onEnd }: VoiceIntervie
               ))}
 
               {currentTranscript && (
-                <div className="flex justify-start">
-                  <div className="max-w-[80%] rounded-lg px-4 py-2 bg-muted/50 border border-dashed">
-                    <p className="text-sm text-muted-foreground italic">{currentTranscript}</p>
+                <div className="flex justify-end">
+                  <div className="max-w-[80%] rounded-lg px-4 py-2 bg-primary/50 border border-dashed">
+                    <p className="text-sm text-primary-foreground/80 italic">{currentTranscript}</p>
                   </div>
                 </div>
               )}
 
-              {messages.length === 0 && !currentTranscript && isConnected && (
+              {messages.length === 0 && !isActive && (
                 <p className="text-center text-muted-foreground py-8">
-                  Waiting for interviewer...
+                  Click "Start Voice Interview" to begin
+                </p>
+              )}
+
+              {messages.length === 0 && isActive && isLoading && (
+                <p className="text-center text-muted-foreground py-8">
+                  Preparing your interview...
                 </p>
               )}
             </div>
@@ -109,16 +119,23 @@ export function VoiceInterviewMode({ jobRole, resumeText, onEnd }: VoiceIntervie
       <Card>
         <CardContent className="py-4">
           <div className="flex items-center justify-center gap-4">
-            {!isConnected ? (
-              <Button size="lg" onClick={connect} disabled={isConnecting} className="gap-2">
+            {!isActive ? (
+              <Button size="lg" onClick={start} disabled={isLoading} className="gap-2">
                 <Phone className="h-5 w-5" />
-                {isConnecting ? 'Connecting...' : 'Start Voice Interview'}
+                Start Voice Interview
               </Button>
             ) : (
               <>
                 <div className="flex items-center gap-2">
-                  <div className={cn("h-3 w-3 rounded-full", isListening ? "bg-green-500 animate-pulse" : "bg-muted-foreground")} />
-                  <span className="text-sm text-muted-foreground">{isListening ? 'Mic Active' : 'Standby'}</span>
+                  <div className={cn(
+                    "h-3 w-3 rounded-full",
+                    isListening ? "bg-green-500 animate-pulse" :
+                    isSpeaking ? "bg-primary animate-pulse" :
+                    "bg-muted-foreground"
+                  )} />
+                  <span className="text-sm text-muted-foreground">
+                    {isListening ? 'Mic Active' : isSpeaking ? 'Speaking' : 'Standby'}
+                  </span>
                 </div>
                 <Button size="lg" variant="destructive" onClick={handleEnd} className="gap-2">
                   <PhoneOff className="h-5 w-5" />
@@ -127,9 +144,9 @@ export function VoiceInterviewMode({ jobRole, resumeText, onEnd }: VoiceIntervie
               </>
             )}
           </div>
-          {!isConnected && (
+          {!isActive && (
             <p className="text-center text-xs text-muted-foreground mt-4">
-              Microphone access required
+              Microphone access required for speech-to-text
             </p>
           )}
         </CardContent>
