@@ -7,10 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mic, Play, CheckCircle, ArrowRight, RotateCcw, Trophy, Clock, Target, MessageSquare, Lightbulb, AlertCircle, ThumbsUp } from 'lucide-react';
+import { Mic, Play, CheckCircle, ArrowRight, RotateCcw, Trophy, Clock, Target, MessageSquare, Lightbulb, AlertCircle, ThumbsUp, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { VoiceInterviewMode } from '@/components/interview/VoiceInterviewMode';
 
 interface Feedback {
   verdict: string;
@@ -42,7 +43,8 @@ interface OverallResults {
 
 const InterviewSimulator = () => {
   const { studentDetails } = useUserProfile();
-  const [step, setStep] = useState<'setup' | 'interview' | 'results'>('setup');
+  const [step, setStep] = useState<'setup' | 'interview' | 'voice' | 'results'>('setup');
+  const [interviewMode, setInterviewMode] = useState<'text' | 'voice'>('text');
   const [jobRole, setJobRole] = useState('');
   const [industry, setIndustry] = useState('');
   const [difficulty, setDifficulty] = useState('intermediate');
@@ -367,21 +369,39 @@ const InterviewSimulator = () => {
                 />
               </div>
 
-              <Button 
-                className="w-full mt-4" 
-                size="lg" 
-                onClick={startInterview}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>Preparing Interview...</>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4 mr-2" />
-                    Start Mock Interview
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-3 mt-4">
+                <Button 
+                  className="flex-1" 
+                  size="lg" 
+                  onClick={startInterview}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>Preparing Interview...</>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-2" />
+                      Text Interview
+                    </>
+                  )}
+                </Button>
+                <Button 
+                  className="flex-1" 
+                  size="lg" 
+                  variant="secondary"
+                  onClick={() => {
+                    if (!jobRole.trim()) {
+                      toast.error('Please enter a job role');
+                      return;
+                    }
+                    setStep('voice');
+                  }}
+                  disabled={isLoading}
+                >
+                  <Phone className="h-4 w-4 mr-2" />
+                  Voice Interview
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -410,6 +430,16 @@ const InterviewSimulator = () => {
               </ul>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {step === 'voice' && (
+        <div className="max-w-3xl mx-auto">
+          <VoiceInterviewMode
+            jobRole={jobRole}
+            resumeText={resumeText}
+            onEnd={() => setStep('setup')}
+          />
         </div>
       )}
 
