@@ -67,7 +67,7 @@ const TrainEmployees = () => {
     }
   };
 
-  const handleInviteEmployee = () => {
+  const handleInviteEmployee = async () => {
     if (!inviteEmail) {
       toast.error('Please enter an email address');
       return;
@@ -81,6 +81,47 @@ const TrainEmployees = () => {
     if (invitedEmails.includes(inviteEmail)) {
       toast.error('This email has already been invited');
       return;
+    }
+
+    // Get employer details for the invitation email
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData?.session?.user;
+    let companyName = 'Your Company';
+    let inviterName = 'Your employer';
+    
+    if (user) {
+      const { data: employer } = await supabase
+        .from('employer_details')
+        .select('company_name')
+        .eq('user_id', user.id)
+        .single();
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+      
+      if (employer?.company_name) companyName = employer.company_name;
+      if (profile?.full_name) inviterName = profile.full_name;
+    }
+
+    // Send invitation email via edge function
+    try {
+      const { error } = await supabase.functions.invoke('send-employee-invite', {
+        body: { 
+          email: inviteEmail,
+          companyName,
+          inviterName
+        }
+      });
+      
+      if (error) {
+        console.error('Email invitation error:', error);
+        // Still add to list even if email fails
+      }
+    } catch (e) {
+      console.error('Failed to send invitation email:', e);
     }
 
     const updatedEmails = [...invitedEmails, inviteEmail];
