@@ -38,20 +38,29 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const ensureProfileRow = async (userId: string) => {
+  const ensureProfileRow = async (userId: string, metadata?: { full_name?: string; avatar_url?: string }) => {
     // Ensures a profiles row exists so onboarding status can be persisted/read.
-    // Only inserts the minimal required field (id) to avoid overwriting any existing profile data.
+    // For OAuth users, also saves their full_name and avatar from provider metadata.
+    const upsertData: { id: string; full_name?: string; avatar_url?: string } = { id: userId };
+    
+    if (metadata?.full_name) upsertData.full_name = metadata.full_name;
+    if (metadata?.avatar_url) upsertData.avatar_url = metadata.avatar_url;
+
     const { error } = await supabase
       .from('profiles')
-      .upsert({ id: userId }, { onConflict: 'id' });
+      .upsert(upsertData, { onConflict: 'id', ignoreDuplicates: false });
 
     if (error) throw error;
   };
 
   useEffect(() => {
-    const checkOnboardingStatus = async (userId: string) => {
+    const checkOnboardingStatus = async (userId: string, userMetadata?: Record<string, any>) => {
       try {
-        await ensureProfileRow(userId);
+        // Extract user info from OAuth metadata (Google provides these)
+        const fullName = userMetadata?.full_name || userMetadata?.name;
+        const avatarUrl = userMetadata?.avatar_url || userMetadata?.picture;
+        
+        await ensureProfileRow(userId, { full_name: fullName, avatar_url: avatarUrl });
 
         const { data: profile, error } = await supabase
           .from('profiles')
@@ -71,15 +80,17 @@ const Auth = () => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        checkOnboardingStatus(session.user.id);
+        checkOnboardingStatus(session.user.id, session.user.user_metadata);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        toast.success('Successfully logged in!');
+        if (event === 'SIGNED_IN') {
+          toast.success('Successfully logged in!');
+        }
         // Avoid Supabase calls directly inside the auth callback.
-        setTimeout(() => checkOnboardingStatus(session.user.id), 0);
+        setTimeout(() => checkOnboardingStatus(session.user.id, session.user.user_metadata), 0);
       }
     });
 
@@ -150,7 +161,11 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo: `${window.location.origin}/auth`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
 
@@ -187,6 +202,30 @@ const Auth = () => {
       }
     } catch (error: any) {
       toast.error(error.message || 'An error occurred during sign in');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      toast.error('Please enter your email address first');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Password reset email sent! Check your inbox.');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send reset email');
     } finally {
       setLoading(false);
     }
@@ -289,9 +328,13 @@ const Auth = () => {
                         Remember Me
                       </Label>
                     </div>
-                    <Link to="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                    <button 
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
                       Forgot Password?
-                    </Link>
+                    </button>
                   </div>
 
                   {/* Log in Button */}
