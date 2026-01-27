@@ -19,6 +19,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { ImageCropper } from '@/components/profile/ImageCropper';
 
 interface CounsellorDetails {
   id: string;
@@ -59,6 +60,10 @@ const CounsellorDashboard = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Image cropper state
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -153,9 +158,9 @@ const CounsellorDashboard = () => {
     }
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !counsellorDetails) return;
+    if (!file) return;
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -169,6 +174,18 @@ const CounsellorDashboard = () => {
       return;
     }
 
+    // Create object URL for cropper
+    const imageUrl = URL.createObjectURL(file);
+    setImageToCrop(imageUrl);
+    setCropperOpen(true);
+    
+    // Reset input so same file can be selected again
+    e.target.value = '';
+  };
+
+  const handleCroppedImage = async (croppedBlob: Blob) => {
+    if (!counsellorDetails) return;
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
@@ -176,33 +193,43 @@ const CounsellorDashboard = () => {
         return;
       }
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${session.user.id}/avatar.${fileExt}`;
+      const fileName = `${session.user.id}/avatar.jpg`;
 
-      // Upload to storage
+      // Upload cropped image to storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, croppedBlob, { 
+          upsert: true,
+          contentType: 'image/jpeg'
+        });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
+      // Get public URL with cache buster
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
+      
+      const urlWithCacheBuster = `${publicUrl}?v=${Date.now()}`;
 
       // Update counsellor details with avatar URL
       const { error: updateError } = await supabase
         .from('counsellor_details')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: urlWithCacheBuster })
         .eq('id', counsellorDetails.id);
 
       if (updateError) throw updateError;
 
       setCounsellorDetails({
         ...counsellorDetails,
-        avatar_url: publicUrl,
+        avatar_url: urlWithCacheBuster,
       });
+
+      // Clean up the object URL
+      if (imageToCrop) {
+        URL.revokeObjectURL(imageToCrop);
+        setImageToCrop(null);
+      }
 
       toast.success('Profile picture updated successfully!');
     } catch (error: any) {
@@ -288,7 +315,7 @@ const CounsellorDashboard = () => {
               </Avatar>
               <label className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors">
                 <Camera className="h-4 w-4 text-primary-foreground" />
-                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarSelect} />
               </label>
             </div>
 
@@ -526,6 +553,23 @@ const CounsellorDashboard = () => {
           </div>
         </main>
       </div>
+      
+      {/* Image Cropper Dialog */}
+      {imageToCrop && (
+        <ImageCropper
+          open={cropperOpen}
+          onClose={() => {
+            setCropperOpen(false);
+            if (imageToCrop) {
+              URL.revokeObjectURL(imageToCrop);
+              setImageToCrop(null);
+            }
+          }}
+          imageSrc={imageToCrop}
+          onCropComplete={handleCroppedImage}
+          aspectRatio={1}
+        />
+      )}
     </div>
   );
 };

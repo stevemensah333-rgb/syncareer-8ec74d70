@@ -89,7 +89,7 @@ export function CommunitySidebar() {
           {otherCommunities.length > 0 && (
             <>
               <p className="text-xs text-muted-foreground px-3 pt-4 pb-2 uppercase tracking-wider">
-                My Subscriptions
+                Communities Joined
               </p>
               {otherCommunities.map((community) => (
                 <CommunityItem

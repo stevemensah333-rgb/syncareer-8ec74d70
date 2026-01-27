@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.interview-tts]
 verify_jwt = false
+
+[functions.send-employee-invite]
+verify_jwt = false

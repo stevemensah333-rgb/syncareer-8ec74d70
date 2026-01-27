@@ -84,6 +84,31 @@ export function useCommunityPosts(communityId?: string, sortBy: SortOption = 'tr
         return null;
       }
 
+      // Check if user has a profile with username/full_name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, full_name, onboarding_completed')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile || (!profile.username && !profile.full_name)) {
+        toast({ 
+          title: 'Profile incomplete', 
+          description: 'Please complete your profile before posting to avoid appearing as anonymous.',
+          variant: 'destructive' 
+        });
+        return null;
+      }
+
+      if (!profile.onboarding_completed) {
+        toast({ 
+          title: 'Complete onboarding first', 
+          description: 'Please finish setting up your profile before posting.',
+          variant: 'destructive' 
+        });
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('community_posts')
         .insert({
