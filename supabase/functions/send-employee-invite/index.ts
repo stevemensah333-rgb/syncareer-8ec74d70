@@ -1,10 +1,14 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Input validation constants
+const MAX_EMAIL_LENGTH = 255;
+const MAX_NAME_LENGTH = 200;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface InviteRequest {
   email: string;
@@ -35,15 +39,83 @@ serve(async (req) => {
       );
     }
 
-    const { email, companyName, inviterName }: InviteRequest = await req.json();
-
-    // Validate inputs
-    if (!email || !companyName) {
+    let requestBody: unknown;
+    try {
+      requestBody = await req.json();
+    } catch {
       return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
+        JSON.stringify({ error: "Invalid JSON in request body" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    if (!requestBody || typeof requestBody !== "object") {
+      return new Response(
+        JSON.stringify({ error: "Request body must be an object" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const { email, companyName, inviterName } = requestBody as InviteRequest;
+
+    // Validate email
+    if (!email || typeof email !== "string") {
+      return new Response(
+        JSON.stringify({ error: "Valid email is required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const trimmedEmail = email.trim();
+    if (trimmedEmail.length === 0 || trimmedEmail.length > MAX_EMAIL_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: `Email must be between 1 and ${MAX_EMAIL_LENGTH} characters` }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid email format" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Validate company name
+    if (!companyName || typeof companyName !== "string") {
+      return new Response(
+        JSON.stringify({ error: "Valid company name is required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const trimmedCompanyName = companyName.trim();
+    if (trimmedCompanyName.length === 0 || trimmedCompanyName.length > MAX_NAME_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: `Company name must be between 1 and ${MAX_NAME_LENGTH} characters` }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Validate inviter name (optional but if provided, must be valid)
+    let sanitizedInviterName = "";
+    if (inviterName) {
+      if (typeof inviterName !== "string") {
+        return new Response(
+          JSON.stringify({ error: "Inviter name must be a string" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      sanitizedInviterName = inviterName.trim();
+      if (sanitizedInviterName.length > MAX_NAME_LENGTH) {
+        return new Response(
+          JSON.stringify({ error: `Inviter name must be less than ${MAX_NAME_LENGTH} characters` }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
+
+    console.log("Sending employee invite to:", trimmedEmail, "for company:", trimmedCompanyName);
 
     // Send invitation email via Resend
     const res = await fetch("https://api.resend.com/emails", {
@@ -54,8 +126,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: "Syncareer <noreply@syncareer.lovable.app>",
-        to: [email],
-        subject: `You've been invited to join ${companyName} on Syncareer`,
+        to: [trimmedEmail],
+        subject: `You've been invited to join ${trimmedCompanyName} on Syncareer`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -68,7 +140,7 @@ serve(async (req) => {
               <h1 style="color: #1a1a1a; margin-bottom: 16px;">You're Invited! 🎉</h1>
               
               <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-                ${inviterName || 'Your employer'} has invited you to join <strong>${companyName}</strong> on Syncareer, a career development platform.
+                ${sanitizedInviterName || 'Your employer'} has invited you to join <strong>${trimmedCompanyName}</strong> on Syncareer, a career development platform.
               </p>
               
               <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
@@ -113,7 +185,7 @@ serve(async (req) => {
   } catch (error: any) {
     console.error("Error in send-employee-invite:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Failed to send invitation" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
