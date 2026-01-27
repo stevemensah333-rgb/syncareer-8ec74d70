@@ -190,7 +190,9 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // If "Remember Me" is not checked, we'll clear the session on browser close
+      // by moving the session to sessionStorage after login
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -198,6 +200,12 @@ const Auth = () => {
       if (error) {
         toast.error(error.message);
       } else {
+        // If remember me is not checked, mark the session for cleanup on browser close
+        if (!rememberMe && data.session) {
+          localStorage.setItem('syncareer_session_only', 'true');
+        } else {
+          localStorage.removeItem('syncareer_session_only');
+        }
         toast.success('Welcome back!');
       }
     } catch (error: any) {
