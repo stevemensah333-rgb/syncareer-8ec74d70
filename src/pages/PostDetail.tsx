@@ -87,7 +87,7 @@ export default function PostDetail() {
         .from('profiles')
         .select('username, full_name, avatar_url')
         .eq('id', postData.author_id)
-        .single();
+        .maybeSingle();
 
       // Fetch user vote
       let userVote = null;
