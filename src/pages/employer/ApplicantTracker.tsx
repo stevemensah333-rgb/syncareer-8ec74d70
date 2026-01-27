@@ -154,12 +154,26 @@ const ApplicantTracker = () => {
 
   const updateApplicationStatus = async (appId: string, newStatus: string) => {
     try {
+      const app = applications.find(a => a.id === appId);
+      
       const { error } = await supabase
         .from('job_applications')
         .update({ status: newStatus })
         .eq('id', appId);
 
       if (error) throw error;
+
+      // Notify the applicant about the status change
+      if (app) {
+        const stageName = PIPELINE_STAGES.find(s => s.id === newStatus)?.label || newStatus;
+        await supabase.from('notifications').insert({
+          user_id: app.applicant_id,
+          title: 'Application Update',
+          message: `Your application for "${app.job?.title}" has moved to: ${stageName}`,
+          type: 'application',
+          link: '/applications',
+        });
+      }
 
       setApplications(prev => prev.map(app => 
         app.id === appId ? { ...app, status: newStatus } : app
@@ -357,7 +371,7 @@ const ApplicantTracker = () => {
                                 >
                                   <ArrowRight className="h-3 w-3" />
                                 </Button>
-                                {stage.id === 'reviewing' && (
+                                {(stage.id === 'pending' || stage.id === 'reviewing' || stage.id === 'interview') && (
                                   <Button
                                     size="sm"
                                     variant="ghost"
@@ -367,6 +381,7 @@ const ApplicantTracker = () => {
                                       setSelectedApplication(app);
                                       setScheduleDialogOpen(true);
                                     }}
+                                    title="Schedule interview"
                                   >
                                     <Calendar className="h-3 w-3" />
                                   </Button>
@@ -436,6 +451,19 @@ const ApplicantTracker = () => {
                             >
                               <ExternalLink className="h-4 w-4 mr-1" />
                               View Portfolio
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedApplication(app);
+                                setScheduleDialogOpen(true);
+                              }}
+                              title="Schedule interview"
+                            >
+                              <Calendar className="h-4 w-4 mr-1" />
+                              Schedule
                             </Button>
                             {app.status !== 'rejected' && app.status !== 'offered' && (
                               <Button

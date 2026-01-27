@@ -210,6 +210,25 @@ export default function PostDetail() {
         .update({ comment_count: post.comment_count + 1 })
         .eq('id', post.id);
 
+      // Notify post author about the comment (if not commenting on own post)
+      if (post.author_id !== currentUserId) {
+        const { data: commenter } = await supabase
+          .from('profiles')
+          .select('username, full_name')
+          .eq('id', currentUserId)
+          .single();
+        
+        const commenterName = commenter?.username || commenter?.full_name || 'Someone';
+        
+        await supabase.from('notifications').insert({
+          user_id: post.author_id,
+          title: 'New Comment',
+          message: `${commenterName} commented on your post "${post.title.substring(0, 30)}${post.title.length > 30 ? '...' : ''}"`,
+          type: 'comment',
+          link: `/communities/post/${post.id}`,
+        });
+      }
+
       // Fetch author for new comment
       const { data: author } = await supabase
         .from('profiles')
