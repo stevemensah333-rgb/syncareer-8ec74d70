@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Eye, EyeOff, User, Lock } from 'lucide-react';
+import { Eye, EyeOff, User, Lock, Mail, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
 
 // Validation schemas
@@ -29,6 +29,7 @@ const signInSchema = z.object({
 const Auth = () => {
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -137,17 +138,21 @@ const Auth = () => {
           toast.error(error.message);
         }
       } else {
-        // If a session is created immediately (e.g. auto-confirm enabled), ensure profiles row exists.
+        // Check if email confirmation is required
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
+        if (!session) {
+          // No session means email confirmation is required
+          setShowVerificationMessage(true);
+          toast.success('Please check your email to verify your account!');
+        } else {
+          // Auto-confirm is enabled, proceed normally
           try {
             await ensureProfileRow(session.user.id);
           } catch (e) {
-            // Non-blocking: user can still complete onboarding; this just prevents repeated onboarding later.
             console.error('Error ensuring profile row after sign up:', e);
           }
+          toast.success('Account created successfully!');
         }
-        toast.success('Account created successfully!');
       }
     } catch (error: any) {
       toast.error(error.message || 'An error occurred during sign up');
@@ -239,6 +244,34 @@ const Auth = () => {
     }
   };
 
+  const handleResendVerification = async () => {
+    if (!email.trim()) {
+      toast.error('Please enter your email address');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        }
+      });
+      
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Verification email sent! Check your inbox.');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to resend verification email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -284,9 +317,45 @@ const Auth = () => {
         <div className="w-[500px] bg-white flex items-center justify-center p-12">
           <Card className="w-full max-w-md border-0 shadow-none">
             <div className="space-y-8">
-              <h2 className="text-4xl font-bold text-black">
-                {isSignUp ? 'Sign up' : 'Log in'}
-              </h2>
+              {showVerificationMessage ? (
+                /* Email Verification Message */
+                <div className="text-center space-y-6">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                    <Mail className="w-8 h-8 text-primary" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-foreground">Check your email</h2>
+                  <p className="text-muted-foreground">
+                    We've sent a verification link to <span className="font-medium text-foreground">{email}</span>. 
+                    Please click the link to verify your account.
+                  </p>
+                  <div className="space-y-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleResendVerification}
+                      disabled={loading}
+                      className="w-full h-12 rounded-xl"
+                    >
+                      {loading ? 'Sending...' : 'Resend verification email'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setShowVerificationMessage(false);
+                        setIsSignUp(false);
+                      }}
+                      className="w-full h-12 rounded-xl"
+                    >
+                      Back to login
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-4xl font-bold text-black">
+                    {isSignUp ? 'Sign up' : 'Log in'}
+                  </h2>
 
               {!isSignUp ? (
                 /* Login Form */
@@ -559,6 +628,8 @@ const Auth = () => {
                     Log in
                   </Button>
                 </form>
+              )}
+                </>
               )}
             </div>
           </Card>
