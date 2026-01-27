@@ -61,6 +61,12 @@ export function useVoiceInterview({ jobRole, resumeContext }: UseVoiceInterviewO
   const speakText = useCallback(async (text: string) => {
     setIsSpeaking(true);
     try {
+      // Get current session for authenticated request
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No authenticated session');
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/interview-tts`,
         {
@@ -68,7 +74,7 @@ export function useVoiceInterview({ jobRole, resumeContext }: UseVoiceInterviewO
           headers: {
             'Content-Type': 'application/json',
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Authorization': `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({ text }),
         }
