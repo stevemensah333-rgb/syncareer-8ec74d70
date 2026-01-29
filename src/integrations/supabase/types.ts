@@ -1422,6 +1422,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_counsellor_owner: { Args: { counsellor_id: string }; Returns: boolean }
+      user_has_counsellor_booking: {
+        Args: { counsellor_details_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "employer" | "job_seeker"
