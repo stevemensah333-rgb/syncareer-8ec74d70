@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Plus, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const DEPARTMENTS = [
   'Engineering',
@@ -44,6 +45,39 @@ export function AddEmployeeDialog({ trigger }: AddEmployeeDialogProps) {
     department: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [companyName, setCompanyName] = useState('');
+  const [inviterName, setInviterName] = useState('');
+
+  useEffect(() => {
+    const fetchEmployerDetails = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const [employerResult, profileResult] = await Promise.all([
+        supabase
+          .from('employer_details')
+          .select('company_name')
+          .eq('user_id', user.id)
+          .single(),
+        supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single()
+      ]);
+
+      if (employerResult.data) {
+        setCompanyName(employerResult.data.company_name);
+      }
+      if (profileResult.data?.full_name) {
+        setInviterName(profileResult.data.full_name);
+      }
+    };
+
+    if (open) {
+      fetchEmployerDetails();
+    }
+  }, [open]);
 
   const handleSubmit = async () => {
     if (!formData.name.trim() || !formData.email.trim()) {
@@ -58,16 +92,30 @@ export function AddEmployeeDialog({ trigger }: AddEmployeeDialogProps) {
       return;
     }
 
+    if (!companyName) {
+      toast.error('Company details not found. Please set up your company profile first.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // In a real app, this would send an invitation email
-      // For now, we'll simulate the action
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      const { data, error } = await supabase.functions.invoke('send-employee-invite', {
+        body: {
+          email: formData.email.trim(),
+          companyName: companyName,
+          inviterName: inviterName || 'Your employer'
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
       toast.success(`Invitation sent to ${formData.email}!`);
       setFormData({ name: '', email: '', department: '' });
       setOpen(false);
     } catch (error: any) {
+      console.error('Error sending invitation:', error);
       toast.error(error.message || 'Failed to send invitation');
     } finally {
       setIsSubmitting(false);
