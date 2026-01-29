@@ -120,6 +120,33 @@ export function useCommunityPosts(communityId?: string, sortBy: SortOption = 'tr
 
       if (error) throw error;
 
+      // Get community info for notification
+      const { data: community } = await supabase
+        .from('communities')
+        .select('name, slug')
+        .eq('id', post.community_id)
+        .single();
+
+      // Get all community members except the author
+      const { data: members } = await supabase
+        .from('community_members')
+        .select('user_id')
+        .eq('community_id', post.community_id)
+        .neq('user_id', user.id);
+
+      // Create notifications for all members
+      if (members && members.length > 0 && community) {
+        const notifications = members.map(member => ({
+          user_id: member.user_id,
+          type: 'community_post',
+          title: `New post in ${community.name}`,
+          message: post.title.substring(0, 100),
+          link: `/communities/post/${data.id}`,
+        }));
+
+        await supabase.from('notifications').insert(notifications);
+      }
+
       toast({ title: 'Post created successfully!' });
       await fetchPosts();
       return data;
