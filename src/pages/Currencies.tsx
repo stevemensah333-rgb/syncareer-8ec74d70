@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Video, FileText, Target, Clock, Star, Flame, CheckCircle, Plus } from 'lucide-react';
+import { BookOpen, FileText, Target, Clock, Star, Flame, CheckCircle } from 'lucide-react';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { getMajorContent } from '@/utils/majorContent';
 import { supabase } from '@/integrations/supabase/client';
@@ -551,36 +551,6 @@ const Learn = () => {
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                onClick={() => recordActivity('video')}
-                disabled={recordingActivity}
-              >
-                <Video className="h-4 w-4 mr-2" />
-                Watch Daily Lesson
-              </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                onClick={() => recordActivity('quiz')}
-                disabled={recordingActivity}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Take Quiz
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <BookOpen className="h-4 w-4 mr-2" />
-                Browse Library
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </PageLayout>
