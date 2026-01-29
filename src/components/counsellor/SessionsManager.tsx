@@ -100,8 +100,8 @@ export function SessionsManager({ counsellorId }: SessionsManagerProps) {
 
       if (error) throw error;
 
-      // Send notification to the user when their request is accepted
-      if (status === 'confirmed' && booking) {
+      // Send notification to the user about their booking status
+      if (booking) {
         const { data: counsellorData } = await supabase
           .from('counsellor_details')
           .select('full_name')
@@ -110,15 +110,27 @@ export function SessionsManager({ counsellorId }: SessionsManagerProps) {
 
         const counsellorName = counsellorData?.full_name || 'A counsellor';
         
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: (booking as any).user_id,
-            type: 'booking_accepted',
-            title: 'Booking Request Accepted!',
-            message: `${counsellorName} has accepted your session request. Check your bookings for details.`,
-            link: '/portfolio',
-          });
+        if (status === 'confirmed') {
+          await supabase
+            .from('notifications')
+            .insert({
+              user_id: booking.user_id,
+              type: 'booking_accepted',
+              title: 'Booking Request Accepted!',
+              message: `${counsellorName} has accepted your session request. Check your bookings for details.`,
+              link: '/portfolio',
+            });
+        } else if (status === 'cancelled') {
+          await supabase
+            .from('notifications')
+            .insert({
+              user_id: booking.user_id,
+              type: 'booking_declined',
+              title: 'Booking Request Declined',
+              message: `${counsellorName} was unable to accommodate your session request. Please try booking a different time.`,
+              link: '/portfolio',
+            });
+        }
       }
 
       setBookings(prev => prev.map(b => 
