@@ -3,7 +3,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Building2, MapPin, Users, Megaphone, ShoppingCart, Edit, Globe, Mail, Phone } from 'lucide-react';
+import { Building2, MapPin, Users, Edit, Globe, Mail, Phone } from 'lucide-react';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { EditCompanyDialog } from '@/components/employer/EditCompanyDialog';
 import { AddEmployeeDialog } from '@/components/employer/AddEmployeeDialog';
@@ -219,50 +219,6 @@ const MyCompany = () => {
             </CardContent>
           </Card>
 
-          {/* Advertise Card */}
-          <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Megaphone className="h-5 w-5 text-primary" />
-                Advertise
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Promote your brand to thousands of skilled professionals on Syncareer.
-              </p>
-              <Button 
-                className="w-full"
-                onClick={() => toast.info('Ad campaign feature coming soon!')}
-              >
-                <Megaphone className="h-4 w-4 mr-2" />
-                Create Ad Campaign
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Sell Products Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-primary" />
-                Sell Products
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Offer products or services to our community of professionals.
-              </p>
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => toast.info('Marketplace feature coming soon!')}
-              >
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                Start Selling
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </div>
 

@@ -239,6 +239,16 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
 
       if (error) throw error;
 
+      // Notify the counsellor about the new booking request
+      const formattedDate = format(selectedDate, 'PPP');
+      await supabase.from('notifications').insert({
+        user_id: selectedCounsellor.user_id,
+        type: 'new_booking_request',
+        title: 'New Session Request',
+        message: `${userName} has requested a session on ${formattedDate}. Please review and respond.`,
+        link: '/counsellor-sessions',
+      });
+
       toast.success('Booking request sent! You will be notified when the counsellor accepts.');
       onOpenChange(false);
     } catch (error: any) {
