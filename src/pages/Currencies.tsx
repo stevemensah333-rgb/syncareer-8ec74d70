@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookOpen, FileText, Target, Clock, Star, Flame, CheckCircle } from 'lucide-react';
+import { BookOpen, Target, Clock, Star, Flame, CheckCircle } from 'lucide-react';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { getMajorContent } from '@/utils/majorContent';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,10 +13,6 @@ interface LearningStreak {
   longest_streak: number;
   last_activity_date: string | null;
   total_learning_days: number;
-}
-
-interface LearningActivity {
-  activity_date: string;
 }
 
 interface LearningGoal {
@@ -37,15 +33,55 @@ const Learn = () => {
   const { studentDetails, loading } = useUserProfile();
   const majorContent = getMajorContent(studentDetails?.major);
   const [streak, setStreak] = useState<LearningStreak | null>(null);
-  const [recentActivities, setRecentActivities] = useState<LearningActivity[]>([]);
   const [goals, setGoals] = useState<LearningGoal[]>([]);
   const [paths, setPaths] = useState<LearningPath[]>([]);
   const [streakLoading, setStreakLoading] = useState(true);
   const [recordingActivity, setRecordingActivity] = useState(false);
+  const [hasLoggedToday, setHasLoggedToday] = useState(false);
+
+  // Auto-log activity on page visit (once per day)
+  const autoLogActivity = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Check if already logged today
+      const { data: existingActivity } = await supabase
+        .from('learning_activities')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .eq('activity_date', today)
+        .limit(1);
+
+      if (existingActivity && existingActivity.length > 0) {
+        setHasLoggedToday(true);
+        return;
+      }
+
+      // Auto-log visit activity
+      await supabase
+        .from('learning_activities')
+        .insert({
+          user_id: session.user.id,
+          activity_type: 'page_visit',
+          duration_minutes: 1,
+        });
+
+      setHasLoggedToday(true);
+    } catch (error) {
+      console.error('Error auto-logging activity:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    autoLogActivity();
+  }, [autoLogActivity]);
 
   useEffect(() => {
     fetchData();
-  }, [studentDetails]);
+  }, [studentDetails, hasLoggedToday]);
 
   const fetchData = async () => {
     try {
@@ -61,21 +97,6 @@ const Learn = () => {
 
       if (streakData) {
         setStreak(streakData);
-      }
-
-      // Fetch last 28 days of activities for the grid
-      const twentyEightDaysAgo = new Date();
-      twentyEightDaysAgo.setDate(twentyEightDaysAgo.getDate() - 28);
-
-      const { data: activities } = await supabase
-        .from('learning_activities')
-        .select('activity_date')
-        .eq('user_id', session.user.id)
-        .gte('activity_date', twentyEightDaysAgo.toISOString().split('T')[0])
-        .order('activity_date', { ascending: false });
-
-      if (activities) {
-        setRecentActivities(activities);
       }
 
       // Fetch weekly goals
@@ -270,38 +291,16 @@ const Learn = () => {
 
   const recommendedCourses = getRecommendedCourses();
 
-  // Generate streak grid for last 28 days
-  const getStreakGrid = () => {
-    const grid = [];
-    const today = new Date();
-    const activityDates = new Set(recentActivities.map(a => a.activity_date));
-
-    for (let i = 27; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      grid.push({
-        date: dateStr,
-        hasActivity: activityDates.has(dateStr),
-      });
-    }
-    return grid;
-  };
-
-  const streakGrid = getStreakGrid();
-  const todayHasActivity = recentActivities.some(
-    a => a.activity_date === new Date().toISOString().split('T')[0]
-  );
-
   // Get goal display info
   const getGoalDisplay = (goalType: string) => {
     switch (goalType) {
-      case 'lessons': return { label: 'Complete lessons', icon: BookOpen };
-      case 'practice': return { label: 'Practice sessions', icon: FileText };
-      case 'projects': return { label: 'Upload projects', icon: Target };
-      default: return { label: goalType, icon: Target };
+      case 'lessons': return { label: 'Complete lessons' };
+      case 'practice': return { label: 'Practice sessions' };
+      case 'projects': return { label: 'Upload projects' };
+      default: return { label: goalType };
     }
   };
+
 
   if (loading) {
     return (
@@ -449,70 +448,39 @@ const Learn = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Learning Streak */}
+          {/* Learning Streak - Compact */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Flame className="h-5 w-5 text-orange-500" />
-                Learning Streak
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {streakLoading ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-                </div>
-              ) : (
-                <>
-                  <div className="text-center mb-4">
-                    <div className="text-5xl mb-2">🔥</div>
-                    <div className="text-3xl font-bold text-primary mb-1">
-                      {streak?.current_streak || 0} Days
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {streak?.current_streak 
-                        ? "Keep it going!" 
-                        : "Start your streak today!"}
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Flame className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Current Streak</p>
+                    <p className="text-2xl font-bold">
+                      {streakLoading ? '...' : `${streak?.current_streak || 0} days`}
                     </p>
-                    {streak?.longest_streak ? (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Best: {streak.longest_streak} days
-                      </p>
-                    ) : null}
                   </div>
-
-                  {/* Activity Grid */}
-                  <div className="grid grid-cols-7 gap-1 mb-4">
-                    {streakGrid.map((day, i) => (
-                      <div
-                        key={i}
-                        className={`aspect-square rounded transition-colors ${
-                          day.hasActivity
-                            ? 'bg-primary'
-                            : 'bg-muted'
-                        }`}
-                        title={day.date}
-                      />
-                    ))}
+                </div>
+                {hasLoggedToday && (
+                  <div className="flex items-center gap-1 text-primary text-sm">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>Today</span>
                   </div>
-
-                  {/* Today's status */}
-                  {todayHasActivity ? (
-                    <div className="flex items-center justify-center gap-2 text-sm text-primary">
-                      <CheckCircle className="h-4 w-4" />
-                      <span>You've learned today!</span>
-                    </div>
-                  ) : (
-                    <Button 
-                      className="w-full" 
-                      size="sm"
-                      onClick={() => recordActivity('lesson')}
-                      disabled={recordingActivity}
-                    >
-                      {recordingActivity ? 'Recording...' : 'Log Today\'s Learning'}
-                    </Button>
-                  )}
-                </>
+                )}
+              </div>
+              {streak?.longest_streak && streak.longest_streak > 0 && (
+                <div className="mt-3 pt-3 border-t flex justify-between text-sm">
+                  <span className="text-muted-foreground">Best streak</span>
+                  <span className="font-medium">{streak.longest_streak} days</span>
+                </div>
+              )}
+              {streak?.total_learning_days && streak.total_learning_days > 0 && (
+                <div className="flex justify-between text-sm mt-1">
+                  <span className="text-muted-foreground">Total learning days</span>
+                  <span className="font-medium">{streak.total_learning_days}</span>
+                </div>
               )}
             </CardContent>
           </Card>
