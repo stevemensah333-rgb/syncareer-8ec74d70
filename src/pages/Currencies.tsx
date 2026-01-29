@@ -485,39 +485,6 @@ const Learn = () => {
             </CardContent>
           </Card>
 
-          {/* Weekly Goals */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Weekly Goals</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {goals.length === 0 ? (
-                <p className="text-muted-foreground text-sm">Loading goals...</p>
-              ) : (
-                goals.map((goal) => {
-                  const { label } = getGoalDisplay(goal.goal_type);
-                  const isComplete = goal.current_count >= goal.target_count;
-                  return (
-                    <div key={goal.id} className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">{label}</span>
-                        <span className={`text-sm font-medium ${isComplete ? 'text-primary' : 'text-muted-foreground'}`}>
-                          {goal.current_count}/{goal.target_count}
-                          {isComplete && ' ✓'}
-                        </span>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-1.5">
-                        <div
-                          className={`h-1.5 rounded-full transition-all ${isComplete ? 'bg-primary' : 'bg-primary/60'}`}
-                          style={{ width: `${Math.min((goal.current_count / goal.target_count) * 100, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </CardContent>
-          </Card>
 
         </div>
       </div>
