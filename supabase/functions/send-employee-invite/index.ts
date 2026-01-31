@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +24,51 @@ serve(async (req) => {
   }
 
   try {
+    // Authentication check - verify JWT token
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      console.error("Missing or invalid authorization header");
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      console.error("Invalid token:", claimsError?.message);
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const userId = claimsData.claims.sub;
+    console.log("Authenticated user:", userId);
+
+    // Verify user is an employer by checking employer_details
+    const { data: employerData, error: employerError } = await supabase
+      .from("employer_details")
+      .select("id, company_name")
+      .eq("user_id", userId)
+      .single();
+
+    if (employerError || !employerData) {
+      console.error("User is not an employer or employer details not found");
+      return new Response(
+        JSON.stringify({ error: "Only employers can send employee invitations" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     
     if (!resendApiKey) {
@@ -115,7 +161,7 @@ serve(async (req) => {
       }
     }
 
-    console.log("Sending employee invite to:", trimmedEmail, "for company:", trimmedCompanyName);
+    console.log("Sending employee invite to:", trimmedEmail, "for company:", trimmedCompanyName, "by user:", userId);
 
     // Send invitation email via Resend
     const res = await fetch("https://api.resend.com/emails", {
@@ -154,7 +200,7 @@ serve(async (req) => {
                 <li>Community networking</li>
               </ul>
               
-              <a href="https://syncareer.lovable.app/auth" 
+              <a href="https://syncareer.lovable.app/" 
                  style="display: inline-block; background: #6366f1; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 24px 0;">
                 Join Syncareer
               </a>
