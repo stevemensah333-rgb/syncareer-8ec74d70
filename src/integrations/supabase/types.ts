@@ -1329,6 +1329,59 @@ export type Database = {
       }
     }
     Views: {
+      candidate_interview_view: {
+        Row: {
+          application_id: string | null
+          candidate_feedback: string | null
+          created_at: string | null
+          duration_minutes: number | null
+          id: string | null
+          interview_type: string | null
+          location: string | null
+          meeting_link: string | null
+          notes: string | null
+          scheduled_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          application_id?: string | null
+          candidate_feedback?: string | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string | null
+          interview_type?: string | null
+          location?: string | null
+          meeting_link?: string | null
+          notes?: string | null
+          scheduled_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          application_id?: string | null
+          candidate_feedback?: string | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string | null
+          interview_type?: string | null
+          location?: string | null
+          meeting_link?: string | null
+          notes?: string | null
+          scheduled_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_sessions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       counsellor_bookings_public: {
         Row: {
           counsellor_id: string | null
