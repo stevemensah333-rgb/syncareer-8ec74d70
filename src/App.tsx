@@ -37,6 +37,7 @@ import ExploreCommunities from "./pages/ExploreCommunities";
 import CreateCommunity from "./pages/CreateCommunity";
 import CommunityDetail from "./pages/CommunityDetail";
 import PostDetail from "./pages/PostDetail";
+import Landing from "./pages/Landing";
 
 const queryClient = new QueryClient();
 
@@ -49,11 +50,12 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             {/* Public routes */}
+            <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/portfolio/:userId" element={<PublicPortfolio />} />
             
             {/* Protected routes */}
-            <Route path="/" element={<ProtectedRoute><Communities /></ProtectedRoute>} />
+            <Route path="/home" element={<ProtectedRoute><Communities /></ProtectedRoute>} />
             <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
             <Route path="/skills" element={<ProtectedRoute><Stocks /></ProtectedRoute>} />
             <Route path="/learn" element={<ProtectedRoute><Currencies /></ProtectedRoute>} />

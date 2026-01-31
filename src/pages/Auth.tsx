@@ -71,7 +71,7 @@ const Auth = () => {
 
         if (error) throw error;
 
-        navigate(profile?.onboarding_completed === true ? '/' : '/onboarding');
+        navigate(profile?.onboarding_completed === true ? '/home' : '/onboarding');
       } catch (error) {
         console.error('Error checking onboarding status:', error);
         navigate('/onboarding');
