@@ -66,7 +66,7 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
       toast.error('Error signing out');
     } else {
       toast.success('Signed out successfully');
-      navigate('/auth');
+      navigate('/');
     }
   };
 

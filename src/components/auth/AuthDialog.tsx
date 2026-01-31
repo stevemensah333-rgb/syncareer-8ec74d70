@@ -144,7 +144,7 @@ export default function AuthDialog({ open, onOpenChange, defaultMode = 'signin' 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth`,
+          redirectTo: `${window.location.origin}/`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -205,7 +205,7 @@ export default function AuthDialog({ open, onOpenChange, defaultMode = 'signin' 
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/auth?reset=true`,
+        redirectTo: `${window.location.origin}/?reset=true`,
       });
 
       if (error) {
