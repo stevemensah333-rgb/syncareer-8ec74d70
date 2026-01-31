@@ -192,7 +192,7 @@ const Onboarding = () => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        navigate('/auth');
+        navigate('/');
         return;
       }
       setUserId(session.user.id);

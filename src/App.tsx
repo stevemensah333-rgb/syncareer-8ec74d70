@@ -14,7 +14,7 @@ import PublicPortfolio from "./pages/PublicPortfolio";
 import Performance from "./pages/Performance";
 import Analysis from "./pages/Analysis";
 import Settings from "./pages/Settings";
-import Auth from "./pages/Auth";
+import { Navigate } from "react-router-dom";
 import AICoach from "./pages/AICoach";
 import Onboarding from "./pages/Onboarding";
 // New feature pages
@@ -51,7 +51,7 @@ const App = () => (
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Landing />} />
-            <Route path="/auth" element={<Auth />} />
+            <Route path="/auth" element={<Navigate to="/" replace />} />
             <Route path="/portfolio/:userId" element={<PublicPortfolio />} />
             
             {/* Protected routes */}

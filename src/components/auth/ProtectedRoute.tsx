@@ -60,8 +60,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!session) {
-    // Redirect to auth page, saving the attempted location
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    // Redirect to landing page, saving the attempted location
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;
