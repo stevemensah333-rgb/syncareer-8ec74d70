@@ -211,7 +211,7 @@ const Onboarding = () => {
         .maybeSingle();
 
       if (profile?.onboarding_completed) {
-        navigate('/');
+        navigate('/home');
       }
     };
 
@@ -324,7 +324,7 @@ const Onboarding = () => {
       }
 
       toast.success('Profile setup complete!');
-      navigate('/');
+      navigate('/home');
     } catch (error: any) {
       console.error('Onboarding error:', error);
       toast.error(error.message || 'Failed to complete setup');
