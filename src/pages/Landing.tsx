@@ -11,10 +11,12 @@ import {
 import skillbridgeLogo from "@/assets/skillbridge-logo.png";
 import heroImage from "@/assets/hero-landing.jpg";
 import AuthDialog from "@/components/auth/AuthDialog";
+import VideoModal from "@/components/landing/VideoModal";
 
 export default function Landing() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [videoOpen, setVideoOpen] = useState(false);
 
   const openSignIn = () => {
     setAuthMode('signin');
@@ -120,6 +122,7 @@ export default function Landing() {
             <Button 
               size="lg" 
               variant="outline"
+              onClick={() => setVideoOpen(true)}
               className="border-white text-white hover:bg-white/20 text-lg px-8 py-6 rounded-full"
             >
               <Play className="h-5 w-5 mr-2" />
@@ -258,6 +261,12 @@ export default function Landing() {
         open={authOpen} 
         onOpenChange={setAuthOpen} 
         defaultMode={authMode}
+      />
+
+      {/* Video Modal */}
+      <VideoModal 
+        open={videoOpen} 
+        onOpenChange={setVideoOpen} 
       />
     </div>
   );
