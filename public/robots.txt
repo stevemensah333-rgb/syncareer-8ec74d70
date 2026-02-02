@@ -25,4 +25,4 @@ Disallow: /counsellor-sessions
 Disallow: /communities
 
 # Sitemap location
-Sitemap: https://syncareer.lovable.app/sitemap.xml
+Sitemap: https://syncareer.me/sitemap.xml
