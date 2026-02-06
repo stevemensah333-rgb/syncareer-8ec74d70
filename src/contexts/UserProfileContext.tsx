@@ -71,41 +71,32 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
         return;
       }
 
-      // Fetch profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
+      const userId = session.user.id;
 
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Error fetching profile:', profileError);
+      // Fetch profile and both role-specific details in parallel
+      const [profileResult, studentResult, employerResult] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', userId).single(),
+        supabase.from('student_details').select('*').eq('user_id', userId).single(),
+        supabase.from('employer_details').select('*').eq('user_id', userId).single(),
+      ]);
+
+      if (profileResult.error && profileResult.error.code !== 'PGRST116') {
+        console.error('Error fetching profile:', profileResult.error);
       }
 
-      if (profileData) {
-        setProfile(profileData as UserProfile);
+      if (profileResult.data) {
+        setProfile(profileResult.data as UserProfile);
 
-        // Fetch role-specific details
-        if (profileData.user_type === 'student') {
-          const { data: studentData } = await supabase
-            .from('student_details')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .single();
-          
-          if (studentData) {
-            setStudentDetails(studentData as StudentDetails);
-          }
-        } else if (profileData.user_type === 'employer') {
-          const { data: employerData } = await supabase
-            .from('employer_details')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .single();
-          
-          if (employerData) {
-            setEmployerDetails(employerData as EmployerDetails);
-          }
+        // Set role-specific details based on user_type (data already fetched)
+        if (profileResult.data.user_type === 'student' && studentResult.data) {
+          setStudentDetails(studentResult.data as StudentDetails);
+          setEmployerDetails(null);
+        } else if (profileResult.data.user_type === 'employer' && employerResult.data) {
+          setEmployerDetails(employerResult.data as EmployerDetails);
+          setStudentDetails(null);
+        } else {
+          setStudentDetails(null);
+          setEmployerDetails(null);
         }
       }
     } catch (error) {

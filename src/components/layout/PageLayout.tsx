@@ -3,13 +3,11 @@ import React, { useState } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { CommunityErrorBoundary } from '@/components/communities/CommunityErrorBoundary';
 import {
   Drawer,
   DrawerContent,
-  DrawerTrigger,
 } from '@/components/ui/drawer';
-import { Button } from '@/components/ui/button';
-import { Menu } from 'lucide-react';
 
 interface PageLayoutProps {
   children: React.ReactNode;
@@ -27,6 +25,13 @@ export function PageLayout({ children, title }: PageLayoutProps) {
   
   return (
     <div className="min-h-screen flex flex-col">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-foreground"
+      >
+        Skip to main content
+      </a>
+      
       <Navbar onMobileMenuClick={() => setIsMobileDrawerOpen(true)} />
       
       <div className="flex-1 flex">
@@ -48,10 +53,12 @@ export function PageLayout({ children, title }: PageLayoutProps) {
           </Drawer>
         )}
         
-        <main className="flex-1 transition-all duration-300">
+        <main id="main-content" className="flex-1 transition-all duration-300">
           <div className="container max-w-full p-4 lg:p-6 animate-fade-in">
             <h1 className="text-2xl font-bold mb-6">{title}</h1>
-            {children}
+            <CommunityErrorBoundary fallbackTitle="This section encountered an error">
+              {children}
+            </CommunityErrorBoundary>
           </div>
         </main>
       </div>

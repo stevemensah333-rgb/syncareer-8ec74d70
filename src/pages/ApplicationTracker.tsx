@@ -32,14 +32,14 @@ interface Application {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  reviewing: 'bg-blue-100 text-blue-800',
-  shortlisted: 'bg-purple-100 text-purple-800',
-  interview: 'bg-indigo-100 text-indigo-800',
-  offered: 'bg-green-100 text-green-800',
-  hired: 'bg-green-500 text-white',
-  rejected: 'bg-red-100 text-red-800',
-  withdrawn: 'bg-gray-100 text-gray-800',
+  pending: 'bg-warning/15 text-warning',
+  reviewing: 'bg-primary/15 text-primary',
+  shortlisted: 'bg-secondary/15 text-secondary',
+  interview: 'bg-primary/20 text-primary',
+  offered: 'bg-success/15 text-success',
+  hired: 'bg-success text-success-foreground',
+  rejected: 'bg-destructive/15 text-destructive',
+  withdrawn: 'bg-muted text-muted-foreground',
 };
 
 const ApplicationTracker = () => {
@@ -261,7 +261,7 @@ const ApplicationTracker = () => {
                           <h3 className="font-semibold text-lg">
                             {app.job?.title || 'Unknown Position'}
                           </h3>
-                          <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[app.status] || 'bg-gray-100'}`}>
+                          <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[app.status] || 'bg-muted text-muted-foreground'}`}>
                             {app.status}
                           </span>
                         </div>
