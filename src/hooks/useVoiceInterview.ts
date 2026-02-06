@@ -1,126 +1,248 @@
-import { useState, useRef, useCallback } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-
-// Type declarations for Web Speech API
-interface SpeechRecognitionEvent extends Event {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-}
-
-interface SpeechRecognitionInstance extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start(): void;
-  stop(): void;
-  onstart: ((this: SpeechRecognitionInstance, ev: Event) => void) | null;
-  onresult: ((this: SpeechRecognitionInstance, ev: SpeechRecognitionEvent) => void) | null;
-  onerror: ((this: SpeechRecognitionInstance, ev: SpeechRecognitionErrorEvent) => void) | null;
-  onend: ((this: SpeechRecognitionInstance, ev: Event) => void) | null;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognitionInstance;
-    webkitSpeechRecognition: new () => SpeechRecognitionInstance;
-  }
-}
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
+import type {
+  InterviewMessage,
+  InterviewPhase,
+  VoiceInterviewState,
+  RetryConfig,
+  DEFAULT_RETRY_CONFIG,
+} from '@/types/interview';
 
 interface UseVoiceInterviewOptions {
   jobRole: string;
+  industry?: string;
+  difficulty?: string;
+  interviewType?: string;
   resumeContext?: string;
+  jobDescription?: string;
 }
 
-export function useVoiceInterview({ jobRole, resumeContext }: UseVoiceInterviewOptions) {
-  const [isActive, setIsActive] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+// ─── Retry utility with exponential backoff ─────────────────────────
+
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  config: RetryConfig = { maxRetries: 3, baseDelayMs: 1000, maxDelayMs: 8000 },
+  label = 'operation'
+): Promise<T> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt < config.maxRetries) {
+        const delay = Math.min(
+          config.baseDelayMs * Math.pow(2, attempt),
+          config.maxDelayMs
+        );
+        console.warn(`[Interview] ${label} attempt ${attempt + 1} failed, retrying in ${delay}ms:`, lastError.message);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+
+// ─── Safe string extraction ────────────────────────────────────────
+
+function safeString(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return '[Object]';
+  }
+}
+
+export function useVoiceInterview({
+  jobRole,
+  industry,
+  difficulty,
+  interviewType,
+  resumeContext,
+  jobDescription,
+}: UseVoiceInterviewOptions) {
+  const [phase, setPhase] = useState<InterviewPhase>('idle');
+  const [messages, setMessages] = useState<InterviewMessage[]>([]);
   const [currentTranscript, setCurrentTranscript] = useState('');
-  const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const recognitionRef = useRef<any>(null);
   const interviewIdRef = useRef<string | null>(null);
   const questionCountRef = useRef(0);
   const conversationHistoryRef = useRef<Array<{ role: string; content: string }>>([]);
+  const isMountedRef = useRef(true);
+  const isStoppingRef = useRef(false);
 
-  const speakText = useCallback(async (text: string) => {
-    setIsSpeaking(true);
-    try {
-      // Get current session for authenticated request
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('No authenticated session');
+  // ─── Cleanup on unmount ──────────────────────────────────────────
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    // Global unhandled rejection safety net
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      console.error('[Interview] Unhandled rejection:', event.reason);
+      event.preventDefault();
+    };
+    window.addEventListener('unhandledrejection', handleRejection);
+
+    return () => {
+      isMountedRef.current = false;
+      window.removeEventListener('unhandledrejection', handleRejection);
+      cleanupResources();
+    };
+  }, []);
+
+  // ─── Resource cleanup ────────────────────────────────────────────
+
+  const cleanupResources = useCallback(() => {
+    // Stop speech recognition
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onstart = null;
+        recognitionRef.current.abort();
+      } catch (e) {
+        console.warn('[Interview] Recognition cleanup error:', e);
       }
+      recognitionRef.current = null;
+    }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/interview-tts`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ text }),
+    // Stop audio
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        if (audioRef.current.src) {
+          URL.revokeObjectURL(audioRef.current.src);
         }
-      );
-
-      if (!response.ok) {
-        throw new Error('TTS request failed');
+      } catch (e) {
+        console.warn('[Interview] Audio cleanup error:', e);
       }
+      audioRef.current = null;
+    }
+  }, []);
 
-      const audioBlob = await response.blob();
+  // ─── Safe state update ───────────────────────────────────────────
+
+  const safeSetPhase = useCallback((newPhase: InterviewPhase) => {
+    if (isMountedRef.current && !isStoppingRef.current) {
+      setPhase(newPhase);
+    }
+  }, []);
+
+  // ─── TTS with retry and fallback ─────────────────────────────────
+
+  const speakText = useCallback(async (text: string): Promise<void> => {
+    if (!isMountedRef.current || isStoppingRef.current) return;
+    safeSetPhase('ai_speaking');
+
+    try {
+      const audioBlob = await withRetry(async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) throw new Error('No authenticated session');
+
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/interview-tts`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ text: text.slice(0, 5000) }),
+          }
+        );
+
+        if (response.status === 429) throw new Error('Rate limited');
+        if (!response.ok) throw new Error(`TTS failed: ${response.status}`);
+
+        return await response.blob();
+      }, { maxRetries: 2, baseDelayMs: 1500, maxDelayMs: 6000 }, 'TTS');
+
+      if (!isMountedRef.current || isStoppingRef.current) return;
+
       const audioUrl = URL.createObjectURL(audioBlob);
-      
+
+      // Clean up previous audio
       if (audioRef.current) {
         audioRef.current.pause();
-        URL.revokeObjectURL(audioRef.current.src);
+        if (audioRef.current.src) URL.revokeObjectURL(audioRef.current.src);
       }
 
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-      
-      audio.onended = () => {
-        setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
-        // Start listening after interviewer finishes speaking
+      await new Promise<void>((resolve, reject) => {
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          if (isMountedRef.current && !isStoppingRef.current) {
+            resolve();
+          }
+        };
+
+        audio.onerror = () => {
+          URL.revokeObjectURL(audioUrl);
+          reject(new Error('Audio playback failed'));
+        };
+
+        audio.play().catch(reject);
+      });
+
+      // After speaking, start listening
+      if (isMountedRef.current && !isStoppingRef.current) {
         startListening();
-      };
+      }
+    } catch (err) {
+      console.error('[Interview] TTS error:', err);
+      if (!isMountedRef.current || isStoppingRef.current) return;
 
-      audio.onerror = () => {
-        setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
-      };
-
-      await audio.play();
-    } catch (error) {
-      console.error('TTS error:', error);
-      setIsSpeaking(false);
-      toast({ title: 'Audio Error', description: 'Failed to play audio', variant: 'destructive' });
+      // Fallback: use browser TTS
+      try {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.95;
+        utterance.onend = () => {
+          if (isMountedRef.current && !isStoppingRef.current) {
+            startListening();
+          }
+        };
+        utterance.onerror = () => {
+          safeSetPhase('error');
+          setError('Audio playback failed. Please check your speakers.');
+        };
+        window.speechSynthesis.speak(utterance);
+      } catch {
+        safeSetPhase('error');
+        setError('Audio playback unavailable. Please try again.');
+      }
     }
-  }, [toast]);
+  }, []);
+
+  // ─── Speech Recognition ──────────────────────────────────────────
 
   const startListening = useCallback(() => {
+    if (!isMountedRef.current || isStoppingRef.current) return;
+
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
+
     if (!SpeechRecognitionClass) {
-      toast({ title: 'Not Supported', description: 'Speech recognition is not supported in this browser', variant: 'destructive' });
+      toast.error('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
+      safeSetPhase('error');
+      setError('Speech recognition not supported. Use Chrome or Edge.');
       return;
+    }
+
+    // Prevent duplicate listeners
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {}
+      recognitionRef.current = null;
     }
 
     const recognition = new SpeechRecognitionClass();
@@ -130,197 +252,300 @@ export function useVoiceInterview({ jobRole, resumeContext }: UseVoiceInterviewO
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
+    let silenceTimer: ReturnType<typeof setTimeout> | null = null;
+    let finalTranscriptAccumulator = '';
+
     recognition.onstart = () => {
-      setIsListening(true);
-      setCurrentTranscript('');
+      if (isMountedRef.current) {
+        safeSetPhase('user_speaking');
+        setCurrentTranscript('');
+        finalTranscriptAccumulator = '';
+      }
     };
 
-    recognition.onresult = (event) => {
-      let finalTranscript = '';
-      let interimTranscript = '';
+    recognition.onresult = (event: any) => {
+      if (!isMountedRef.current || isStoppingRef.current) return;
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript;
-        } else {
-          interimTranscript += transcript;
+      try {
+        let interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = safeString(event.results[i][0]?.transcript);
+          if (event.results[i].isFinal) {
+            finalTranscriptAccumulator += transcript + ' ';
+          } else {
+            interimTranscript += transcript;
+          }
         }
-      }
 
-      setCurrentTranscript(interimTranscript || finalTranscript);
+        setCurrentTranscript(finalTranscriptAccumulator + interimTranscript);
 
-      if (finalTranscript) {
-        handleUserResponse(finalTranscript);
+        // Reset silence timer on each result
+        if (silenceTimer) clearTimeout(silenceTimer);
+        silenceTimer = setTimeout(() => {
+          if (finalTranscriptAccumulator.trim() && isMountedRef.current && !isStoppingRef.current) {
+            handleUserResponse(finalTranscriptAccumulator.trim());
+          }
+        }, 2500); // 2.5s of silence = submit
+      } catch (err) {
+        console.error('[Interview] Recognition result error:', err);
       }
     };
 
-    recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-      setIsListening(false);
+    recognition.onerror = (event: any) => {
+      console.warn('[Interview] Recognition error:', event.error);
+      if (event.error === 'not-allowed') {
+        setError('Microphone access denied. Please enable it in browser settings.');
+        safeSetPhase('error');
+      } else if (event.error !== 'aborted' && event.error !== 'no-speech') {
+        // Auto-restart on transient errors
+        setTimeout(() => {
+          if (isMountedRef.current && !isStoppingRef.current && phase === 'user_speaking') {
+            startListening();
+          }
+        }, 1000);
+      }
     };
 
     recognition.onend = () => {
-      setIsListening(false);
+      if (silenceTimer) clearTimeout(silenceTimer);
+      // Submit accumulated transcript if any
+      if (finalTranscriptAccumulator.trim() && isMountedRef.current && !isStoppingRef.current) {
+        handleUserResponse(finalTranscriptAccumulator.trim());
+      }
     };
 
-    recognition.start();
-  }, [toast]);
+    try {
+      recognition.start();
+    } catch (err) {
+      console.error('[Interview] Failed to start recognition:', err);
+      safeSetPhase('error');
+      setError('Could not start speech recognition. Please refresh and try again.');
+    }
+  }, []);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+      } catch {}
       recognitionRef.current = null;
     }
-    setIsListening(false);
-    setCurrentTranscript('');
+    if (isMountedRef.current) {
+      setCurrentTranscript('');
+    }
   }, []);
 
+  // ─── Handle user response with retry ─────────────────────────────
+
   const handleUserResponse = useCallback(async (userText: string) => {
+    if (!isMountedRef.current || isStoppingRef.current) return;
     stopListening();
-    
-    // Add user message
-    const userMessage: Message = {
+
+    const userMessage: InterviewMessage = {
       id: crypto.randomUUID(),
       role: 'user',
       content: userText,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
     setMessages(prev => [...prev, userMessage]);
     setCurrentTranscript('');
-    setIsLoading(true);
+    safeSetPhase('processing');
 
-    // Update conversation history
     conversationHistoryRef.current.push({ role: 'user', content: userText });
 
     try {
-      const { data, error } = await supabase.functions.invoke('mock-interview', {
-        body: {
-          action: 'answer',
-          interviewId: interviewIdRef.current,
-          answer: userText,
-          conversationHistory: conversationHistoryRef.current,
-        }
-      });
+      const { data, error: fnError } = await withRetry(
+        () => supabase.functions.invoke('mock-interview', {
+          body: {
+            action: 'answer',
+            interviewId: interviewIdRef.current,
+            answer: userText,
+            conversationHistory: conversationHistoryRef.current,
+          },
+        }),
+        { maxRetries: 2, baseDelayMs: 2000, maxDelayMs: 8000 },
+        'AI response'
+      );
 
-      if (error) throw error;
+      if (fnError) throw fnError;
+      if (!isMountedRef.current || isStoppingRef.current) return;
 
       questionCountRef.current++;
-      
-      // Add feedback as assistant message
+
       let responseText = '';
-      if (data.feedback) {
-        responseText = `${data.feedback.verdict}: ${data.feedback.feedback}`;
-        if (data.feedback.tip) {
-          responseText += ` Tip: ${data.feedback.tip}`;
-        }
-      }
-      
+
       if (!data.isComplete && data.nextQuestion) {
-        responseText = data.nextQuestion;
-        conversationHistoryRef.current.push({ role: 'assistant', content: data.nextQuestion });
+        responseText = safeString(data.nextQuestion);
+        conversationHistoryRef.current.push({ role: 'assistant', content: responseText });
       } else if (data.isComplete) {
-        responseText = "Great job! You've completed all 5 questions. Let me prepare your overall feedback...";
-        
-        // Get final feedback
-        const { data: feedbackData } = await supabase.functions.invoke('mock-interview', {
-          body: {
-            action: 'feedback',
-            interviewId: interviewIdRef.current,
+        responseText = "Great job! You've completed all questions. Preparing your overall feedback...";
+
+        try {
+          const { data: feedbackData } = await supabase.functions.invoke('mock-interview', {
+            body: {
+              action: 'feedback',
+              interviewId: interviewIdRef.current,
+            },
+          });
+
+          if (feedbackData?.overallFeedback) {
+            const fb = feedbackData.overallFeedback;
+            const strengths = Array.isArray(fb.strengths) ? fb.strengths.join(', ') : 'N/A';
+            const weaknesses = Array.isArray(fb.weaknesses) ? fb.weaknesses.join(', ') : 'N/A';
+            responseText = `Interview Complete! Your score: ${fb.overallScore ?? 'N/A'}/100. ${safeString(fb.assessment)}. Key strengths: ${strengths}. Areas to improve: ${weaknesses}.`;
           }
-        });
-        
-        if (feedbackData?.overallFeedback) {
-          const fb = feedbackData.overallFeedback;
-          responseText = `Interview Complete! Your score: ${fb.overallScore}/100. ${fb.assessment}. Key strengths: ${fb.strengths?.join(', ')}. Areas to improve: ${fb.weaknesses?.join(', ')}.`;
+        } catch (feedbackErr) {
+          console.error('[Interview] Feedback fetch error:', feedbackErr);
+          responseText = "Interview complete! There was an issue loading detailed feedback, but your responses have been saved.";
         }
+
+        safeSetPhase('completed');
       }
 
-      const aiMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: responseText,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, aiMessage]);
+      if (responseText && isMountedRef.current) {
+        const aiMessage: InterviewMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: responseText,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, aiMessage]);
 
-      // Speak the response
-      await speakText(responseText);
-    } catch (error) {
-      console.error('AI response error:', error);
-      toast({ title: 'Error', description: 'Failed to get response', variant: 'destructive' });
-      startListening();
-    } finally {
-      setIsLoading(false);
+        if (!data.isComplete) {
+          await speakText(responseText);
+        }
+      }
+    } catch (err) {
+      console.error('[Interview] Response error:', err);
+      if (!isMountedRef.current || isStoppingRef.current) return;
+
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+
+      if (errorMsg.includes('Rate limit') || errorMsg.includes('429')) {
+        toast.error('Too many requests. Please wait a moment before continuing.');
+        // Auto-retry after delay
+        setTimeout(() => {
+          if (isMountedRef.current && !isStoppingRef.current) {
+            startListening();
+          }
+        }, 5000);
+      } else {
+        toast.error('Failed to get AI response. You can try speaking again.');
+        startListening();
+      }
     }
-  }, [speakText, stopListening, startListening, toast]);
+  }, [speakText, stopListening, startListening]);
+
+  // ─── Start interview ─────────────────────────────────────────────
 
   const start = useCallback(async () => {
-    setIsActive(true);
+    isStoppingRef.current = false;
     setMessages([]);
+    setError(null);
     questionCountRef.current = 0;
     conversationHistoryRef.current = [];
-    setIsLoading(true);
+    safeSetPhase('connecting');
 
     try {
-      // Start interview with mock-interview edge function
-      const { data, error } = await supabase.functions.invoke('mock-interview', {
-        body: {
-          action: 'start',
-          jobRole,
-          resumeText: resumeContext,
-          difficulty: 'intermediate',
-          interviewType: 'mixed',
-        }
-      });
+      // Request microphone permission upfront
+      await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      if (error) throw error;
+      const { data, error: fnError } = await withRetry(
+        () => supabase.functions.invoke('mock-interview', {
+          body: {
+            action: 'start',
+            jobRole,
+            industry,
+            resumeText: resumeContext,
+            jobDescription,
+            difficulty: difficulty || 'intermediate',
+            interviewType: interviewType || 'mixed',
+          },
+        }),
+        { maxRetries: 2, baseDelayMs: 2000, maxDelayMs: 8000 },
+        'Start interview'
+      );
 
-      interviewIdRef.current = data.interview?.id;
-      const greeting = data.currentQuestion;
-      
-      // Add to conversation history
+      if (fnError) throw fnError;
+      if (!isMountedRef.current) return;
+
+      interviewIdRef.current = data.interview?.id ?? null;
+      const greeting = safeString(data.currentQuestion);
+
       conversationHistoryRef.current.push({ role: 'assistant', content: greeting });
-      
-      const greetingMessage: Message = {
+
+      const greetingMessage: InterviewMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
         content: greeting,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
       setMessages([greetingMessage]);
-      
-      // Speak the greeting
+
       await speakText(greeting);
-    } catch (error) {
-      console.error('Start error:', error);
-      toast({ title: 'Error', description: 'Failed to start interview', variant: 'destructive' });
-      setIsActive(false);
-    } finally {
-      setIsLoading(false);
+    } catch (err) {
+      console.error('[Interview] Start error:', err);
+      if (!isMountedRef.current) return;
+
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+
+      if (errorMsg.includes('Permission denied') || errorMsg.includes('NotAllowedError')) {
+        setError('Microphone access is required. Please allow microphone access and try again.');
+      } else if (errorMsg.includes('Rate limit') || errorMsg.includes('429')) {
+        setError('Service is busy. Please wait a moment and try again.');
+      } else {
+        setError('Failed to start interview. Please check your connection and try again.');
+      }
+      safeSetPhase('error');
     }
-  }, [jobRole, resumeContext, speakText, toast]);
+  }, [jobRole, industry, difficulty, interviewType, resumeContext, jobDescription, speakText]);
+
+  // ─── Stop interview ──────────────────────────────────────────────
 
   const stop = useCallback(() => {
-    stopListening();
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    setIsActive(false);
-    setIsSpeaking(false);
+    isStoppingRef.current = true;
+    cleanupResources();
+    window.speechSynthesis?.cancel();
     setCurrentTranscript('');
+    setError(null);
+    safeSetPhase('idle');
     interviewIdRef.current = null;
-  }, [stopListening]);
+  }, [cleanupResources]);
+
+  // ─── Retry from error state ──────────────────────────────────────
+
+  const retry = useCallback(() => {
+    setError(null);
+    safeSetPhase('idle');
+    isStoppingRef.current = false;
+  }, []);
+
+  // ─── Derived state ───────────────────────────────────────────────
+
+  const isActive = phase !== 'idle' && phase !== 'error';
+  const isLoading = phase === 'connecting' || phase === 'processing';
+  const isSpeaking = phase === 'ai_speaking';
+  const isListening = phase === 'user_speaking';
+  const isCompleted = phase === 'completed';
 
   return {
+    // State
+    phase,
     isActive,
     isLoading,
     isSpeaking,
     isListening,
+    isCompleted,
     messages,
     currentTranscript,
+    error,
+    // Actions
     start,
     stop,
+    retry,
   };
 }
