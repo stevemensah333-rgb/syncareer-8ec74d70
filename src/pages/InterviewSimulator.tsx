@@ -24,6 +24,21 @@ const MAJOR_ROLE_MAP: Record<string, { role: string; industry: string }> = {
   'Medicine': { role: 'Medical Intern', industry: 'Healthcare' },
   'Electrical Engineering': { role: 'Electrical Engineer', industry: 'Engineering' },
   'Mechanical Engineering': { role: 'Mechanical Engineer', industry: 'Engineering' },
+  'Civil Engineering': { role: 'Site Engineer', industry: 'Construction' },
+  'Chemical Engineering': { role: 'Process Engineer', industry: 'Manufacturing' },
+  'Information Technology': { role: 'IT Support Specialist', industry: 'Technology' },
+  'Accounting': { role: 'Junior Accountant', industry: 'Finance' },
+  'Human Resources': { role: 'HR Coordinator', industry: 'Human Resources' },
+  'Economics': { role: 'Economic Analyst', industry: 'Research' },
+  'Psychology': { role: 'HR Specialist', industry: 'Human Resources' },
+  'Nursing': { role: 'Registered Nurse', industry: 'Healthcare' },
+  'Pharmacy': { role: 'Pharmacist', industry: 'Healthcare' },
+  'Architecture': { role: 'Junior Architect', industry: 'Architecture' },
+  'Graphic Design': { role: 'Graphic Designer', industry: 'Creative' },
+  'Communications': { role: 'Communications Specialist', industry: 'Media' },
+  'Education': { role: 'Teacher', industry: 'Education' },
+  'Environmental Science': { role: 'Environmental Consultant', industry: 'Environment' },
+  'Agriculture': { role: 'Agricultural Scientist', industry: 'Agriculture' },
 };
 
 const InterviewSimulator = () => {
@@ -184,19 +199,19 @@ const InterviewSimulator = () => {
                 <CardContent>
                   <ul className="space-y-2 text-sm text-muted-foreground" aria-label="Interview process steps">
                     <li className="flex items-start gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" aria-hidden="true" />
                       AI interviewer speaks realistic, role-specific questions
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" aria-hidden="true" />
                       Respond naturally using your voice (Chrome/Edge recommended)
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" aria-hidden="true" />
                       Get real-time feedback and follow-up questions
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" aria-hidden="true" />
                       Review detailed scoring and improvement tips after completion
                     </li>
                   </ul>

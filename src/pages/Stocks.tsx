@@ -25,6 +25,11 @@ const MySkills = () => {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysis, setAnalysis] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [extractedSkills, setExtractedSkills] = useState<any[]>([]);
+  const [experienceSummary, setExperienceSummary] = useState<any>(null);
+  const [scores, setScores] = useState<any>(null);
+  const [suggestedRoles, setSuggestedRoles] = useState<string[]>([]);
+  const [missingSkills, setMissingSkills] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Real data state
@@ -234,7 +239,12 @@ const MySkills = () => {
 
       if (error) throw error;
 
-      setAnalysis(data.analysis);
+      setAnalysis(data.analysis || '');
+      setExtractedSkills(data.extractedSkills || []);
+      setExperienceSummary(data.experienceSummary || null);
+      setScores(data.scores || null);
+      setSuggestedRoles(data.suggestedRoles || []);
+      setMissingSkills(data.missingSkills || []);
       toast.success('Your CV has been analyzed by AI');
     } catch (error) {
       console.error('Error analyzing files:', error);
@@ -274,6 +284,11 @@ const MySkills = () => {
         onOpenChange={setAnalysisOpen}
         analysis={analysis}
         isLoading={isAnalyzing}
+        extractedSkills={extractedSkills}
+        experienceSummary={experienceSummary}
+        scores={scores}
+        suggestedRoles={suggestedRoles}
+        missingSkills={missingSkills}
       />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Skills Display */}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,13 +20,13 @@ const Analysis = () => {
     trend: idx < 6 ? 'up' : 'stable',
   }));
 
-  // Predicted demand over next 12 months
-  const demandForecast = Array.from({ length: 12 }, (_, i) => ({
+  // Predicted demand over next 12 months (deterministic seed per month)
+  const demandForecast = useMemo(() => Array.from({ length: 12 }, (_, i) => ({
     month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i],
-    primary: 70 + i * 2 + Math.random() * 5,
-    secondary: 65 + i * 1.5 + Math.random() * 5,
-    tertiary: 60 + i * 1.8 + Math.random() * 5,
-  }));
+    primary: 70 + i * 2 + ((i * 7 + 3) % 5),
+    secondary: 65 + i * 1.5 + ((i * 11 + 2) % 5),
+    tertiary: 60 + i * 1.8 + ((i * 13 + 1) % 5),
+  })), []);
 
   // Job market insights - personalized
   const marketInsights = [
@@ -105,7 +105,7 @@ const Analysis = () => {
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{item.skill}</span>
                       {item.trend === 'up' ? (
-                        <TrendingUp className="h-4 w-4 text-green-500" />
+                        <TrendingUp className="h-4 w-4 text-primary" />
                       ) : (
                         <TrendingDown className="h-4 w-4 text-muted-foreground" />
                       )}
