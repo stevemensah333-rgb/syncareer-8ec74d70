@@ -977,33 +977,90 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          application_updates: boolean
+          community_posts: boolean
+          community_replies: boolean
+          counsellor_bookings: boolean
+          created_at: string
+          email_enabled: boolean
+          id: string
+          interview_reminders: boolean
+          marketing_emails: boolean
+          push_enabled: boolean
+          system_announcements: boolean
+          updated_at: string
+          user_id: string
+          weekly_digest: boolean
+        }
+        Insert: {
+          application_updates?: boolean
+          community_posts?: boolean
+          community_replies?: boolean
+          counsellor_bookings?: boolean
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          interview_reminders?: boolean
+          marketing_emails?: boolean
+          push_enabled?: boolean
+          system_announcements?: boolean
+          updated_at?: string
+          user_id: string
+          weekly_digest?: boolean
+        }
+        Update: {
+          application_updates?: boolean
+          community_posts?: boolean
+          community_replies?: boolean
+          counsellor_bookings?: boolean
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          interview_reminders?: boolean
+          marketing_emails?: boolean
+          push_enabled?: boolean
+          system_announcements?: boolean
+          updated_at?: string
+          user_id?: string
+          weekly_digest?: boolean
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
+          category: string
           created_at: string
           id: string
           is_read: boolean
           link: string | null
           message: string
+          priority: string
           title: string
           type: string
           user_id: string
         }
         Insert: {
+          category?: string
           created_at?: string
           id?: string
           is_read?: boolean
           link?: string | null
           message: string
+          priority?: string
           title: string
           type: string
           user_id: string
         }
         Update: {
+          category?: string
           created_at?: string
           id?: string
           is_read?: boolean
           link?: string | null
           message?: string
+          priority?: string
           title?: string
           type?: string
           user_id?: string
