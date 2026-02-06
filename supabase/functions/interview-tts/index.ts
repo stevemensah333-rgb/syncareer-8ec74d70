@@ -3,25 +3,32 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-// Input validation constants
 const MAX_TTS_LENGTH = 5000;
+
+function errorResponse(message: string, status: number) {
+  return new Response(
+    JSON.stringify({ error: message }),
+    { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
+  const requestId = crypto.randomUUID().slice(0, 8);
+  const startTime = Date.now();
+
   try {
-    // Verify JWT authentication
+    // ── Auth ──
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Missing or invalid authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.warn(`[interview-tts][${requestId}] Missing auth header`);
+      return errorResponse("Missing or invalid authorization header", 401);
     }
 
     const supabase = createClient(
@@ -33,46 +40,40 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
-      console.error("JWT verification failed:", claimsError);
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.warn(`[interview-tts][${requestId}] JWT verification failed`);
+      return errorResponse("Invalid or expired token", 401);
     }
 
     const userId = claimsData.claims.sub;
-    console.log("TTS request from authenticated user:", userId);
 
-    const { text, voiceId } = await req.json();
-    const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
-
-    if (!ELEVENLABS_API_KEY) {
-      console.error("ELEVENLABS_API_KEY not configured");
-      return new Response(JSON.stringify({ error: "API key not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // ── Parse & Validate ──
+    let body: { text?: string; voiceId?: string };
+    try {
+      body = await req.json();
+    } catch {
+      return errorResponse("Invalid request body", 400);
     }
 
-    // Validate text input
-    if (!text || typeof text !== 'string') {
-      return new Response(JSON.stringify({ error: "Text is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const { text, voiceId } = body;
+
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      return errorResponse("Text is required and must be a non-empty string", 400);
     }
 
     if (text.length > MAX_TTS_LENGTH) {
-      return new Response(JSON.stringify({ error: `Text exceeds maximum length of ${MAX_TTS_LENGTH} characters` }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse(`Text exceeds maximum length of ${MAX_TTS_LENGTH} characters`, 400);
     }
 
-    // Use George voice (professional male) by default, or provided voiceId
+    const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
+    if (!ELEVENLABS_API_KEY) {
+      console.error(`[interview-tts][${requestId}] ELEVENLABS_API_KEY not configured`);
+      return errorResponse("TTS service not configured", 500);
+    }
+
+    // George voice (professional male) by default
     const selectedVoiceId = voiceId || "JBFqnCBsd6RMkjVDRZzb";
 
-    console.log("Generating TTS for text length:", text.length, "user:", userId);
+    console.log(`[interview-tts][${requestId}] Generating TTS: ${text.length} chars for user ${userId}`);
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}?output_format=mp3_44100_128`,
@@ -96,28 +97,33 @@ serve(async (req) => {
     );
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("ElevenLabs error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: "TTS generation failed" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const errorText = await response.text().catch(() => 'Unknown');
+      console.error(`[interview-tts][${requestId}] ElevenLabs error: ${response.status} - ${errorText}`);
+
+      if (response.status === 429) {
+        return errorResponse("TTS rate limit exceeded. Please wait before trying again.", 429);
+      }
+
+      return errorResponse("TTS generation failed", 500);
     }
 
     const audioBuffer = await response.arrayBuffer();
-    console.log("TTS audio generated, size:", audioBuffer.byteLength);
+    const elapsed = Date.now() - startTime;
+    console.log(`[interview-tts][${requestId}] TTS generated: ${audioBuffer.byteLength} bytes in ${elapsed}ms`);
 
     return new Response(audioBuffer, {
       headers: {
         ...corsHeaders,
         "Content-Type": "audio/mpeg",
+        "Cache-Control": "no-store",
       },
     });
   } catch (error) {
-    console.error("TTS error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const elapsed = Date.now() - startTime;
+    console.error(`[interview-tts][${requestId}] Error after ${elapsed}ms:`, error);
+    return errorResponse(
+      error instanceof Error ? error.message : "Unknown error",
+      500
+    );
   }
 });

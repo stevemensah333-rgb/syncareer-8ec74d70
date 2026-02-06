@@ -9,42 +9,50 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Mic, CheckCircle, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { InterviewErrorBoundary } from '@/components/interview/InterviewErrorBoundary';
 import { VoiceInterviewMode } from '@/components/interview/VoiceInterviewMode';
+import { InterviewHistory } from '@/components/interview/InterviewHistory';
+import type { InterviewSetupConfig } from '@/types/interview';
+
+const MAJOR_ROLE_MAP: Record<string, { role: string; industry: string }> = {
+  'Computer Science': { role: 'Software Developer', industry: 'Technology' },
+  'Data Science': { role: 'Data Analyst', industry: 'Technology' },
+  'Business Administration': { role: 'Business Analyst', industry: 'Consulting' },
+  'Finance': { role: 'Financial Analyst', industry: 'Finance' },
+  'Marketing': { role: 'Marketing Coordinator', industry: 'Marketing' },
+  'Law': { role: 'Legal Associate', industry: 'Legal' },
+  'Medicine': { role: 'Medical Intern', industry: 'Healthcare' },
+  'Electrical Engineering': { role: 'Electrical Engineer', industry: 'Engineering' },
+  'Mechanical Engineering': { role: 'Mechanical Engineer', industry: 'Engineering' },
+};
 
 const InterviewSimulator = () => {
   const { studentDetails } = useUserProfile();
   const [step, setStep] = useState<'setup' | 'interview'>('setup');
-  const [jobRole, setJobRole] = useState('');
-  const [industry, setIndustry] = useState('');
-  const [difficulty, setDifficulty] = useState('intermediate');
-  const [interviewType, setInterviewType] = useState('mixed');
-  const [resumeText, setResumeText] = useState('');
-  const [jobDescription, setJobDescription] = useState('');
+  const [config, setConfig] = useState<InterviewSetupConfig>({
+    jobRole: '',
+    industry: '',
+    difficulty: 'intermediate',
+    interviewType: 'mixed',
+    resumeText: '',
+    jobDescription: '',
+  });
 
-  // Pre-populate based on student major
   useEffect(() => {
     if (studentDetails?.major) {
-      const majorRoleMap: Record<string, {role: string; industry: string}> = {
-        'Computer Science': { role: 'Software Developer', industry: 'Technology' },
-        'Data Science': { role: 'Data Analyst', industry: 'Technology' },
-        'Business Administration': { role: 'Business Analyst', industry: 'Consulting' },
-        'Finance': { role: 'Financial Analyst', industry: 'Finance' },
-        'Marketing': { role: 'Marketing Coordinator', industry: 'Marketing' },
-        'Law': { role: 'Legal Associate', industry: 'Legal' },
-        'Medicine': { role: 'Medical Intern', industry: 'Healthcare' },
-        'Electrical Engineering': { role: 'Electrical Engineer', industry: 'Engineering' },
-        'Mechanical Engineering': { role: 'Mechanical Engineer', industry: 'Engineering' },
-      };
-      const mapping = majorRoleMap[studentDetails.major];
+      const mapping = MAJOR_ROLE_MAP[studentDetails.major];
       if (mapping) {
-        setJobRole(mapping.role);
-        setIndustry(mapping.industry);
+        setConfig(prev => ({ ...prev, jobRole: mapping.role, industry: mapping.industry }));
       }
     }
   }, [studentDetails]);
 
+  const updateConfig = (field: keyof InterviewSetupConfig, value: string) => {
+    setConfig(prev => ({ ...prev, [field]: value }));
+  };
+
   const startInterview = () => {
-    if (!jobRole.trim()) {
+    if (!config.jobRole.trim()) {
       toast.error('Please enter a job role');
       return;
     }
@@ -54,11 +62,12 @@ const InterviewSimulator = () => {
   return (
     <PageLayout title="Interview Simulator">
       {step === 'setup' && (
-        <div className="max-w-2xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Header */}
           <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center">
+                <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center" aria-hidden="true">
                   <Mic className="h-8 w-8 text-primary" />
                 </div>
                 <div>
@@ -71,134 +80,154 @@ const InterviewSimulator = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Set Up Your Interview</CardTitle>
-              <CardDescription>
-                Customize your practice session based on your target role
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="jobRole">Target Job Role *</Label>
-                  <Input
-                    id="jobRole"
-                    value={jobRole}
-                    onChange={(e) => setJobRole(e.target.value)}
-                    placeholder="e.g., Software Developer"
-                  />
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Setup Form */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Set Up Your Interview</CardTitle>
+                  <CardDescription>
+                    Customize your practice session based on your target role
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="jobRole">Target Job Role *</Label>
+                      <Input
+                        id="jobRole"
+                        value={config.jobRole}
+                        onChange={(e) => updateConfig('jobRole', e.target.value)}
+                        placeholder="e.g., Software Developer"
+                        aria-required="true"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="industry">Industry</Label>
+                      <Input
+                        id="industry"
+                        value={config.industry}
+                        onChange={(e) => updateConfig('industry', e.target.value)}
+                        placeholder="e.g., Technology"
+                      />
+                    </div>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="industry">Industry</Label>
-                  <Input
-                    id="industry"
-                    value={industry}
-                    onChange={(e) => setIndustry(e.target.value)}
-                    placeholder="e.g., Technology"
-                  />
-                </div>
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="difficulty">Seniority Level</Label>
+                      <Select value={config.difficulty} onValueChange={(v) => updateConfig('difficulty', v)}>
+                        <SelectTrigger id="difficulty">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="beginner">Entry-level / Internship</SelectItem>
+                          <SelectItem value="intermediate">Mid-level (2-5 years)</SelectItem>
+                          <SelectItem value="advanced">Senior level</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="interviewType">Interview Type</Label>
+                      <Select value={config.interviewType} onValueChange={(v) => updateConfig('interviewType', v)}>
+                        <SelectTrigger id="interviewType">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="behavioral">Behavioral</SelectItem>
+                          <SelectItem value="technical">Technical</SelectItem>
+                          <SelectItem value="mixed">Mixed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="difficulty">Seniority Level</Label>
-                  <Select value={difficulty} onValueChange={setDifficulty}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="beginner">Entry-level / Internship</SelectItem>
-                      <SelectItem value="intermediate">Mid-level (2-5 years)</SelectItem>
-                      <SelectItem value="advanced">Senior level</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="resumeText">Resume / Experience Summary (Optional)</Label>
+                    <Textarea
+                      id="resumeText"
+                      value={config.resumeText}
+                      onChange={(e) => updateConfig('resumeText', e.target.value)}
+                      placeholder="Paste your resume text or key experiences here for more personalized questions..."
+                      rows={3}
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="interviewType">Interview Type</Label>
-                  <Select value={interviewType} onValueChange={setInterviewType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="behavioral">Behavioral</SelectItem>
-                      <SelectItem value="technical">Technical</SelectItem>
-                      <SelectItem value="mixed">Mixed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="jobDescription">Job Description (Optional)</Label>
+                    <Textarea
+                      id="jobDescription"
+                      value={config.jobDescription}
+                      onChange={(e) => updateConfig('jobDescription', e.target.value)}
+                      placeholder="Paste the job description for role-specific questions..."
+                      rows={3}
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="resumeText">Resume / Experience Summary (Optional)</Label>
-                <Textarea
-                  id="resumeText"
-                  value={resumeText}
-                  onChange={(e) => setResumeText(e.target.value)}
-                  placeholder="Paste your resume text or key experiences here for more personalized questions..."
-                  rows={3}
-                />
-              </div>
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={startInterview}
+                    aria-label="Start voice interview session"
+                  >
+                    <Phone className="h-4 w-4 mr-2" aria-hidden="true" />
+                    Start Voice Interview
+                  </Button>
+                </CardContent>
+              </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="jobDescription">Job Description (Optional)</Label>
-                <Textarea
-                  id="jobDescription"
-                  value={jobDescription}
-                  onChange={(e) => setJobDescription(e.target.value)}
-                  placeholder="Paste the job description for role-specific questions..."
-                  rows={3}
-                />
-              </div>
+              {/* How it works */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">How It Works</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-sm text-muted-foreground" aria-label="Interview process steps">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      AI interviewer speaks realistic, role-specific questions
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      Respond naturally using your voice (Chrome/Edge recommended)
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      Get real-time feedback and follow-up questions
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      Review detailed scoring and improvement tips after completion
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
 
-              <Button 
-                className="w-full" 
-                size="lg" 
-                onClick={startInterview}
-              >
-                <Phone className="h-4 w-4 mr-2" />
-                Start Voice Interview
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">How It Works</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  AI interviewer speaks realistic, role-specific questions
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  Respond naturally using your voice
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  Get real-time feedback and follow-up questions
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  Practice speaking under interview pressure
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
+            {/* History Sidebar */}
+            <div className="lg:col-span-1">
+              <InterviewHistory />
+            </div>
+          </div>
         </div>
       )}
 
       {step === 'interview' && (
         <div className="max-w-3xl mx-auto">
-          <VoiceInterviewMode
-            jobRole={jobRole}
-            resumeText={resumeText}
-            onEnd={() => setStep('setup')}
-          />
+          <InterviewErrorBoundary
+            onReset={() => setStep('setup')}
+            fallbackTitle="Interview session crashed"
+          >
+            <VoiceInterviewMode
+              jobRole={config.jobRole}
+              industry={config.industry}
+              difficulty={config.difficulty}
+              interviewType={config.interviewType}
+              resumeText={config.resumeText}
+              jobDescription={config.jobDescription}
+              onEnd={() => setStep('setup')}
+            />
+          </InterviewErrorBoundary>
         </div>
       )}
     </PageLayout>
