@@ -48,6 +48,7 @@ const CounsellorSessions = lazy(() => import("./pages/counsellor/CounsellorSessi
 const ExploreCommunities = lazy(() => import("./pages/ExploreCommunities"));
 const CreateCommunity = lazy(() => import("./pages/CreateCommunity"));
 const CommunityDetail = lazy(() => import("./pages/CommunityDetail"));
+const CommunityModeration = lazy(() => import("./pages/CommunityModeration"));
 const PostDetail = lazy(() => import("./pages/PostDetail"));
 
 const queryClient = new QueryClient();
@@ -102,6 +103,7 @@ const App = () => (
                 <Route path="/communities/explore" element={<ProtectedRoute><ExploreCommunities /></ProtectedRoute>} />
                 <Route path="/communities/create" element={<ProtectedRoute><CreateCommunity /></ProtectedRoute>} />
                 <Route path="/communities/:slug" element={<ProtectedRoute><CommunityDetail /></ProtectedRoute>} />
+                <Route path="/communities/:slug/moderation" element={<ProtectedRoute><CommunityModeration /></ProtectedRoute>} />
                 <Route path="/communities/post/:postId" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
                 
                 {/* Catch-all */}
