@@ -1,23 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CommunityPost } from '@/types/community';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 type SortOption = 'trending' | 'new' | 'hot';
 
 export function useCommunityPosts(communityId?: string, sortBy: SortOption = 'trending') {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const [hasMore, setHasMore] = useState(true);
+  const pageRef = useRef(0);
+  const PAGE_SIZE = 25;
+  const isFetchingRef = useRef(false);
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async (reset = true) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      if (reset) {
+        setLoading(true);
+        pageRef.current = 0;
+      }
 
-      let query = supabase
-        .from('community_posts')
-        .select('*');
+      const { data: { user } } = await supabase.auth.getUser();
+      const offset = pageRef.current * PAGE_SIZE;
+
+      let query = supabase.from('community_posts').select('*');
 
       if (communityId) {
         query = query.eq('community_id', communityId);
@@ -32,34 +41,40 @@ export function useCommunityPosts(communityId?: string, sortBy: SortOption = 'tr
         query = query.order('upvotes', { ascending: false });
       }
 
-      const { data: postsData, error } = await query.limit(50);
+      const { data: postsData, error } = await query
+        .range(offset, offset + PAGE_SIZE - 1);
+
       if (error) throw error;
 
       if (!postsData || postsData.length === 0) {
-        setPosts([]);
+        if (reset) setPosts([]);
+        setHasMore(false);
         return;
       }
 
-      // Batch fetch: Get unique IDs
+      setHasMore(postsData.length === PAGE_SIZE);
+
+      // Batch fetch related data
       const communityIds = [...new Set(postsData.map(p => p.community_id))];
       const authorIds = [...new Set(postsData.map(p => p.author_id))];
       const postIds = postsData.map(p => p.id);
 
-      // Parallel batch queries instead of N+1
       const [communitiesRes, authorsRes, votesRes, membershipsRes] = await Promise.all([
         supabase.from('communities').select('id, name, slug, icon_url').in('id', communityIds),
         supabase.from('profiles').select('id, username, full_name, avatar_url').in('id', authorIds),
-        user ? supabase.from('community_post_votes').select('post_id, vote_type').in('post_id', postIds).eq('user_id', user.id) : Promise.resolve({ data: [] }),
-        user ? supabase.from('community_members').select('community_id, role').in('community_id', communityIds).eq('user_id', user.id) : Promise.resolve({ data: [] }),
+        user
+          ? supabase.from('community_post_votes').select('post_id, vote_type').in('post_id', postIds).eq('user_id', user.id)
+          : Promise.resolve({ data: [] }),
+        user
+          ? supabase.from('community_members').select('community_id, role').in('community_id', communityIds).eq('user_id', user.id)
+          : Promise.resolve({ data: [] }),
       ]);
 
-      // Create lookup maps for O(1) access
       const communitiesMap = new Map((communitiesRes.data || []).map(c => [c.id, c]));
       const authorsMap = new Map((authorsRes.data || []).map(a => [a.id, { username: a.username, full_name: a.full_name, avatar_url: a.avatar_url }]));
       const votesMap = new Map((votesRes.data || []).map(v => [v.post_id, v.vote_type]));
       const membershipsMap = new Map((membershipsRes.data || []).map(m => [m.community_id, m.role]));
 
-      // Enrich posts using maps (no additional queries)
       const enrichedPosts = postsData.map(post => ({
         ...post,
         community: communitiesMap.get(post.community_id) || null,
@@ -68,23 +83,36 @@ export function useCommunityPosts(communityId?: string, sortBy: SortOption = 'tr
         user_role: membershipsMap.get(post.community_id) || null,
       } as CommunityPost));
 
-      setPosts(enrichedPosts);
+      if (reset) {
+        setPosts(enrichedPosts);
+      } else {
+        setPosts(prev => [...prev, ...enrichedPosts]);
+      }
+      pageRef.current++;
     } catch (error) {
-      console.error('Error fetching posts:', error);
+      console.error('[useCommunityPosts] Fetch error:', error);
+      toast.error('Failed to load posts. Please try again.');
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  };
+  }, [communityId, sortBy]);
+
+  const loadMore = useCallback(() => {
+    if (!isFetchingRef.current && hasMore) {
+      fetchPosts(false);
+    }
+  }, [fetchPosts, hasMore]);
 
   const createPost = async (post: { title: string; content: string; community_id: string; cover_image_url?: string; tags?: string[] }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast({ title: 'Please sign in to create a post', variant: 'destructive' });
+        toast.error('Please sign in to create a post');
         return null;
       }
 
-      // Check if user has a profile with username/full_name
+      // Check profile
       const { data: profile } = await supabase
         .from('profiles')
         .select('username, full_name, onboarding_completed')
@@ -92,145 +120,147 @@ export function useCommunityPosts(communityId?: string, sortBy: SortOption = 'tr
         .single();
 
       if (!profile || (!profile.username && !profile.full_name)) {
-        toast({ 
-          title: 'Profile incomplete', 
-          description: 'Please complete your profile before posting to avoid appearing as anonymous.',
-          variant: 'destructive' 
-        });
+        toast.error('Please complete your profile before posting.');
         return null;
       }
 
       if (!profile.onboarding_completed) {
-        toast({ 
-          title: 'Complete onboarding first', 
-          description: 'Please finish setting up your profile before posting.',
-          variant: 'destructive' 
-        });
+        toast.error('Please finish setting up your profile before posting.');
         return null;
       }
 
       const { data, error } = await supabase
         .from('community_posts')
-        .insert({
-          ...post,
-          author_id: user.id,
-        })
+        .insert({ ...post, author_id: user.id })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Get community info for notification
-      const { data: community } = await supabase
-        .from('communities')
-        .select('name, slug')
-        .eq('id', post.community_id)
-        .single();
+      // Send notifications to community members (fire-and-forget)
+      const notifyMembers = async () => {
+        try {
+          const { data: community } = await supabase
+            .from('communities')
+            .select('name, slug')
+            .eq('id', post.community_id)
+            .single();
 
-      // Get all community members except the author
-      const { data: members } = await supabase
-        .from('community_members')
-        .select('user_id')
-        .eq('community_id', post.community_id)
-        .neq('user_id', user.id);
+          const { data: members } = await supabase
+            .from('community_members')
+            .select('user_id')
+            .eq('community_id', post.community_id)
+            .neq('user_id', user.id);
 
-      // Create notifications for all members
-      if (members && members.length > 0 && community) {
-        const notifications = members.map(member => ({
-          user_id: member.user_id,
-          type: 'community_post',
-          title: `New post in ${community.name}`,
-          message: post.title.substring(0, 100),
-          link: `/communities/post/${data.id}`,
-        }));
+          if (members?.length && community) {
+            const notifications = members.map(m => ({
+              user_id: m.user_id,
+              type: 'community_post',
+              title: `New post in ${community.name}`,
+              message: post.title.substring(0, 100),
+              link: `/communities/post/${data.id}`,
+            }));
+            await supabase.from('notifications').insert(notifications);
+          }
+        } catch (e) {
+          console.warn('[useCommunityPosts] Notification error:', e);
+        }
+      };
+      notifyMembers();
 
-        await supabase.from('notifications').insert(notifications);
-      }
-
-      toast({ title: 'Post created successfully!' });
-      await fetchPosts();
+      toast.success('Post created successfully!');
+      await fetchPosts(true);
       return data;
     } catch (error: any) {
-      console.error('Error creating post:', error);
-      toast({ title: 'Failed to create post', description: error.message, variant: 'destructive' });
+      console.error('[useCommunityPosts] Create error:', error);
+      toast.error(error.message || 'Failed to create post');
       return null;
     }
   };
 
+  // Optimistic voting with rollback
   const votePost = async (postId: string, voteType: 'up' | 'down') => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({ title: 'Please sign in to vote', variant: 'destructive' });
-        return;
-      }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Please sign in to vote');
+      return;
+    }
 
+    // Save previous state for rollback
+    const previousPosts = [...posts];
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+
+    // Calculate optimistic update
+    const currentVote = post.user_vote;
+    let newUpvotes = post.upvotes;
+    let newDownvotes = post.downvotes;
+    let newUserVote: 'up' | 'down' | null = voteType;
+
+    if (currentVote === voteType) {
+      // Toggle off
+      newUserVote = null;
+      if (voteType === 'up') newUpvotes--;
+      else newDownvotes--;
+    } else if (currentVote) {
+      // Switch vote
+      if (voteType === 'up') { newUpvotes++; newDownvotes--; }
+      else { newUpvotes--; newDownvotes++; }
+    } else {
+      // New vote
+      if (voteType === 'up') newUpvotes++;
+      else newDownvotes++;
+    }
+
+    // Optimistic update
+    setPosts(prev => prev.map(p =>
+      p.id === postId
+        ? { ...p, upvotes: newUpvotes, downvotes: newDownvotes, user_vote: newUserVote }
+        : p
+    ));
+
+    try {
       // Check existing vote
       const { data: existingVote } = await supabase
         .from('community_post_votes')
-        .select('*')
+        .select('id, vote_type')
         .eq('post_id', postId)
         .eq('user_id', user.id)
-        .single();
-
-      const post = posts.find(p => p.id === postId);
-      if (!post) return;
+        .maybeSingle();
 
       if (existingVote) {
         if (existingVote.vote_type === voteType) {
-          // Remove vote
-          await supabase
-            .from('community_post_votes')
-            .delete()
-            .eq('id', existingVote.id);
-
-          // Update post counts
-          await supabase
-            .from('community_posts')
-            .update({
-              upvotes: voteType === 'up' ? post.upvotes - 1 : post.upvotes,
-              downvotes: voteType === 'down' ? post.downvotes - 1 : post.downvotes,
-            })
-            .eq('id', postId);
+          await supabase.from('community_post_votes').delete().eq('id', existingVote.id);
         } else {
-          // Change vote
-          await supabase
-            .from('community_post_votes')
-            .update({ vote_type: voteType })
-            .eq('id', existingVote.id);
-
-          // Update post counts
-          await supabase
-            .from('community_posts')
-            .update({
-              upvotes: voteType === 'up' ? post.upvotes + 1 : post.upvotes - 1,
-              downvotes: voteType === 'down' ? post.downvotes + 1 : post.downvotes - 1,
-            })
-            .eq('id', postId);
+          await supabase.from('community_post_votes').update({ vote_type: voteType }).eq('id', existingVote.id);
         }
       } else {
-        // New vote
-        await supabase
-          .from('community_post_votes')
-          .insert({ post_id: postId, user_id: user.id, vote_type: voteType });
-
-        // Update post counts
-        await supabase
-          .from('community_posts')
-          .update({
-            upvotes: voteType === 'up' ? post.upvotes + 1 : post.upvotes,
-            downvotes: voteType === 'down' ? post.downvotes + 1 : post.downvotes,
-          })
-          .eq('id', postId);
+        await supabase.from('community_post_votes').insert({
+          post_id: postId,
+          user_id: user.id,
+          vote_type: voteType,
+        });
       }
 
-      await fetchPosts();
+      // Update post counts in DB
+      await supabase
+        .from('community_posts')
+        .update({ upvotes: newUpvotes, downvotes: newDownvotes })
+        .eq('id', postId);
     } catch (error) {
-      console.error('Error voting:', error);
+      console.error('[useCommunityPosts] Vote error:', error);
+      // Rollback on failure
+      setPosts(previousPosts);
+      toast.error('Vote failed. Please try again.');
     }
   };
 
   const deletePost = async (postId: string) => {
+    const previousPosts = [...posts];
+
+    // Optimistic removal
+    setPosts(prev => prev.filter(p => p.id !== postId));
+
     try {
       const { error } = await supabase
         .from('community_posts')
@@ -238,25 +268,26 @@ export function useCommunityPosts(communityId?: string, sortBy: SortOption = 'tr
         .eq('id', postId);
 
       if (error) throw error;
-
-      toast({ title: 'Post deleted' });
-      await fetchPosts();
+      toast.success('Post deleted');
     } catch (error: any) {
-      console.error('Error deleting post:', error);
-      toast({ title: 'Failed to delete post', description: error.message, variant: 'destructive' });
+      console.error('[useCommunityPosts] Delete error:', error);
+      setPosts(previousPosts);
+      toast.error(error.message || 'Failed to delete post');
     }
   };
 
   useEffect(() => {
-    fetchPosts();
+    fetchPosts(true);
   }, [communityId, sortBy]);
 
   return {
     posts,
     loading,
+    hasMore,
     createPost,
     votePost,
     deletePost,
-    refetch: fetchPosts,
+    loadMore,
+    refetch: () => fetchPosts(true),
   };
 }

@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, 
-  Users, 
-  Settings, 
-  Shield, 
-  PenSquare,
-  Check
+  ArrowLeft, Users, Settings, Shield, PenSquare, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,26 +9,22 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { CommunityPostCard } from '@/components/communities/CommunityPostCard';
 import { CreatePostDialog } from '@/components/communities/CreatePostDialog';
 import { TrendingCommunitiesSidebar } from '@/components/communities/TrendingCommunitiesSidebar';
+import { CommunityErrorBoundary } from '@/components/communities/CommunityErrorBoundary';
 import { useCommunityPosts } from '@/hooks/useCommunityPosts';
 import { supabase } from '@/integrations/supabase/client';
 import { Community, CommunityMember } from '@/types/community';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 type SortOption = 'trending' | 'new' | 'hot';
 
 export default function CommunityDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
   
   const [community, setCommunity] = useState<Community | null>(null);
   const [membership, setMembership] = useState<CommunityMember | null>(null);
@@ -42,7 +33,7 @@ export default function CommunityDetail() {
   const [joining, setJoining] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>('trending');
 
-  const { posts, loading: postsLoading, createPost, votePost, deletePost } = 
+  const { posts, loading: postsLoading, hasMore, createPost, votePost, deletePost, loadMore } = 
     useCommunityPosts(community?.id, sortBy);
 
   useEffect(() => {
@@ -52,7 +43,6 @@ export default function CommunityDetail() {
       try {
         setLoading(true);
         
-        // Fetch community
         const { data: communityData, error: commError } = await supabase
           .from('communities')
           .select('*')
@@ -62,14 +52,12 @@ export default function CommunityDetail() {
         if (commError) throw commError;
         setCommunity(communityData);
 
-        // Fetch member count
         const { count } = await supabase
           .from('community_members')
           .select('*', { count: 'exact', head: true })
           .eq('community_id', communityData.id);
         setMemberCount(count || 0);
 
-        // Check user membership
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data: memberData } = await supabase
@@ -77,12 +65,12 @@ export default function CommunityDetail() {
             .select('*')
             .eq('community_id', communityData.id)
             .eq('user_id', user.id)
-            .single() as { data: CommunityMember | null };
-          setMembership(memberData);
+            .maybeSingle();
+          setMembership(memberData as CommunityMember | null);
         }
       } catch (error) {
-        console.error('Error fetching community:', error);
-        toast({ title: 'Community not found', variant: 'destructive' });
+        console.error('[CommunityDetail] Fetch error:', error);
+        toast.error('Community not found');
         navigate('/communities');
       } finally {
         setLoading(false);
@@ -90,7 +78,7 @@ export default function CommunityDetail() {
     };
 
     fetchCommunity();
-  }, [slug, navigate, toast]);
+  }, [slug, navigate]);
 
   const handleJoinLeave = async () => {
     if (!community) return;
@@ -99,12 +87,11 @@ export default function CommunityDetail() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast({ title: 'Please sign in', variant: 'destructive' });
+        toast.error('Please sign in');
         return;
       }
 
       if (membership) {
-        // Leave
         await supabase
           .from('community_members')
           .delete()
@@ -112,22 +99,21 @@ export default function CommunityDetail() {
           .eq('user_id', user.id);
         setMembership(null);
         setMemberCount(c => c - 1);
-        toast({ title: 'Left community' });
+        toast.success('Left community');
       } else {
-        // Join
         const { data, error } = await supabase
           .from('community_members')
           .insert({ community_id: community.id, user_id: user.id, role: 'member' })
           .select()
-          .single() as { data: CommunityMember | null; error: any };
+          .single();
         if (error) throw error;
-        setMembership(data);
+        setMembership(data as CommunityMember);
         setMemberCount(c => c + 1);
-        toast({ title: 'Joined community!' });
+        toast.success('Joined community!');
       }
     } catch (error: any) {
-      console.error('Error:', error);
-      toast({ title: 'Operation failed', description: error.message, variant: 'destructive' });
+      console.error('[CommunityDetail] Join/Leave error:', error);
+      toast.error(error.message || 'Operation failed');
     } finally {
       setJoining(false);
     }
@@ -135,7 +121,7 @@ export default function CommunityDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background" aria-busy="true">
         <Skeleton className="h-48 w-full" />
         <div className="max-w-5xl mx-auto px-6 -mt-16">
           <div className="flex items-end gap-4">
@@ -165,14 +151,17 @@ export default function CommunityDetail() {
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         } : undefined}
+        role="img"
+        aria-label={`${community.name} banner`}
       >
         <Button 
           variant="ghost" 
           size="sm" 
           className="absolute top-4 left-4 bg-background/50 backdrop-blur"
           onClick={() => navigate('/communities')}
+          aria-label="Back to communities"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
           Back
         </Button>
       </div>
@@ -181,7 +170,7 @@ export default function CommunityDetail() {
       <div className="max-w-7xl mx-auto px-6 -mt-16 relative z-10">
         <div className="flex flex-col md:flex-row md:items-end gap-4">
           <Avatar className="h-24 w-24 border-4 border-background">
-            <AvatarImage src={community.icon_url || undefined} />
+            <AvatarImage src={community.icon_url || undefined} alt={`${community.name} icon`} />
             <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
               {community.name.substring(0, 2).toUpperCase()}
             </AvatarFallback>
@@ -194,7 +183,7 @@ export default function CommunityDetail() {
             </div>
             <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
               <span className="flex items-center gap-1">
-                <Users className="h-4 w-4" />
+                <Users className="h-4 w-4" aria-hidden="true" />
                 {memberCount} members
               </span>
             </div>
@@ -202,8 +191,8 @@ export default function CommunityDetail() {
 
           <div className="flex gap-2 pb-4">
             {isAdmin && (
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" aria-label="Community settings">
+                <Settings className="h-4 w-4 mr-2" aria-hidden="true" />
                 Settings
               </Button>
             )}
@@ -211,10 +200,11 @@ export default function CommunityDetail() {
               variant={membership ? "secondary" : "default"}
               onClick={handleJoinLeave}
               disabled={joining}
+              aria-label={membership ? 'Leave community' : 'Join community'}
             >
               {membership ? (
                 <>
-                  <Check className="h-4 w-4 mr-2" />
+                  <Check className="h-4 w-4 mr-2" aria-hidden="true" />
                   Joined
                 </>
               ) : (
@@ -243,7 +233,7 @@ export default function CommunityDetail() {
 
               <div className="flex items-center gap-2">
                 <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-32" aria-label="Sort posts">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -257,7 +247,7 @@ export default function CommunityDetail() {
                   <CreatePostDialog
                     trigger={
                       <Button size="sm" className="gap-2">
-                        <PenSquare className="h-4 w-4" />
+                        <PenSquare className="h-4 w-4" aria-hidden="true" />
                         Post
                       </Button>
                     }
@@ -268,38 +258,51 @@ export default function CommunityDetail() {
               </div>
             </div>
 
-            <TabsContent value="posts" className="space-y-4">
-              {postsLoading ? (
-                [...Array(3)].map((_, i) => (
-                  <div key={i} className="space-y-3 p-4 border rounded-lg">
-                    <Skeleton className="h-6 w-3/4" />
-                    <Skeleton className="h-16 w-full" />
-                  </div>
-                ))
-              ) : posts.length === 0 ? (
-                <div className="text-center py-12 border rounded-lg">
-                  <p className="text-muted-foreground mb-4">
-                    No posts yet in this community.
-                  </p>
-                  {membership && (
-                    <CreatePostDialog
-                      trigger={<Button>Create the first post</Button>}
-                      defaultCommunityId={community.id}
-                      onSubmit={createPost}
-                    />
+            <TabsContent value="posts">
+              <CommunityErrorBoundary fallbackTitle="Posts failed to load">
+                <div className="space-y-4" role="feed" aria-label="Community posts">
+                  {postsLoading ? (
+                    [...Array(3)].map((_, i) => (
+                      <div key={i} className="space-y-3 p-4 border rounded-lg" aria-hidden="true">
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-16 w-full" />
+                      </div>
+                    ))
+                  ) : posts.length === 0 ? (
+                    <div className="text-center py-12 border rounded-lg">
+                      <p className="text-muted-foreground mb-4">
+                        No posts yet in this community.
+                      </p>
+                      {membership && (
+                        <CreatePostDialog
+                          trigger={<Button>Create the first post</Button>}
+                          defaultCommunityId={community.id}
+                          onSubmit={createPost}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {posts.map((post) => (
+                        <CommunityPostCard
+                          key={post.id}
+                          post={post}
+                          onVote={votePost}
+                          onDelete={isMod ? deletePost : undefined}
+                          showCommunity={false}
+                        />
+                      ))}
+                      {hasMore && (
+                        <div className="flex justify-center pt-4">
+                          <Button variant="outline" onClick={loadMore}>
+                            Load More
+                          </Button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
-              ) : (
-                posts.map((post) => (
-                  <CommunityPostCard
-                    key={post.id}
-                    post={post}
-                    onVote={votePost}
-                    onDelete={isMod ? deletePost : undefined}
-                    showCommunity={false}
-                  />
-                ))
-              )}
+              </CommunityErrorBoundary>
             </TabsContent>
 
             <TabsContent value="about">
@@ -314,7 +317,7 @@ export default function CommunityDetail() {
                 {community.rules && (
                   <div>
                     <h3 className="font-semibold mb-2 flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
+                      <Shield className="h-4 w-4" aria-hidden="true" />
                       Community Rules
                     </h3>
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">
@@ -344,8 +347,10 @@ export default function CommunityDetail() {
         </div>
 
         {/* Right Sidebar */}
-        <aside className="hidden lg:block">
-          <TrendingCommunitiesSidebar />
+        <aside className="hidden lg:block" aria-label="Trending communities">
+          <CommunityErrorBoundary fallbackTitle="Trending error">
+            <TrendingCommunitiesSidebar />
+          </CommunityErrorBoundary>
         </aside>
       </div>
     </div>

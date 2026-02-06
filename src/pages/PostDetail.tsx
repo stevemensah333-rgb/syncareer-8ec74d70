@@ -9,7 +9,8 @@ import {
   ArrowLeft,
   Send,
   MoreHorizontal,
-  Trash2
+  Trash2,
+  Flag
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,10 +22,13 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CommunitySidebar } from '@/components/communities/CommunitySidebar';
 import { TrendingCommunitiesSidebar } from '@/components/communities/TrendingCommunitiesSidebar';
+import { CommunityErrorBoundary } from '@/components/communities/CommunityErrorBoundary';
+import { ReportContentDialog } from '@/components/communities/ReportContentDialog';
 import { UserProfileLink } from '@/components/communities/UserProfileLink';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -314,7 +318,7 @@ export default function PostDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background" aria-busy="true">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-0">
           <aside className="hidden lg:block border-r min-h-screen">
             <CommunitySidebar />

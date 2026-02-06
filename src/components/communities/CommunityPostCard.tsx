@@ -7,7 +7,8 @@ import {
   Share2, 
   MoreHorizontal,
   Trash2,
-  Pin
+  Pin,
+  Flag
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,11 +18,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CommunityPost } from '@/types/community';
 import { cn } from '@/lib/utils';
 import { UserProfileLink } from './UserProfileLink';
+import { ReportContentDialog } from './ReportContentDialog';
+import { toast } from 'sonner';
 
 interface CommunityPostCardProps {
   post: CommunityPost;
@@ -37,30 +41,32 @@ export function CommunityPostCard({
   showCommunity = true 
 }: CommunityPostCardProps) {
   const score = post.upvotes - post.downvotes;
-
   const canModerate = post.user_role === 'admin' || post.user_role === 'moderator';
 
   const handleShare = async () => {
     const url = window.location.origin + `/communities/post/${post.id}`;
     try {
       await navigator.clipboard.writeText(url);
-      // Show feedback via toast
-      const { toast } = await import('sonner');
       toast.success('Link copied to clipboard!');
-    } catch (e) {
-      console.error('Failed to copy link');
-      const { toast } = await import('sonner');
-      toast.error('Failed to copy link');
+    } catch {
+      // Fallback for browsers without clipboard API
+      const input = document.createElement('input');
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      toast.success('Link copied!');
     }
   };
 
   return (
-    <Card className="hover:border-primary/20 transition-colors">
+    <Card className="hover:border-primary/20 transition-colors" role="article" aria-label={`Post: ${post.title}`}>
       <CardContent className="p-4">
         {/* Header */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
           <Avatar className="h-6 w-6">
-            <AvatarImage src={post.author?.avatar_url || undefined} />
+            <AvatarImage src={post.author?.avatar_url || undefined} alt="" />
             <AvatarFallback className="text-xs">
               {post.author?.username?.substring(0, 2).toUpperCase() || 'U'}
             </AvatarFallback>
@@ -89,12 +95,14 @@ export function CommunityPostCard({
             </>
           )}
 
-          <span>•</span>
-          <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
+          <span aria-hidden="true">•</span>
+          <time dateTime={post.created_at}>
+            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+          </time>
 
           {post.is_pinned && (
             <Badge variant="outline" className="text-xs gap-1">
-              <Pin className="h-3 w-3" />
+              <Pin className="h-3 w-3" aria-hidden="true" />
               Pinned
             </Badge>
           )}
@@ -106,8 +114,9 @@ export function CommunityPostCard({
             <Link to={`/communities/post/${post.id}`} className="flex-shrink-0">
               <img 
                 src={post.cover_image_url} 
-                alt=""
+                alt={`Cover image for ${post.title}`}
                 className="w-32 h-24 object-cover rounded-lg"
+                loading="lazy"
               />
             </Link>
           )}
@@ -125,7 +134,7 @@ export function CommunityPostCard({
             </p>
 
             {post.tags && post.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
+              <div className="flex flex-wrap gap-1 mt-2" aria-label="Post tags">
                 {post.tags.slice(0, 5).map((tag) => (
                   <Badge key={tag} variant="secondary" className="text-xs">
                     #{tag}
@@ -137,68 +146,79 @@ export function CommunityPostCard({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 mt-4">
+        <div className="flex items-center gap-1 mt-4" role="toolbar" aria-label="Post actions">
           {/* Vote buttons */}
-          <div className="flex items-center bg-muted rounded-full">
+          <div className="flex items-center bg-muted rounded-full" role="group" aria-label="Vote on post">
             <Button
               variant="ghost"
               size="sm"
-              className={cn(
-                "rounded-l-full px-3",
-                post.user_vote === 'up' && "text-primary"
-              )}
+              className={cn("rounded-l-full px-3", post.user_vote === 'up' && "text-primary")}
               onClick={() => onVote(post.id, 'up')}
+              aria-label={`Upvote (${post.upvotes})`}
+              aria-pressed={post.user_vote === 'up'}
             >
-              <ArrowBigUp className={cn("h-5 w-5", post.user_vote === 'up' && "fill-current")} />
+              <ArrowBigUp className={cn("h-5 w-5", post.user_vote === 'up' && "fill-current")} aria-hidden="true" />
             </Button>
-            <span className="font-medium text-sm min-w-[2rem] text-center">{score}</span>
+            <span className="font-medium text-sm min-w-[2rem] text-center" aria-label={`Score: ${score}`}>
+              {score}
+            </span>
             <Button
               variant="ghost"
               size="sm"
-              className={cn(
-                "rounded-r-full px-3",
-                post.user_vote === 'down' && "text-destructive"
-              )}
+              className={cn("rounded-r-full px-3", post.user_vote === 'down' && "text-destructive")}
               onClick={() => onVote(post.id, 'down')}
+              aria-label={`Downvote (${post.downvotes})`}
+              aria-pressed={post.user_vote === 'down'}
             >
-              <ArrowBigDown className={cn("h-5 w-5", post.user_vote === 'down' && "fill-current")} />
+              <ArrowBigDown className={cn("h-5 w-5", post.user_vote === 'down' && "fill-current")} aria-hidden="true" />
             </Button>
           </div>
 
           {/* Comments */}
           <Link to={`/communities/post/${post.id}`}>
-            <Button variant="ghost" size="sm" className="gap-1">
-              <MessageSquare className="h-4 w-4" />
+            <Button variant="ghost" size="sm" className="gap-1" aria-label={`${post.comment_count} comments`}>
+              <MessageSquare className="h-4 w-4" aria-hidden="true" />
               <span>{post.comment_count}</span>
             </Button>
           </Link>
 
           {/* Share */}
-          <Button variant="ghost" size="sm" onClick={handleShare}>
-            <Share2 className="h-4 w-4" />
+          <Button variant="ghost" size="sm" onClick={handleShare} aria-label="Share post">
+            <Share2 className="h-4 w-4" aria-hidden="true" />
           </Button>
 
           {/* More options */}
-          {(canModerate || onDelete) && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {onDelete && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" aria-label="More options">
+                <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <ReportContentDialog
+                contentType="post"
+                contentId={post.id}
+                trigger={
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2">
+                    <Flag className="h-4 w-4" />
+                    Report Post
+                  </DropdownMenuItem>
+                }
+              />
+              {(canModerate || onDelete) && (
+                <>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem 
-                    className="text-destructive"
-                    onClick={() => onDelete(post.id)}
+                    className="text-destructive gap-2"
+                    onClick={() => onDelete?.(post.id)}
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="h-4 w-4" />
                     Delete Post
                   </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardContent>
     </Card>
