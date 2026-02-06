@@ -38,6 +38,7 @@ import CreateCommunity from "./pages/CreateCommunity";
 import CommunityDetail from "./pages/CommunityDetail";
 import PostDetail from "./pages/PostDetail";
 import Landing from "./pages/Landing";
+import CVBuilder from "./pages/CVBuilder";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +70,7 @@ const App = () => (
             {/* Protected feature routes */}
             <Route path="/interview-simulator" element={<ProtectedRoute><InterviewSimulator /></ProtectedRoute>} />
             <Route path="/applications" element={<ProtectedRoute><ApplicationTracker /></ProtectedRoute>} />
+            <Route path="/cv-builder" element={<ProtectedRoute><CVBuilder /></ProtectedRoute>} />
             
             {/* Protected employer routes */}
             <Route path="/my-company" element={<ProtectedRoute><MyCompany /></ProtectedRoute>} />
