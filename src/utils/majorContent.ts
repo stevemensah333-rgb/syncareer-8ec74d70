@@ -106,9 +106,175 @@ const majorContentMap: Record<string, MajorContent> = {
     suggestedCourses: ['Deep Learning', 'Natural Language Processing', 'Big Data Engineering', 'MLOps'],
     industryNews: ['AI talent shortage creates opportunities', 'Data-driven companies outperform competitors'],
   },
+  // ─── New majors below ────────────────────────────────────────
+  'Civil Engineering': {
+    skills: ['Structural Analysis', 'AutoCAD', 'Project Management', 'Geotechnical Engineering', 'Construction Management', 'Surveying', 'BIM'],
+    jobTrends: [
+      { title: 'Structural Engineer', growth: '+8%', demand: 'High' },
+      { title: 'Site Engineer', growth: '+10%', demand: 'High' },
+      { title: 'Project Manager', growth: '+12%', demand: 'High' },
+      { title: 'Urban Planner', growth: '+9%', demand: 'Medium' },
+    ],
+    suggestedCourses: ['Building Information Modelling', 'Sustainable Construction', 'Structural Design', 'Transport Engineering'],
+    industryNews: ['Infrastructure spend boosts civil engineering demand', 'Green building standards reshape construction industry'],
+  },
+  'Chemical Engineering': {
+    skills: ['Process Design', 'Chemical Analysis', 'MATLAB', 'Process Simulation', 'Safety Engineering', 'Thermodynamics', 'Quality Assurance'],
+    jobTrends: [
+      { title: 'Process Engineer', growth: '+7%', demand: 'High' },
+      { title: 'Chemical Engineer', growth: '+6%', demand: 'Medium' },
+      { title: 'Quality Assurance Engineer', growth: '+10%', demand: 'High' },
+      { title: 'Environmental Engineer', growth: '+14%', demand: 'High' },
+    ],
+    suggestedCourses: ['Process Optimization', 'Environmental Engineering', 'Petrochemical Processing', 'Sustainable Chemistry'],
+    industryNews: ['Petrochemical sector modernizes processes', 'Water treatment engineering demand rises in SA'],
+  },
+  'Information Technology': {
+    skills: ['Networking', 'Cybersecurity', 'Database Management', 'Cloud Infrastructure', 'Linux Administration', 'ITIL', 'Scripting'],
+    jobTrends: [
+      { title: 'IT Systems Administrator', growth: '+10%', demand: 'High' },
+      { title: 'Cybersecurity Analyst', growth: '+32%', demand: 'Very High' },
+      { title: 'Network Engineer', growth: '+12%', demand: 'High' },
+      { title: 'Cloud Engineer', growth: '+28%', demand: 'Very High' },
+    ],
+    suggestedCourses: ['Cybersecurity Fundamentals', 'AWS/Azure Cloud Certification', 'Network Architecture', 'DevOps Practices'],
+    industryNews: ['Cyber threats drive security hiring surge in SA', 'Cloud migration accelerates across industries'],
+  },
+  'Accounting': {
+    skills: ['Financial Reporting', 'Auditing', 'Tax Compliance', 'IFRS Standards', 'SAP/ERP', 'Bookkeeping', 'Data Analytics'],
+    jobTrends: [
+      { title: 'Chartered Accountant', growth: '+6%', demand: 'High' },
+      { title: 'Tax Consultant', growth: '+9%', demand: 'High' },
+      { title: 'Audit Manager', growth: '+7%', demand: 'Medium' },
+      { title: 'Forensic Accountant', growth: '+15%', demand: 'High' },
+    ],
+    suggestedCourses: ['SAICA Board Exam Prep', 'Tax Law & Practice', 'Forensic Accounting', 'Financial Data Analytics'],
+    industryNews: ['Forensic accounting demand rises amid corporate governance focus', 'Big Four firms expand SA operations'],
+  },
+  'Human Resources': {
+    skills: ['Talent Acquisition', 'Employee Relations', 'Labour Law', 'Performance Management', 'HRIS Systems', 'Training & Development', 'Conflict Resolution'],
+    jobTrends: [
+      { title: 'HR Business Partner', growth: '+10%', demand: 'High' },
+      { title: 'Talent Acquisition Specialist', growth: '+14%', demand: 'High' },
+      { title: 'Learning & Development Manager', growth: '+12%', demand: 'Medium' },
+      { title: 'Compensation Analyst', growth: '+8%', demand: 'Medium' },
+    ],
+    suggestedCourses: ['SA Labour Law', 'People Analytics', 'Organisational Development', 'HR Technology & HRIS'],
+    industryNews: ['Remote work policies reshape HR practices', 'Employee wellness programmes become standard'],
+  },
+  'Economics': {
+    skills: ['Econometrics', 'Statistical Analysis', 'Policy Analysis', 'Research Methods', 'Data Modelling', 'Financial Economics', 'R/Stata'],
+    jobTrends: [
+      { title: 'Economic Analyst', growth: '+8%', demand: 'Medium' },
+      { title: 'Policy Researcher', growth: '+10%', demand: 'Medium' },
+      { title: 'Data Analyst', growth: '+20%', demand: 'High' },
+      { title: 'Investment Analyst', growth: '+9%', demand: 'High' },
+    ],
+    suggestedCourses: ['Applied Econometrics', 'Development Economics', 'Behavioural Economics', 'Public Policy Analysis'],
+    industryNews: ['Economic research roles grow in think tanks', 'Data-literate economists in high demand'],
+  },
+  'Psychology': {
+    skills: ['Counselling', 'Research Design', 'Clinical Assessment', 'Behavioural Analysis', 'SPSS/Statistics', 'Empathy', 'Report Writing'],
+    jobTrends: [
+      { title: 'Clinical Psychologist', growth: '+10%', demand: 'High' },
+      { title: 'Industrial Psychologist', growth: '+14%', demand: 'High' },
+      { title: 'HR Specialist', growth: '+8%', demand: 'Medium' },
+      { title: 'UX Researcher', growth: '+18%', demand: 'High' },
+    ],
+    suggestedCourses: ['Clinical Psychology Practice', 'Industrial/Organisational Psychology', 'Research Methodology', 'Psychometric Assessment'],
+    industryNews: ['Mental health awareness drives demand for psychologists', 'Corporate wellness creates industrial psychology roles'],
+  },
+  'Nursing': {
+    skills: ['Patient Assessment', 'Clinical Procedures', 'Emergency Care', 'Medication Administration', 'Infection Control', 'Health Education', 'Critical Care'],
+    jobTrends: [
+      { title: 'Registered Nurse', growth: '+12%', demand: 'Very High' },
+      { title: 'Critical Care Nurse', growth: '+15%', demand: 'Very High' },
+      { title: 'Community Health Nurse', growth: '+10%', demand: 'High' },
+      { title: 'Nurse Educator', growth: '+8%', demand: 'Medium' },
+    ],
+    suggestedCourses: ['Advanced Clinical Nursing', 'Critical Care Specialisation', 'Community Health Practice', 'Nursing Management'],
+    industryNews: ['Global nursing shortage creates opportunities abroad', 'SA public health sector expands nursing roles'],
+  },
+  'Pharmacy': {
+    skills: ['Pharmaceutical Chemistry', 'Drug Dispensing', 'Patient Counselling', 'Pharmacokinetics', 'Clinical Pharmacy', 'Regulatory Compliance', 'Compounding'],
+    jobTrends: [
+      { title: 'Clinical Pharmacist', growth: '+8%', demand: 'High' },
+      { title: 'Retail Pharmacist', growth: '+5%', demand: 'High' },
+      { title: 'Pharmaceutical Sales Rep', growth: '+10%', demand: 'Medium' },
+      { title: 'Regulatory Affairs Specialist', growth: '+12%', demand: 'High' },
+    ],
+    suggestedCourses: ['Clinical Pharmacy Practice', 'Pharmacovigilance', 'Pharmaceutical Regulations', 'Drug Development'],
+    industryNews: ['Pharmaceutical innovation drives specialist demand', 'Community pharmacies expand clinical services'],
+  },
+  'Architecture': {
+    skills: ['AutoCAD', 'Revit/BIM', 'SketchUp', 'Sustainable Design', '3D Visualisation', 'Project Management', 'Building Codes'],
+    jobTrends: [
+      { title: 'Junior Architect', growth: '+6%', demand: 'Medium' },
+      { title: 'Urban Designer', growth: '+9%', demand: 'Medium' },
+      { title: 'BIM Specialist', growth: '+15%', demand: 'High' },
+      { title: 'Interior Designer', growth: '+8%', demand: 'Medium' },
+    ],
+    suggestedCourses: ['Sustainable Architecture', 'Digital Fabrication', 'Urban Design Theory', 'Advanced BIM Workflows'],
+    industryNews: ['Green building trend transforms architecture practice', 'Smart city projects create urban design opportunities'],
+  },
+  'Graphic Design': {
+    skills: ['Adobe Creative Suite', 'UI/UX Design', 'Typography', 'Branding', 'Motion Graphics', 'Illustration', 'Figma'],
+    jobTrends: [
+      { title: 'Graphic Designer', growth: '+8%', demand: 'Medium' },
+      { title: 'UI/UX Designer', growth: '+22%', demand: 'Very High' },
+      { title: 'Brand Designer', growth: '+10%', demand: 'Medium' },
+      { title: 'Motion Designer', growth: '+15%', demand: 'High' },
+    ],
+    suggestedCourses: ['UI/UX Design', 'Motion Graphics & After Effects', 'Design Systems', 'Brand Identity Design'],
+    industryNews: ['UX design demand explodes in SA tech sector', 'AI design tools reshape creative workflows'],
+  },
+  'Communications': {
+    skills: ['Public Relations', 'Media Writing', 'Social Media Management', 'Content Creation', 'Crisis Communication', 'Copywriting', 'Event Planning'],
+    jobTrends: [
+      { title: 'Communications Specialist', growth: '+8%', demand: 'Medium' },
+      { title: 'PR Manager', growth: '+7%', demand: 'Medium' },
+      { title: 'Content Manager', growth: '+15%', demand: 'High' },
+      { title: 'Social Media Manager', growth: '+18%', demand: 'High' },
+    ],
+    suggestedCourses: ['Digital Content Strategy', 'Crisis Communications', 'Media Relations', 'Copywriting Masterclass'],
+    industryNews: ['Content marketing budgets increase across SA companies', 'Social media management becomes a core business function'],
+  },
+  'Education': {
+    skills: ['Curriculum Design', 'Classroom Management', 'Assessment & Evaluation', 'Educational Technology', 'Inclusive Education', 'Lesson Planning', 'Student Mentoring'],
+    jobTrends: [
+      { title: 'Secondary School Teacher', growth: '+5%', demand: 'High' },
+      { title: 'Educational Technologist', growth: '+15%', demand: 'High' },
+      { title: 'Curriculum Developer', growth: '+10%', demand: 'Medium' },
+      { title: 'Special Education Teacher', growth: '+12%', demand: 'High' },
+    ],
+    suggestedCourses: ['Educational Technology Integration', 'Inclusive Teaching Practices', 'Curriculum Development', 'Assessment Design'],
+    industryNews: ['EdTech adoption transforms SA classrooms', 'Teacher shortage creates opportunities in STEM education'],
+  },
+  'Environmental Science': {
+    skills: ['Environmental Impact Assessment', 'GIS/Remote Sensing', 'Water Quality Analysis', 'Ecology', 'Sustainability Planning', 'Data Analysis', 'Environmental Law'],
+    jobTrends: [
+      { title: 'Environmental Consultant', growth: '+12%', demand: 'High' },
+      { title: 'Sustainability Manager', growth: '+18%', demand: 'High' },
+      { title: 'GIS Analyst', growth: '+15%', demand: 'High' },
+      { title: 'Environmental Officer', growth: '+10%', demand: 'Medium' },
+    ],
+    suggestedCourses: ['Environmental Impact Assessment', 'GIS & Spatial Analysis', 'Climate Change Science', 'Sustainability Management'],
+    industryNews: ['ESG regulations drive environmental consulting growth', 'Climate change creates new career paths in SA'],
+  },
+  'Agriculture': {
+    skills: ['Agronomy', 'Soil Science', 'Agricultural Technology', 'Farm Management', 'Precision Agriculture', 'Irrigation Systems', 'Supply Chain'],
+    jobTrends: [
+      { title: 'Agricultural Scientist', growth: '+8%', demand: 'Medium' },
+      { title: 'Farm Manager', growth: '+6%', demand: 'High' },
+      { title: 'Agri-Tech Specialist', growth: '+20%', demand: 'High' },
+      { title: 'Food Safety Analyst', growth: '+12%', demand: 'High' },
+    ],
+    suggestedCourses: ['Precision Agriculture Technology', 'Sustainable Farming Practices', 'Agricultural Economics', 'Food Science & Safety'],
+    industryNews: ['AgriTech startups flourish in SA', 'Climate-smart agriculture investment grows'],
+  },
 };
 
-// Default content for majors not specifically mapped
+// Default content for majors not specifically mapped (e.g. "Other")
 const defaultContent: MajorContent = {
   skills: ['Communication', 'Critical Thinking', 'Problem Solving', 'Teamwork', 'Time Management', 'Adaptability', 'Leadership'],
   jobTrends: [

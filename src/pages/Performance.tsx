@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
@@ -95,6 +95,17 @@ const Performance = () => {
         .gte('created_at', sixMonthsAgo.toISOString())
         .order('created_at', { ascending: true });
 
+      // Fetch real endorsement counts per skill
+      const { data: endorsementData } = await supabase
+        .from('skill_endorsements')
+        .select('skill_name')
+        .eq('user_id', userId);
+
+      const endorsementsBySkill: Record<string, number> = {};
+      (endorsementData || []).forEach(e => {
+        endorsementsBySkill[e.skill_name] = (endorsementsBySkill[e.skill_name] || 0) + 1;
+      });
+
       // Process monthly data
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const monthlyStats: Record<string, { applications: number; posts: number }> = {};
@@ -130,7 +141,7 @@ const Performance = () => {
         };
       });
 
-      // Calculate skill progress from community posts
+      // Calculate skill progress from community posts with real endorsements
       const skillCounts: Record<string, number> = {};
       (postsData || []).forEach(post => {
         (post.tags || []).forEach((tag: string) => {
@@ -144,7 +155,7 @@ const Performance = () => {
         .map(([skill, posts]) => ({
           skill,
           posts,
-          endorsements: Math.floor(Math.random() * 10) + 1, // Would fetch real endorsements per skill
+          endorsements: endorsementsBySkill[skill] || 0,
         }));
 
       setStats({
@@ -228,8 +239,8 @@ const Performance = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Users className="h-5 w-5 text-green-600" />
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Users className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.communitiesJoined}</p>
@@ -383,17 +394,17 @@ const Performance = () => {
               </div>
             )}
             {stats.interviewsScheduled > 0 && (
-              <div className="p-3 bg-green-50 rounded-lg">
-                <p className="text-sm font-medium mb-1 text-green-700">🎉 Interview Stage</p>
-                <p className="text-xs text-green-600">
+              <div className="p-3 bg-primary/5 rounded-lg">
+                <p className="text-sm font-medium mb-1 text-foreground">🎉 Interview Stage</p>
+                <p className="text-xs text-muted-foreground">
                   You have {stats.interviewsScheduled} interview{stats.interviewsScheduled !== 1 ? 's' : ''} lined up!
                 </p>
               </div>
             )}
             {learningStreak && learningStreak.current_streak >= 7 && (
-              <div className="p-3 bg-orange-50 rounded-lg">
-                <p className="text-sm font-medium mb-1 text-orange-700">🔥 On Fire!</p>
-                <p className="text-xs text-orange-600">
+              <div className="p-3 bg-accent/10 rounded-lg">
+                <p className="text-sm font-medium mb-1 text-foreground">🔥 On Fire!</p>
+                <p className="text-xs text-muted-foreground">
                   {learningStreak.current_streak}-day learning streak! Keep the momentum going.
                 </p>
               </div>

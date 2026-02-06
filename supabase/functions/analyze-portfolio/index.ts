@@ -1,4 +1,3 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -7,12 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Input validation constants
-const MAX_CV_CONTENT_LENGTH = 50000; // 50KB for CV content
-const MAX_PORTFOLIO_CONTENT_LENGTH = 50000; // 50KB for portfolio content
-const MAX_FILENAME_LENGTH = 255; // Standard filename length limit
+const MAX_CV_CONTENT_LENGTH = 50000;
+const MAX_PORTFOLIO_CONTENT_LENGTH = 50000;
+const MAX_FILENAME_LENGTH = 255;
 
-// Validate portfolio analysis request
 interface PortfolioRequest {
   cvContent?: string;
   portfolioContent?: string;
@@ -26,42 +23,23 @@ function validatePortfolioRequest(body: unknown): { valid: boolean; error?: stri
 
   const request = body as Record<string, unknown>;
 
-  // Validate fileName (required)
-  if (typeof request.fileName !== "string") {
-    return { valid: false, error: "fileName is required and must be a string" };
+  if (typeof request.fileName !== "string" || request.fileName.length === 0) {
+    return { valid: false, error: "fileName is required and must be a non-empty string" };
   }
-
-  if (request.fileName.length === 0) {
-    return { valid: false, error: "fileName cannot be empty" };
-  }
-
   if (request.fileName.length > MAX_FILENAME_LENGTH) {
     return { valid: false, error: `fileName exceeds maximum length of ${MAX_FILENAME_LENGTH} characters` };
   }
 
-  // Validate cvContent (optional)
   if (request.cvContent !== undefined) {
-    if (typeof request.cvContent !== "string") {
-      return { valid: false, error: "cvContent must be a string" };
-    }
-
-    if (request.cvContent.length > MAX_CV_CONTENT_LENGTH) {
-      return { valid: false, error: `cvContent exceeds maximum length of ${MAX_CV_CONTENT_LENGTH} characters (${Math.round(MAX_CV_CONTENT_LENGTH / 1000)}KB)` };
-    }
+    if (typeof request.cvContent !== "string") return { valid: false, error: "cvContent must be a string" };
+    if (request.cvContent.length > MAX_CV_CONTENT_LENGTH) return { valid: false, error: `cvContent exceeds ${MAX_CV_CONTENT_LENGTH} characters` };
   }
 
-  // Validate portfolioContent (optional)
   if (request.portfolioContent !== undefined) {
-    if (typeof request.portfolioContent !== "string") {
-      return { valid: false, error: "portfolioContent must be a string" };
-    }
-
-    if (request.portfolioContent.length > MAX_PORTFOLIO_CONTENT_LENGTH) {
-      return { valid: false, error: `portfolioContent exceeds maximum length of ${MAX_PORTFOLIO_CONTENT_LENGTH} characters (${Math.round(MAX_PORTFOLIO_CONTENT_LENGTH / 1000)}KB)` };
-    }
+    if (typeof request.portfolioContent !== "string") return { valid: false, error: "portfolioContent must be a string" };
+    if (request.portfolioContent.length > MAX_PORTFOLIO_CONTENT_LENGTH) return { valid: false, error: `portfolioContent exceeds ${MAX_PORTFOLIO_CONTENT_LENGTH} characters` };
   }
 
-  // Ensure at least one content type is provided
   if (!request.cvContent && !request.portfolioContent) {
     return { valid: false, error: "At least one of cvContent or portfolioContent must be provided" };
   }
@@ -107,8 +85,6 @@ serve(async (req) => {
       );
     }
 
-    const userId = claimsData.claims.sub;
-
     // Parse and validate request body
     let requestBody: unknown;
     try {
@@ -120,7 +96,6 @@ serve(async (req) => {
       );
     }
 
-    // Validate portfolio request
     const validation = validatePortfolioRequest(requestBody);
     if (!validation.valid) {
       console.warn('Input validation failed:', validation.error);
@@ -137,8 +112,9 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are an expert career advisor and portfolio reviewer for South Africa. Analyze the provided CV and portfolio content thoroughly and provide:
+    const systemPrompt = `You are an expert career advisor and portfolio reviewer for South Africa. Analyze the provided CV and portfolio content thoroughly.
 
+Your analysis must cover:
 1. **Strengths**: Key strengths and standout skills
 2. **Areas for Improvement**: Specific areas that need work
 3. **Skills Gap Analysis**: Missing skills that are in demand
@@ -155,6 +131,7 @@ ${portfolioContent ? `**Portfolio/Projects:**\n${portfolioContent}` : ''}
 
 File: ${fileName}`;
 
+    // Use tool calling for structured skill extraction
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -167,6 +144,74 @@ File: ${fileName}`;
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "analyze_portfolio",
+              description: "Return a structured analysis of the CV/portfolio including extracted skills, experience summary, scores, and detailed analysis text.",
+              parameters: {
+                type: "object",
+                properties: {
+                  analysis: {
+                    type: "string",
+                    description: "The full detailed analysis text in markdown format, covering strengths, weaknesses, recommendations, market fit, etc."
+                  },
+                  extractedSkills: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string", description: "Skill name" },
+                        category: { type: "string", enum: ["technical", "soft", "domain", "tool"], description: "Skill category" },
+                        proficiency: { type: "string", enum: ["beginner", "intermediate", "advanced", "expert"], description: "Estimated proficiency level" }
+                      },
+                      required: ["name", "category", "proficiency"],
+                      additionalProperties: false
+                    },
+                    description: "All skills extracted from the CV/portfolio"
+                  },
+                  experienceSummary: {
+                    type: "object",
+                    properties: {
+                      totalYears: { type: "number", description: "Estimated total years of experience" },
+                      industries: { type: "array", items: { type: "string" }, description: "Industries the candidate has experience in" },
+                      educationLevel: { type: "string", description: "Highest education level detected" },
+                      keyAchievements: { type: "array", items: { type: "string" }, description: "Top 3-5 notable achievements" }
+                    },
+                    required: ["totalYears", "industries", "educationLevel", "keyAchievements"],
+                    additionalProperties: false
+                  },
+                  scores: {
+                    type: "object",
+                    properties: {
+                      overall: { type: "number", description: "Overall CV quality score 0-100" },
+                      formatting: { type: "number", description: "Formatting and presentation score 0-100" },
+                      content: { type: "number", description: "Content depth and quality score 0-100" },
+                      relevance: { type: "number", description: "Market relevance score 0-100" },
+                      impact: { type: "number", description: "Achievement impact score 0-100" }
+                    },
+                    required: ["overall", "formatting", "content", "relevance", "impact"],
+                    additionalProperties: false
+                  },
+                  suggestedRoles: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Top 3-5 job roles this candidate is suited for"
+                  },
+                  missingSkills: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Key skills the candidate should develop to improve employability"
+                  }
+                },
+                required: ["analysis", "extractedSkills", "experienceSummary", "scores", "suggestedRoles", "missingSkills"],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: { type: "function", function: { name: "analyze_portfolio" } },
       }),
     });
 
@@ -192,10 +237,44 @@ File: ${fileName}`;
     }
 
     const data = await response.json();
-    const analysis = data.choices[0].message.content;
+    
+    // Extract structured data from tool call response
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    
+    if (toolCall?.function?.arguments) {
+      try {
+        const structured = JSON.parse(toolCall.function.arguments);
+        console.log(`[analyze-portfolio] Structured extraction: ${structured.extractedSkills?.length || 0} skills, score: ${structured.scores?.overall || 'N/A'}`);
+        
+        return new Response(
+          JSON.stringify({
+            analysis: structured.analysis || '',
+            extractedSkills: structured.extractedSkills || [],
+            experienceSummary: structured.experienceSummary || null,
+            scores: structured.scores || null,
+            suggestedRoles: structured.suggestedRoles || [],
+            missingSkills: structured.missingSkills || [],
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } catch (parseError) {
+        console.error("[analyze-portfolio] Failed to parse tool call arguments:", parseError);
+      }
+    }
 
+    // Fallback: extract content from regular message if tool calling didn't work
+    const fallbackContent = data.choices?.[0]?.message?.content || '';
+    console.warn("[analyze-portfolio] Tool calling failed, falling back to text analysis");
+    
     return new Response(
-      JSON.stringify({ analysis }),
+      JSON.stringify({
+        analysis: fallbackContent,
+        extractedSkills: [],
+        experienceSummary: null,
+        scores: null,
+        suggestedRoles: [],
+        missingSkills: [],
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
