@@ -59,6 +59,11 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       href: '/portfolio',
     },
     {
+      title: 'CV Builder',
+      icon: FileText,
+      href: '/cv-builder',
+    },
+    {
       title: 'Applications',
       icon: ClipboardList,
       href: '/applications',
@@ -185,8 +190,8 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
     }
     return [
       { label: 'Main', items: jobSeekerNavItems.slice(0, 4) },
-      { label: 'Growth', items: jobSeekerNavItems.slice(4, 8) },
-      { label: 'Account', items: jobSeekerNavItems.slice(8) },
+      { label: 'Growth', items: jobSeekerNavItems.slice(4, 9) },
+      { label: 'Account', items: jobSeekerNavItems.slice(9) },
     ];
   };
 
