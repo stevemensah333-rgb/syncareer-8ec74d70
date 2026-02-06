@@ -6,13 +6,23 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mic, CheckCircle, Phone } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Mic, CheckCircle, Phone, Clock, Zap, Target } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { InterviewErrorBoundary } from '@/components/interview/InterviewErrorBoundary';
 import { VoiceInterviewMode } from '@/components/interview/VoiceInterviewMode';
 import { InterviewHistory } from '@/components/interview/InterviewHistory';
 import type { InterviewSetupConfig } from '@/types/interview';
+
+type SessionLength = 'quick' | 'standard' | 'extended';
+
+const SESSION_OPTIONS: Array<{ value: SessionLength; label: string; description: string; questions: number; icon: typeof Zap }> = [
+  { value: 'quick', label: 'Quick', description: '~15 min · 8 questions', questions: 8, icon: Zap },
+  { value: 'standard', label: 'Standard', description: '~30 min · 15 questions', questions: 15, icon: Target },
+  { value: 'extended', label: 'Deep Dive', description: '~45 min · 20 questions', questions: 20, icon: Clock },
+];
 
 const MAJOR_ROLE_MAP: Record<string, { role: string; industry: string }> = {
   'Computer Science': { role: 'Software Developer', industry: 'Technology' },
@@ -44,6 +54,7 @@ const MAJOR_ROLE_MAP: Record<string, { role: string; industry: string }> = {
 const InterviewSimulator = () => {
   const { studentDetails } = useUserProfile();
   const [step, setStep] = useState<'setup' | 'interview'>('setup');
+  const [sessionLength, setSessionLength] = useState<SessionLength>('standard');
   const [config, setConfig] = useState<InterviewSetupConfig>({
     jobRole: '',
     industry: '',
@@ -157,6 +168,33 @@ const InterviewSimulator = () => {
                     </div>
                   </div>
 
+                  {/* Session Length Selector */}
+                  <div className="space-y-2">
+                    <Label>Session Length</Label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {SESSION_OPTIONS.map((opt) => {
+                        const Icon = opt.icon;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setSessionLength(opt.value)}
+                            className={cn(
+                              "relative flex flex-col items-center gap-1.5 rounded-lg border-2 p-3 text-center transition-all hover:border-primary/50",
+                              sessionLength === opt.value
+                                ? "border-primary bg-primary/5"
+                                : "border-border"
+                            )}
+                          >
+                            <Icon className={cn("h-5 w-5", sessionLength === opt.value ? "text-primary" : "text-muted-foreground")} />
+                            <span className="text-sm font-medium">{opt.label}</span>
+                            <span className="text-xs text-muted-foreground">{opt.description}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="resumeText">Resume / Experience Summary (Optional)</Label>
                     <Textarea
@@ -200,19 +238,23 @@ const InterviewSimulator = () => {
                   <ul className="space-y-2 text-sm text-muted-foreground" aria-label="Interview process steps">
                     <li className="flex items-start gap-2">
                       <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" aria-hidden="true" />
-                      AI interviewer speaks realistic, role-specific questions
+                      Multi-round interview: Intro → Technical → Behavioral → Scenario → Closing
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" aria-hidden="true" />
-                      Respond naturally using your voice (Chrome/Edge recommended)
+                      Adaptive difficulty — questions get harder as you perform well
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" aria-hidden="true" />
-                      Get real-time feedback and follow-up questions
+                      Follow-up probes on weak answers to test depth of understanding
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" aria-hidden="true" />
-                      Review detailed scoring and improvement tips after completion
+                      Detailed per-question feedback with improved answer examples
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      Comprehensive final report with category scores and next steps
                     </li>
                   </ul>
                 </CardContent>
@@ -240,6 +282,7 @@ const InterviewSimulator = () => {
               interviewType={config.interviewType}
               resumeText={config.resumeText}
               jobDescription={config.jobDescription}
+              sessionLength={sessionLength}
               onEnd={() => setStep('setup')}
             />
           </InterviewErrorBoundary>

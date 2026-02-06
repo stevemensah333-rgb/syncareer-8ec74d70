@@ -4,9 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import type {
   InterviewMessage,
   InterviewPhase,
-  VoiceInterviewState,
-  RetryConfig,
-  DEFAULT_RETRY_CONFIG,
 } from '@/types/interview';
 
 interface UseVoiceInterviewOptions {
@@ -16,6 +13,25 @@ interface UseVoiceInterviewOptions {
   interviewType?: string;
   resumeContext?: string;
   jobDescription?: string;
+  sessionLength?: 'quick' | 'standard' | 'extended';
+}
+
+export interface InterviewProgress {
+  answered: number;
+  total: number;
+  runningScore: number;
+  currentRound: string;
+  questionNumber: number;
+  totalQuestions: number;
+  category: string;
+  roundName: string;
+  isFollowUp: boolean;
+}
+
+interface RetryConfig {
+  maxRetries: number;
+  baseDelayMs: number;
+  maxDelayMs: number;
 }
 
 // ─── Retry utility with exponential backoff ─────────────────────────
@@ -64,11 +80,23 @@ export function useVoiceInterview({
   interviewType,
   resumeContext,
   jobDescription,
+  sessionLength = 'standard',
 }: UseVoiceInterviewOptions) {
   const [phase, setPhase] = useState<InterviewPhase>('idle');
   const [messages, setMessages] = useState<InterviewMessage[]>([]);
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<InterviewProgress>({
+    answered: 0,
+    total: 15,
+    runningScore: 0,
+    currentRound: 'intro',
+    questionNumber: 1,
+    totalQuestions: 15,
+    category: 'intro',
+    roundName: 'Introduction',
+    isFollowUp: false,
+  });
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<any>(null);
@@ -82,7 +110,6 @@ export function useVoiceInterview({
   useEffect(() => {
     isMountedRef.current = true;
 
-    // Global unhandled rejection safety net
     const handleRejection = (event: PromiseRejectionEvent) => {
       console.error('[Interview] Unhandled rejection:', event.reason);
       event.preventDefault();
@@ -99,7 +126,6 @@ export function useVoiceInterview({
   // ─── Resource cleanup ────────────────────────────────────────────
 
   const cleanupResources = useCallback(() => {
-    // Stop speech recognition
     if (recognitionRef.current) {
       try {
         recognitionRef.current.onresult = null;
@@ -113,7 +139,6 @@ export function useVoiceInterview({
       recognitionRef.current = null;
     }
 
-    // Stop audio
     if (audioRef.current) {
       try {
         audioRef.current.pause();
@@ -169,7 +194,6 @@ export function useVoiceInterview({
 
       const audioUrl = URL.createObjectURL(audioBlob);
 
-      // Clean up previous audio
       if (audioRef.current) {
         audioRef.current.pause();
         if (audioRef.current.src) URL.revokeObjectURL(audioRef.current.src);
@@ -194,7 +218,6 @@ export function useVoiceInterview({
         audio.play().catch(reject);
       });
 
-      // After speaking, start listening
       if (isMountedRef.current && !isStoppingRef.current) {
         startListening();
       }
@@ -202,7 +225,6 @@ export function useVoiceInterview({
       console.error('[Interview] TTS error:', err);
       if (!isMountedRef.current || isStoppingRef.current) return;
 
-      // Fallback: use browser TTS
       try {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 0.95;
@@ -237,11 +259,8 @@ export function useVoiceInterview({
       return;
     }
 
-    // Prevent duplicate listeners
     if (recognitionRef.current) {
-      try {
-        recognitionRef.current.abort();
-      } catch {}
+      try { recognitionRef.current.abort(); } catch {}
       recognitionRef.current = null;
     }
 
@@ -280,13 +299,12 @@ export function useVoiceInterview({
 
         setCurrentTranscript(finalTranscriptAccumulator + interimTranscript);
 
-        // Reset silence timer on each result
         if (silenceTimer) clearTimeout(silenceTimer);
         silenceTimer = setTimeout(() => {
           if (finalTranscriptAccumulator.trim() && isMountedRef.current && !isStoppingRef.current) {
             handleUserResponse(finalTranscriptAccumulator.trim());
           }
-        }, 2500); // 2.5s of silence = submit
+        }, 2500);
       } catch (err) {
         console.error('[Interview] Recognition result error:', err);
       }
@@ -298,7 +316,6 @@ export function useVoiceInterview({
         setError('Microphone access denied. Please enable it in browser settings.');
         safeSetPhase('error');
       } else if (event.error !== 'aborted' && event.error !== 'no-speech') {
-        // Auto-restart on transient errors
         setTimeout(() => {
           if (isMountedRef.current && !isStoppingRef.current && phase === 'user_speaking') {
             startListening();
@@ -309,7 +326,6 @@ export function useVoiceInterview({
 
     recognition.onend = () => {
       if (silenceTimer) clearTimeout(silenceTimer);
-      // Submit accumulated transcript if any
       if (finalTranscriptAccumulator.trim() && isMountedRef.current && !isStoppingRef.current) {
         handleUserResponse(finalTranscriptAccumulator.trim());
       }
@@ -339,7 +355,7 @@ export function useVoiceInterview({
     }
   }, []);
 
-  // ─── Handle user response with retry ─────────────────────────────
+  // ─── Handle user response ────────────────────────────────────────
 
   const handleUserResponse = useCallback(async (userText: string) => {
     if (!isMountedRef.current || isStoppingRef.current) return;
@@ -365,6 +381,7 @@ export function useVoiceInterview({
             interviewId: interviewIdRef.current,
             answer: userText,
             conversationHistory: conversationHistoryRef.current,
+            sessionLength,
           },
         }),
         { maxRetries: 2, baseDelayMs: 2000, maxDelayMs: 8000 },
@@ -376,13 +393,29 @@ export function useVoiceInterview({
 
       questionCountRef.current++;
 
+      // Update progress from backend
+      if (data.progress) {
+        setProgress(prev => ({
+          ...prev,
+          answered: data.progress.answered,
+          total: data.progress.total,
+          runningScore: data.progress.runningScore,
+          currentRound: data.progress.currentRound,
+          questionNumber: data.questionNumber || prev.questionNumber,
+          totalQuestions: data.totalQuestions || prev.totalQuestions,
+          category: data.category || prev.category,
+          roundName: data.roundName || prev.roundName,
+          isFollowUp: data.isFollowUp || false,
+        }));
+      }
+
       let responseText = '';
 
       if (!data.isComplete && data.nextQuestion) {
         responseText = safeString(data.nextQuestion);
         conversationHistoryRef.current.push({ role: 'assistant', content: responseText });
       } else if (data.isComplete) {
-        responseText = "Great job! You've completed all questions. Preparing your overall feedback...";
+        responseText = "Excellent! You've completed all the interview questions. Let me prepare your comprehensive feedback report...";
 
         try {
           const { data: feedbackData } = await supabase.functions.invoke('mock-interview', {
@@ -396,13 +429,16 @@ export function useVoiceInterview({
             const fb = feedbackData.overallFeedback;
             const strengths = Array.isArray(fb.strengths) ? fb.strengths.join(', ') : 'N/A';
             const weaknesses = Array.isArray(fb.weaknesses) ? fb.weaknesses.join(', ') : 'N/A';
-            responseText = `Interview Complete! Your score: ${fb.overallScore ?? 'N/A'}/100. ${safeString(fb.assessment)}. Key strengths: ${strengths}. Areas to improve: ${weaknesses}.`;
+            const nextSteps = Array.isArray(fb.nextSteps) ? fb.nextSteps.join(', ') : '';
+
+            responseText = `🎯 Interview Complete!\n\nScore: ${fb.overallScore ?? 'N/A'}/100 — ${fb.overallVerdict || 'N/A'}\nReadiness: ${fb.readiness || 'N/A'}\n\n${safeString(fb.assessment)}\n\n✅ Strengths: ${strengths}\n⚠️ Areas to Improve: ${weaknesses}${nextSteps ? `\n\n📋 Next Steps: ${nextSteps}` : ''}${fb.interviewerNote ? `\n\n💼 Interviewer's Note: ${fb.interviewerNote}` : ''}`;
           }
         } catch (feedbackErr) {
           console.error('[Interview] Feedback fetch error:', feedbackErr);
-          responseText = "Interview complete! There was an issue loading detailed feedback, but your responses have been saved.";
+          responseText = "Interview complete! There was an issue loading detailed feedback, but your responses have been saved. Check your interview history for results.";
         }
 
+        setProgress(prev => ({ ...prev, currentRound: 'complete', answered: prev.total }));
         safeSetPhase('completed');
       }
 
@@ -427,7 +463,6 @@ export function useVoiceInterview({
 
       if (errorMsg.includes('Rate limit') || errorMsg.includes('429')) {
         toast.error('Too many requests. Please wait a moment before continuing.');
-        // Auto-retry after delay
         setTimeout(() => {
           if (isMountedRef.current && !isStoppingRef.current) {
             startListening();
@@ -438,7 +473,7 @@ export function useVoiceInterview({
         startListening();
       }
     }
-  }, [speakText, stopListening, startListening]);
+  }, [speakText, stopListening, startListening, sessionLength]);
 
   // ─── Start interview ─────────────────────────────────────────────
 
@@ -450,8 +485,20 @@ export function useVoiceInterview({
     conversationHistoryRef.current = [];
     safeSetPhase('connecting');
 
+    const totalMap = { quick: 8, standard: 15, extended: 20 };
+    setProgress({
+      answered: 0,
+      total: totalMap[sessionLength] || 15,
+      runningScore: 0,
+      currentRound: 'intro',
+      questionNumber: 1,
+      totalQuestions: totalMap[sessionLength] || 15,
+      category: 'intro',
+      roundName: 'Introduction',
+      isFollowUp: false,
+    });
+
     try {
-      // Request microphone permission upfront
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
       const { data, error: fnError } = await withRetry(
@@ -464,6 +511,7 @@ export function useVoiceInterview({
             jobDescription,
             difficulty: difficulty || 'intermediate',
             interviewType: interviewType || 'mixed',
+            sessionLength,
           },
         }),
         { maxRetries: 2, baseDelayMs: 2000, maxDelayMs: 8000 },
@@ -475,6 +523,16 @@ export function useVoiceInterview({
 
       interviewIdRef.current = data.interview?.id ?? null;
       const greeting = safeString(data.currentQuestion);
+
+      if (data.totalQuestions) {
+        setProgress(prev => ({
+          ...prev,
+          totalQuestions: data.totalQuestions,
+          total: data.totalQuestions,
+          category: data.category || 'intro',
+          roundName: data.roundName || 'Introduction',
+        }));
+      }
 
       conversationHistoryRef.current.push({ role: 'assistant', content: greeting });
 
@@ -502,7 +560,7 @@ export function useVoiceInterview({
       }
       safeSetPhase('error');
     }
-  }, [jobRole, industry, difficulty, interviewType, resumeContext, jobDescription, speakText]);
+  }, [jobRole, industry, difficulty, interviewType, resumeContext, jobDescription, speakText, sessionLength]);
 
   // ─── Stop interview ──────────────────────────────────────────────
 
@@ -533,7 +591,6 @@ export function useVoiceInterview({
   const isCompleted = phase === 'completed';
 
   return {
-    // State
     phase,
     isActive,
     isLoading,
@@ -543,7 +600,7 @@ export function useVoiceInterview({
     messages,
     currentTranscript,
     error,
-    // Actions
+    progress,
     start,
     stop,
     retry,

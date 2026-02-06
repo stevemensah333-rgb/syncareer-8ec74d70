@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { useVoiceInterview } from '@/hooks/useVoiceInterview';
 import { useEffect, useRef } from 'react';
@@ -14,8 +15,18 @@ interface VoiceInterviewModeProps {
   interviewType?: string;
   resumeText?: string;
   jobDescription?: string;
+  sessionLength?: 'quick' | 'standard' | 'extended';
   onEnd: () => void;
 }
+
+const ROUND_LABELS: Record<string, { label: string; color: string }> = {
+  intro: { label: 'Intro', color: 'bg-primary/20 text-primary border-primary/30' },
+  technical: { label: 'Technical', color: 'bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/30' },
+  behavioral: { label: 'Behavioral', color: 'bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-500/30' },
+  situational: { label: 'Scenario', color: 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30' },
+  closing: { label: 'Closing', color: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' },
+  complete: { label: 'Complete', color: 'bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30' },
+};
 
 export function VoiceInterviewMode({
   jobRole,
@@ -24,6 +35,7 @@ export function VoiceInterviewMode({
   interviewType,
   resumeText,
   jobDescription,
+  sessionLength = 'standard',
   onEnd,
 }: VoiceInterviewModeProps) {
   const {
@@ -36,6 +48,7 @@ export function VoiceInterviewMode({
     messages,
     currentTranscript,
     error,
+    progress,
     start,
     stop,
     retry,
@@ -46,11 +59,11 @@ export function VoiceInterviewMode({
     interviewType,
     resumeContext: resumeText,
     jobDescription,
+    sessionLength,
   });
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to latest message
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -83,12 +96,14 @@ export function VoiceInterviewMode({
 
   const status = getStatusInfo();
   const StatusIcon = status.icon;
+  const progressPercent = progress.total > 0 ? (progress.answered / progress.total) * 100 : 0;
+  const roundInfo = ROUND_LABELS[progress.currentRound] || ROUND_LABELS.intro;
 
   return (
-    <div className="space-y-6" role="region" aria-label="Voice Interview Session">
-      {/* Status Bar */}
+    <div className="space-y-4" role="region" aria-label="Voice Interview Session">
+      {/* Status + Progress Bar */}
       <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
-        <CardContent className="py-4">
+        <CardContent className="py-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
@@ -104,10 +119,33 @@ export function VoiceInterviewMode({
                 <p className="text-sm text-muted-foreground">{jobRole}</p>
               </div>
             </div>
-            <Badge variant={isActive ? 'default' : 'secondary'} aria-label={`Status: ${isActive ? 'Live' : isCompleted ? 'Completed' : 'Offline'}`}>
-              {isCompleted ? 'Done' : isActive ? 'Live' : 'Offline'}
-            </Badge>
+            <div className="flex items-center gap-2">
+              {isActive && (
+                <Badge variant="outline" className={cn("text-xs", roundInfo.color)}>
+                  {roundInfo.label}
+                </Badge>
+              )}
+              <Badge variant={isActive ? 'default' : 'secondary'} aria-label={`Status: ${isActive ? 'Live' : isCompleted ? 'Completed' : 'Offline'}`}>
+                {isCompleted ? 'Done' : isActive ? 'Live' : 'Offline'}
+              </Badge>
+            </div>
           </div>
+
+          {/* Progress bar */}
+          {isActive && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Question {progress.answered} of {progress.total}</span>
+                {progress.runningScore > 0 && (
+                  <span>Running Score: {progress.runningScore}%</span>
+                )}
+              </div>
+              <Progress value={progressPercent} className="h-2" />
+              {progress.isFollowUp && (
+                <p className="text-xs text-muted-foreground italic">Follow-up question — probing deeper</p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -175,7 +213,7 @@ export function VoiceInterviewMode({
                 </p>
               )}
 
-              {messages.length === 0 && (phase === 'connecting') && (
+              {messages.length === 0 && phase === 'connecting' && (
                 <p className="text-center text-muted-foreground py-8">
                   Preparing your interview...
                 </p>
