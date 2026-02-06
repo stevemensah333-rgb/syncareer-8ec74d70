@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, Users, Settings, Shield, PenSquare, Check
+  ArrowLeft, Users, Shield, PenSquare, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -190,10 +190,15 @@ export default function CommunityDetail() {
           </div>
 
           <div className="flex gap-2 pb-4">
-            {isAdmin && (
-              <Button variant="outline" size="sm" aria-label="Community settings">
-                <Settings className="h-4 w-4 mr-2" aria-hidden="true" />
-                Settings
+            {isMod && (
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label="Moderation dashboard"
+                onClick={() => navigate(`/communities/${slug}/moderation`)}
+              >
+                <Shield className="h-4 w-4 mr-2" aria-hidden="true" />
+                Moderation
               </Button>
             )}
             <Button
