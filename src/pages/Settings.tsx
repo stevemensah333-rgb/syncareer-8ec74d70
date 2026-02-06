@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { NotificationSettingsPanel } from '@/components/notifications/NotificationSettingsPanel';
 import { useSearchParams } from 'react-router-dom';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
@@ -333,42 +334,7 @@ const Settings = () => {
             {activeSection === 'notifications' && (
               <>
                 <h2 className="text-xl font-semibold mb-6">{t('settings.notificationSettings')}</h2>
-                <div className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between py-3 border-b">
-                      <div>
-                        <p className="font-medium">{t('settings.emailNotifications')}</p>
-                        <p className="text-sm text-muted-foreground">{t('settings.emailNotificationsDesc')}</p>
-                      </div>
-                      <input type="checkbox" defaultChecked className="h-4 w-4" />
-                    </div>
-                    <div className="flex items-center justify-between py-3 border-b">
-                      <div>
-                        <p className="font-medium">{t('settings.pushNotifications')}</p>
-                        <p className="text-sm text-muted-foreground">{t('settings.pushNotificationsDesc')}</p>
-                      </div>
-                      <input type="checkbox" defaultChecked className="h-4 w-4" />
-                    </div>
-                    <div className="flex items-center justify-between py-3 border-b">
-                      <div>
-                        <p className="font-medium">{t('settings.weeklyDigest')}</p>
-                        <p className="text-sm text-muted-foreground">{t('settings.weeklyDigestDesc')}</p>
-                      </div>
-                      <input type="checkbox" className="h-4 w-4" />
-                    </div>
-                    <div className="flex items-center justify-between py-3">
-                      <div>
-                        <p className="font-medium">{t('settings.marketingEmails')}</p>
-                        <p className="text-sm text-muted-foreground">{t('settings.marketingEmailsDesc')}</p>
-                      </div>
-                      <input type="checkbox" className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <div className="pt-4 border-t">
-                    <Button onClick={handleSave}>{t('settings.saveChanges')}</Button>
-                    <Button variant="outline" className="ml-2">{t('settings.cancel')}</Button>
-                  </div>
-                </div>
+                <NotificationSettingsPanel />
               </>
             )}
 
