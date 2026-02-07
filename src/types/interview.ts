@@ -34,27 +34,6 @@ export interface OverallFeedback {
   readiness: string;
 }
 
-export interface InterviewHistoryItem {
-  id: string;
-  job_role: string;
-  industry: string | null;
-  difficulty: string;
-  status: string;
-  overall_score: number | null;
-  feedback: OverallFeedback | null;
-  questions: Array<{ question: string; type: string }>;
-  answers: Array<{
-    question: string;
-    answer: string;
-    feedback: string;
-    score: number;
-    verdict: string;
-    improvedAnswer: string;
-    tip: string;
-  }>;
-  created_at: string;
-  completed_at: string | null;
-}
 
 // ─── Voice State Machine ────────────────────────────────────────────
 
