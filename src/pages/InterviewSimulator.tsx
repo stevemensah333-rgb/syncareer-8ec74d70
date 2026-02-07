@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { InterviewErrorBoundary } from '@/components/interview/InterviewErrorBoundary';
 import { VoiceInterviewMode } from '@/components/interview/VoiceInterviewMode';
-import { InterviewHistory } from '@/components/interview/InterviewHistory';
+
 import type { InterviewSetupConfig } from '@/types/interview';
 
 type SessionLength = 'quick' | 'standard' | 'extended';
@@ -106,9 +106,8 @@ const InterviewSimulator = () => {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="max-w-2xl mx-auto space-y-6">
             {/* Setup Form */}
-            <div className="lg:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Set Up Your Interview</CardTitle>
@@ -259,12 +258,6 @@ const InterviewSimulator = () => {
                   </ul>
                 </CardContent>
               </Card>
-            </div>
-
-            {/* History Sidebar */}
-            <div className="lg:col-span-1">
-              <InterviewHistory />
-            </div>
           </div>
         </div>
       )}
