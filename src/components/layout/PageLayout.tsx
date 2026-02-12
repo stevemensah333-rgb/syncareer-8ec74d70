@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { CommunityErrorBoundary } from '@/components/communities/CommunityErrorBoundary';
+import { GlobalErrorBoundary } from '@/components/GlobalErrorBoundary';
 import {
   Drawer,
   DrawerContent,
@@ -35,12 +35,10 @@ export function PageLayout({ children, title }: PageLayoutProps) {
       <Navbar onMobileMenuClick={() => setIsMobileDrawerOpen(true)} />
       
       <div className="flex-1 flex">
-        {/* Desktop Sidebar - Hidden on Mobile */}
         {!isMobile && (
           <Sidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar} />
         )}
         
-        {/* Mobile Drawer */}
         {isMobile && (
           <Drawer open={isMobileDrawerOpen} onOpenChange={setIsMobileDrawerOpen}>
             <DrawerContent className="h-[85vh]">
@@ -56,9 +54,7 @@ export function PageLayout({ children, title }: PageLayoutProps) {
         <main id="main-content" className="flex-1 transition-all duration-300">
           <div className="container max-w-full p-4 lg:p-6 animate-fade-in">
             <h1 className="text-2xl font-bold mb-6">{title}</h1>
-            <CommunityErrorBoundary fallbackTitle="This section encountered an error">
-              {children}
-            </CommunityErrorBoundary>
+            {children}
           </div>
         </main>
       </div>

@@ -80,19 +80,8 @@ const MySkills = () => {
 
       const userId = session.user.id;
 
-      // Fetch skills from user's community posts (tags)
-      const { data: posts } = await supabase
-        .from('community_posts')
-        .select('tags')
-        .eq('author_id', userId);
-
-      // Count skill occurrences
+      // Skills are now sourced from endorsements only (communities removed)
       const skillCounts: Record<string, number> = {};
-      (posts || []).forEach(post => {
-        (post.tags || []).forEach((tag: string) => {
-          skillCounts[tag] = (skillCounts[tag] || 0) + 1;
-        });
-      });
 
       // Fetch endorsements for the user
       const { data: endorsements } = await supabase
