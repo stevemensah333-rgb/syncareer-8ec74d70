@@ -208,6 +208,20 @@ const MySkills = () => {
     });
   };
 
+  const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleCVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -238,10 +252,6 @@ const MySkills = () => {
       return;
     }
 
-    if (isSupportedBinary) {
-      toast.warning('For best results with PDF/DOCX files, please also upload a .txt version of your CV. Binary files may not extract text perfectly.');
-    }
-
     setIsAnalyzing(true);
     setAnalysisOpen(true);
     setAnalysis('');
@@ -255,21 +265,35 @@ const MySkills = () => {
         return;
       }
 
-      const cvContent = await readFileAsText(uploadedCV);
+      let body: Record<string, string>;
 
-      if (!cvContent || cvContent.trim().length < 20) {
-        toast.error("We couldn't extract text from your CV. Please try uploading a .txt file instead.");
-        setAnalysisOpen(false);
-        setIsAnalyzing(false);
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('analyze-portfolio', {
-        body: {
+      if (isSupportedBinary) {
+        // Send binary files as base64 for server-side AI extraction
+        const base64Content = await readFileAsBase64(uploadedCV);
+        body = {
+          fileBase64: base64Content,
+          fileMimeType: uploadedCV.type,
+          portfolioContent: '',
+          fileName: uploadedCV.name,
+        };
+      } else {
+        // Text files can be read directly
+        const cvContent = await readFileAsText(uploadedCV);
+        if (!cvContent || cvContent.trim().length < 20) {
+          toast.error("We couldn't extract text from your CV. Please try uploading a .txt file instead.");
+          setAnalysisOpen(false);
+          setIsAnalyzing(false);
+          return;
+        }
+        body = {
           cvContent,
           portfolioContent: '',
           fileName: uploadedCV.name,
-        },
+        };
+      }
+
+      const { data, error } = await supabase.functions.invoke('analyze-portfolio', {
+        body,
       });
 
       if (error) throw error;
