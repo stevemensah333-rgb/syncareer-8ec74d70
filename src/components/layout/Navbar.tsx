@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, User, Briefcase, Users, LogOut, MessageCircle, Menu, HelpCircle, Phone, Mail, X } from 'lucide-react';
+import { User, Briefcase, Users, LogOut, MessageCircle, Menu, HelpCircle, Phone, Mail } from 'lucide-react';
 import skillbridgeLogo from '@/assets/skillbridge-logo.png';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
+
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,12 +21,6 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import AskCounsellorDialog from '@/components/counsellor/AskCounsellorDialog';
 import { NotificationsDropdown } from '@/components/notifications/NotificationsDropdown';
@@ -39,8 +33,7 @@ interface NavbarProps {
 export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
   const [user, setUser] = useState<any>(null);
   const [askCounsellorOpen, setAskCounsellorOpen] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { profile } = useUserProfile();
@@ -92,14 +85,6 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
               <h1 className="text-lg font-semibold tracking-tight lg:text-xl">Syncareer</h1>
             </div>
             
-            <div className="relative hidden md:flex items-center h-9 rounded-md px-3 text-muted-foreground focus-within:text-foreground bg-muted/50">
-              <Search className="h-4 w-4 mr-2" />
-              <Input 
-                type="search" 
-                placeholder="Search skills, people..." 
-                className="h-9 w-[200px] lg:w-[280px] bg-transparent border-none px-0 py-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground"
-              />
-            </div>
 
             <div className="hidden lg:flex items-center gap-2">
               {isEmployer ? (
@@ -145,15 +130,6 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
           </div>
           
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* Mobile Search Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden h-9 w-9"
-              onClick={() => setMobileSearchOpen(true)}
-            >
-              <Search className="h-5 w-5" />
-            </Button>
 
             {/* Mobile Ask Counsellor Button - Only for students */}
             {!isEmployer && !isCounsellor && (
@@ -220,28 +196,6 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
         </div>
       </header>
 
-      {/* Mobile Search Dialog */}
-      <Dialog open={mobileSearchOpen} onOpenChange={setMobileSearchOpen}>
-        <DialogContent className="sm:max-w-md top-4 translate-y-0">
-          <DialogHeader>
-            <DialogTitle>Search</DialogTitle>
-          </DialogHeader>
-          <div className="relative flex items-center">
-            <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search skills, people..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4"
-              autoFocus
-            />
-          </div>
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Search functionality coming soon
-          </p>
-        </DialogContent>
-      </Dialog>
 
       {/* Ask a Counsellor Dialog */}
       <AskCounsellorDialog open={askCounsellorOpen} onOpenChange={setAskCounsellorOpen} />
