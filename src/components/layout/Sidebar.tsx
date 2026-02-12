@@ -79,7 +79,7 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       href: '/performance',
     },
     {
-      title: 'Syncareer AI',
+      title: 'SynAI',
       icon: Sparkles,
       href: '/ai-coach',
     },
