@@ -192,6 +192,13 @@ const MySkills = () => {
     fetchSkillsData();
   }, [fetchSkillsData]);
 
+  const SUPPORTED_TEXT_TYPES = ['text/plain', 'text/markdown', 'text/csv'];
+  const SUPPORTED_BINARY_TYPES = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ];
+
   const readFileAsText = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -222,12 +229,40 @@ const MySkills = () => {
       return;
     }
 
+    const fileType = uploadedCV.type;
+    const isSupportedText = SUPPORTED_TEXT_TYPES.includes(fileType);
+    const isSupportedBinary = SUPPORTED_BINARY_TYPES.includes(fileType);
+
+    if (!isSupportedText && !isSupportedBinary) {
+      toast.error("We couldn't process your CV. Please upload a supported file format (PDF, DOC, DOCX, or TXT).");
+      return;
+    }
+
+    if (isSupportedBinary) {
+      toast.warning('For best results with PDF/DOCX files, please also upload a .txt version of your CV. Binary files may not extract text perfectly.');
+    }
+
     setIsAnalyzing(true);
     setAnalysisOpen(true);
     setAnalysis('');
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Please sign in to scan your CV');
+        setAnalysisOpen(false);
+        setIsAnalyzing(false);
+        return;
+      }
+
       const cvContent = await readFileAsText(uploadedCV);
+
+      if (!cvContent || cvContent.trim().length < 20) {
+        toast.error("We couldn't extract text from your CV. Please try uploading a .txt file instead.");
+        setAnalysisOpen(false);
+        setIsAnalyzing(false);
+        return;
+      }
 
       const { data, error } = await supabase.functions.invoke('analyze-portfolio', {
         body: {
@@ -239,6 +274,10 @@ const MySkills = () => {
 
       if (error) throw error;
 
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       setAnalysis(data.analysis || '');
       setExtractedSkills(data.extractedSkills || []);
       setExperienceSummary(data.experienceSummary || null);
@@ -248,7 +287,7 @@ const MySkills = () => {
       toast.success('Your CV has been analyzed by AI');
     } catch (error) {
       console.error('Error analyzing files:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to analyze files');
+      toast.error("We couldn't process your CV. Please try again or upload a supported file format.");
       setAnalysisOpen(false);
     } finally {
       setIsAnalyzing(false);
