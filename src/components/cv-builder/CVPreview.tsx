@@ -44,7 +44,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, r
 
       {/* Education Section */}
       <div className="mb-4">
-        <h2 className="font-bold border-b border-black mb-2" style={{ fontSize: '12pt' }}>
+        <h2 className="font-bold border-b border-black mb-2 pb-0.5" style={{ fontSize: '12pt' }}>
           EDUCATION
         </h2>
         <div className="flex justify-between">
@@ -60,7 +60,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, r
       {/* Achievements Section */}
       {achievements.length > 0 && (
         <div className="mb-4">
-          <h2 className="font-bold border-b border-black mb-2" style={{ fontSize: '12pt' }}>
+          <h2 className="font-bold border-b border-black mb-2 pb-0.5" style={{ fontSize: '12pt' }}>
             ACHIEVEMENTS/AWARDS
           </h2>
           {achievements.map((achievement) => (
@@ -76,7 +76,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, r
       {/* Work Experience Section */}
       {experience.length > 0 && (
         <div className="mb-4">
-          <h2 className="font-bold border-b border-black mb-2" style={{ fontSize: '12pt' }}>
+          <h2 className="font-bold border-b border-black mb-2 pb-0.5" style={{ fontSize: '12pt' }}>
             WORK EXPERIENCE
           </h2>
           {experience.map((exp) => (
@@ -99,7 +99,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, r
       {/* Projects Section */}
       {projects.length > 0 && (
         <div className="mb-4">
-          <h2 className="font-bold border-b border-black mb-2" style={{ fontSize: '12pt' }}>
+          <h2 className="font-bold border-b border-black mb-2 pb-0.5" style={{ fontSize: '12pt' }}>
             PROJECT AND RESEARCH
           </h2>
           {projects.map((project) => (
@@ -122,7 +122,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, r
       {/* Activities Section */}
       {activities.length > 0 && (
         <div className="mb-4">
-          <h2 className="font-bold border-b border-black mb-2" style={{ fontSize: '12pt' }}>
+          <h2 className="font-bold border-b border-black mb-2 pb-0.5" style={{ fontSize: '12pt' }}>
             CO-CURRICULAR ACTIVITIES
           </h2>
           {activities.map((activity) => (
@@ -145,7 +145,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, r
       {/* Skills Section */}
       {skills.length > 0 && (
         <div className="mb-4">
-          <h2 className="font-bold border-b border-black mb-2" style={{ fontSize: '12pt' }}>
+          <h2 className="font-bold border-b border-black mb-2 pb-0.5" style={{ fontSize: '12pt' }}>
             SKILLS
           </h2>
           <ul className="list-disc ml-6">
@@ -158,7 +158,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(({ data }, r
 
       {/* References Section */}
       <div className="mb-4">
-        <h2 className="font-bold border-b border-black mb-2" style={{ fontSize: '12pt' }}>
+        <h2 className="font-bold border-b border-black mb-2 pb-0.5" style={{ fontSize: '12pt' }}>
           REFERENCES
         </h2>
         <p>{references || 'Available upon request'}</p>
