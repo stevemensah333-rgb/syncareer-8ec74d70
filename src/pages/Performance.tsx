@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Target, Zap, Briefcase, Award } from 'lucide-react';
+import { TrendingUp, Target, Briefcase } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 
@@ -18,7 +18,6 @@ const Performance = () => {
   const [stats, setStats] = useState({
     applicationsThisMonth: 0,
     interviewsScheduled: 0,
-    endorsementsReceived: 0,
   });
   const [learningStreak, setLearningStreak] = useState<LearningStreak | null>(null);
   const [monthlyData, setMonthlyData] = useState<Array<{ month: string; applications: number }>>([]);
@@ -44,11 +43,6 @@ const Performance = () => {
         .select('*', { count: 'exact', head: true })
         .eq('applicant_id', userId)
         .eq('status', 'interview');
-
-      const { count: endorsementsCount } = await supabase
-        .from('skill_endorsements')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
 
       const { data: streakData } = await supabase
         .from('learning_streaks')
@@ -86,7 +80,6 @@ const Performance = () => {
       setStats({
         applicationsThisMonth: appsCount || 0,
         interviewsScheduled: interviewsCount || 0,
-        endorsementsReceived: endorsementsCount || 0,
       });
       setLearningStreak(streakData);
       setMonthlyData(chartData);
@@ -113,7 +106,7 @@ const Performance = () => {
     <PageLayout title="Performance">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Stats Cards */}
-        <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="lg:col-span-3 grid grid-cols-2 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -136,19 +129,6 @@ const Performance = () => {
                 <div>
                   <p className="text-2xl font-bold">{stats.interviewsScheduled}</p>
                   <p className="text-xs text-muted-foreground">Interviews Scheduled</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-secondary/50 rounded-lg">
-                  <Award className="h-5 w-5 text-secondary-foreground" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.endorsementsReceived}</p>
-                  <p className="text-xs text-muted-foreground">Endorsements Received</p>
                 </div>
               </div>
             </CardContent>
@@ -193,13 +173,6 @@ const Performance = () => {
                 <span className="text-sm">Applications Sent</span>
               </div>
               <span className="text-lg font-bold">{stats.applicationsThisMonth}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Award className="h-5 w-5 text-secondary-foreground" />
-                <span className="text-sm">Endorsements Received</span>
-              </div>
-              <span className="text-lg font-bold">{stats.endorsementsReceived}</span>
             </div>
             {learningStreak && (
               <div className="pt-4 border-t">
