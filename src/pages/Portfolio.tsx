@@ -3,11 +3,11 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, Star, MessageSquare, ThumbsUp, ExternalLink, Trash2, Linkedin, Save } from 'lucide-react';
+import { Upload, ExternalLink, Trash2, Linkedin, Save } from 'lucide-react';
 import { UploadProjectDialog } from '@/components/portfolio/UploadProjectDialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { formatDistanceToNow } from 'date-fns';
+
 interface Project {
   id: string;
   title: string;
@@ -20,21 +20,9 @@ interface Project {
   user_id: string;
 }
 
-interface Review {
-  id: string;
-  project_id: string;
-  reviewer_id: string;
-  rating: number;
-  comment: string | null;
-  created_at: string;
-  project_title?: string;
-  reviewer_name?: string;
-}
-
 const Portfolio = () => {
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [linkedinUrl, setLinkedinUrl] = useState('');
@@ -54,7 +42,6 @@ const Portfolio = () => {
       
       setCurrentUserId(session.user.id);
 
-      // Fetch user's profile for LinkedIn URL
       const { data: profileData } = await supabase
         .from('profiles')
         .select('linkedin_url')
@@ -65,7 +52,6 @@ const Portfolio = () => {
         setLinkedinUrl(profileData.linkedin_url);
       }
 
-      // Fetch user's projects
       const { data: projectsData, error: projectsError } = await supabase
         .from('portfolio_projects')
         .select('*')
@@ -74,27 +60,6 @@ const Portfolio = () => {
 
       if (projectsError) throw projectsError;
       setProjects(projectsData || []);
-
-      // Fetch reviews for user's projects
-      if (projectsData && projectsData.length > 0) {
-        const projectIds = projectsData.map(p => p.id);
-        const { data: reviewsData, error: reviewsError } = await supabase
-          .from('portfolio_reviews')
-          .select('*')
-          .in('project_id', projectIds)
-          .order('created_at', { ascending: false });
-
-        if (reviewsError) throw reviewsError;
-        
-        // Map reviews with project titles
-        const reviewsWithTitles = (reviewsData || []).map(review => ({
-          ...review,
-          project_title: projectsData.find(p => p.id === review.project_id)?.title || 'Unknown Project',
-          reviewer_name: 'Anonymous Reviewer', // In production, fetch from profiles
-        }));
-        
-        setReviews(reviewsWithTitles);
-      }
     } catch (error) {
       console.error('Error fetching portfolio data:', error);
       toast.error('Failed to load portfolio');
@@ -111,7 +76,6 @@ const Portfolio = () => {
         .eq('id', projectId);
 
       if (error) throw error;
-      
       setProjects(projects.filter(p => p.id !== projectId));
       toast.success('Project deleted');
     } catch (error) {
@@ -122,7 +86,6 @@ const Portfolio = () => {
 
   const saveLinkedinUrl = async () => {
     if (!currentUserId) return;
-    
     setSavingLinkedin(true);
     try {
       const { error } = await supabase
@@ -140,14 +103,8 @@ const Portfolio = () => {
     }
   };
 
-  // Calculate stats
   const totalProjects = projects.length;
-  const totalEndorsements = reviews.length; // Each review counts as an endorsement
-  const avgRating = reviews.length > 0 
-    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-    : '0.0';
 
-  // Calculate skills from projects
   const skillCounts: Record<string, number> = {};
   projects.forEach(project => {
     project.tags.forEach(tag => {
@@ -158,7 +115,6 @@ const Portfolio = () => {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4);
 
-  // Get emoji for project based on tags
   const getProjectEmoji = (tags: string[]) => {
     const tagLower = tags[0]?.toLowerCase() || '';
     if (tagLower.includes('react') || tagLower.includes('vue')) return '⚛️';
@@ -183,9 +139,7 @@ const Portfolio = () => {
   return (
     <PageLayout title="Portfolio">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Portfolio Area */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Upload Section */}
           <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -193,7 +147,7 @@ const Portfolio = () => {
                 <div className="flex-1">
                   <h3 className="text-xl font-bold">Showcase Your Work</h3>
                   <p className="text-muted-foreground">
-                    Upload projects to get peer ratings and build your portfolio
+                    Upload projects to build your portfolio
                   </p>
                 </div>
                 <UploadProjectDialog onProjectUploaded={fetchData} />
@@ -201,7 +155,6 @@ const Portfolio = () => {
             </CardContent>
           </Card>
 
-          {/* LinkedIn Section */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -216,11 +169,7 @@ const Portfolio = () => {
                       onChange={(e) => setLinkedinUrl(e.target.value)}
                       className="flex-1"
                     />
-                    <Button 
-                      onClick={saveLinkedinUrl} 
-                      disabled={savingLinkedin}
-                      size="sm"
-                    >
+                    <Button onClick={saveLinkedinUrl} disabled={savingLinkedin} size="sm">
                       <Save className="h-4 w-4 mr-1" />
                       Save
                     </Button>
@@ -230,7 +179,6 @@ const Portfolio = () => {
             </CardContent>
           </Card>
 
-          {/* Projects Grid */}
           {projects.length === 0 ? (
             <Card>
               <CardContent className="pt-6 text-center">
@@ -243,131 +191,71 @@ const Portfolio = () => {
             </Card>
           ) : (
             <div className="grid md:grid-cols-2 gap-4">
-              {projects.map((project) => {
-                const projectReviews = reviews.filter(r => r.project_id === project.id);
-                const projectRating = projectReviews.length > 0
-                  ? (projectReviews.reduce((sum, r) => sum + r.rating, 0) / projectReviews.length).toFixed(1)
-                  : null;
-
-                return (
-                  <Card
-                    key={project.id}
-                    className={`cursor-pointer transition-all hover:border-primary/50 ${
-                      selectedProject === project.id ? 'border-primary' : ''
-                    }`}
-                    onClick={() => setSelectedProject(project.id)}
-                  >
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="text-5xl mb-3">{getProjectEmoji(project.tags)}</div>
-                        <div className="flex items-center gap-2">
-                          {project.is_verified && (
-                            <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
-                              ✓ AI Verified
-                            </span>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteProject(project.id);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <CardTitle className="text-lg">{project.title}</CardTitle>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {project.description}
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex flex-wrap gap-2">
-                        {project.tags.map((tag) => (
-                          <span key={tag} className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
-                            {tag}
+              {projects.map((project) => (
+                <Card
+                  key={project.id}
+                  className={`cursor-pointer transition-all hover:border-primary/50 ${
+                    selectedProject === project.id ? 'border-primary' : ''
+                  }`}
+                  onClick={() => setSelectedProject(project.id)}
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="text-5xl mb-3">{getProjectEmoji(project.tags)}</div>
+                      <div className="flex items-center gap-2">
+                        {project.is_verified && (
+                          <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
+                            ✓ AI Verified
                           </span>
-                        ))}
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-3">
-                          {projectRating && (
-                            <span className="flex items-center gap-1">
-                              <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-                              {projectRating}
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <ThumbsUp className="h-4 w-4" />
-                            {projectReviews.length}
-                          </span>
-                        </div>
-                        {(project.project_url || project.github_url) && (
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              window.open(project.project_url || project.github_url || '', '_blank');
-                            }}
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
                         )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Recent Reviews */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Peer Reviews</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {reviews.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">
-                  No reviews yet. Share your portfolio to get feedback!
-                </p>
-              ) : (
-                reviews.slice(0, 5).map((review) => (
-                  <div key={review.id} className="border-b last:border-0 pb-4 last:pb-0">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className="font-semibold">{review.reviewer_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          reviewed {review.project_title}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: review.rating }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className="h-4 w-4 fill-yellow-500 text-yellow-500"
-                          />
-                        ))}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteProject(project.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    {review.comment && <p className="text-sm mb-1">{review.comment}</p>}
-                    <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}
+                    <CardTitle className="text-lg">{project.title}</CardTitle>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {project.description}
                     </p>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      {project.tags.map((tag) => (
+                        <span key={tag} className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-end text-sm">
+                      {(project.project_url || project.github_url) && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(project.project_url || project.github_url || '', '_blank');
+                          }}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
-          {/* Portfolio Stats */}
           <Card>
             <CardHeader>
               <CardTitle>Portfolio Stats</CardTitle>
@@ -377,18 +265,9 @@ const Portfolio = () => {
                 <span className="text-muted-foreground">Total Projects</span>
                 <span className="font-bold">{totalProjects}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Avg Rating</span>
-                <span className="font-bold">{avgRating} ⭐</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total Reviews</span>
-                <span className="font-bold">{totalEndorsements}</span>
-              </div>
             </CardContent>
           </Card>
 
-          {/* Skill Breakdown */}
           <Card>
             <CardHeader>
               <CardTitle>Skills in Portfolio</CardTitle>
@@ -411,7 +290,6 @@ const Portfolio = () => {
             </CardContent>
           </Card>
 
-          {/* Call to Action */}
           <Card className="bg-primary text-primary-foreground">
             <CardContent className="pt-6 text-center">
               <h3 className="font-bold mb-2">Share Your Portfolio</h3>
