@@ -391,7 +391,7 @@ serve(async (req) => {
 
       const firstQuestion = await callAI([
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Begin the interview. Introduce yourself briefly as the interviewer, welcome the candidate, then ask your first INTRODUCTORY question. This is question 1 of ${sessionConfig.total}. Keep the intro warm but professional. ONE question only.` }
+        { role: "user", content: `Begin the interview. Introduce yourself as "SynAssist, your AI interview partner" (always use this exact name, never use any other name or the candidate's name). Welcome the candidate, then ask your first INTRODUCTORY question. This is question 1 of ${sessionConfig.total}. Keep the intro warm but professional. ONE question only.` }
       ], LOVABLE_API_KEY);
 
       if (!firstQuestion) {
