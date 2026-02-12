@@ -34,9 +34,9 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
   // Navigation items for job seekers (students, professionals)
   const jobSeekerNavItems: NavItem[] = [
     {
-      title: 'My Communities',
-      icon: Users,
-      href: '/communities',
+      title: 'Assessment',
+      icon: ClipboardList,
+      href: '/assessment',
     },
     {
       title: 'My Skills',
@@ -93,9 +93,9 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
   // Navigation items for employers
   const employerNavItems: NavItem[] = [
     {
-      title: 'My Communities',
-      icon: Users,
-      href: '/communities',
+      title: 'Assessment',
+      icon: ClipboardList,
+      href: '/assessment',
     },
     {
       title: 'My Company',
@@ -137,9 +137,9 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
   // Navigation items for counsellors
   const counsellorNavItems: NavItem[] = [
     {
-      title: 'My Communities',
-      icon: Users,
-      href: '/communities',
+      title: 'Assessment',
+      icon: ClipboardList,
+      href: '/assessment',
     },
     {
       title: 'My Portfolio',

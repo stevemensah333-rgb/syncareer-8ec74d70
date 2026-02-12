@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      assessment_responses: {
+        Row: {
+          assessment_id: string
+          created_at: string
+          id: string
+          question_id: number
+          selected_value: number
+        }
+        Insert: {
+          assessment_id: string
+          created_at?: string
+          id?: string
+          question_id: number
+          selected_value: number
+        }
+        Update: {
+          assessment_id?: string
+          created_at?: string
+          id?: string
+          question_id?: number
+          selected_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_responses_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_results: {
         Row: {
           answers: Json
@@ -65,328 +97,45 @@ export type Database = {
           },
         ]
       }
-      communities: {
+      assessments: {
         Row: {
-          banner_url: string | null
-          category: string
+          completed_at: string | null
           created_at: string
-          created_by: string
-          description: string | null
-          icon_url: string | null
           id: string
-          is_public: boolean
-          name: string
-          rules: string | null
-          slug: string
+          personality_score_json: Json
+          primary_interest: string | null
+          secondary_interest: string | null
+          skills_score_json: Json
+          tertiary_interest: string | null
           updated_at: string
+          user_id: string
+          work_interest_score_json: Json
         }
         Insert: {
-          banner_url?: string | null
-          category?: string
+          completed_at?: string | null
           created_at?: string
-          created_by: string
-          description?: string | null
-          icon_url?: string | null
           id?: string
-          is_public?: boolean
-          name: string
-          rules?: string | null
-          slug: string
+          personality_score_json?: Json
+          primary_interest?: string | null
+          secondary_interest?: string | null
+          skills_score_json?: Json
+          tertiary_interest?: string | null
           updated_at?: string
+          user_id: string
+          work_interest_score_json?: Json
         }
         Update: {
-          banner_url?: string | null
-          category?: string
+          completed_at?: string | null
           created_at?: string
-          created_by?: string
-          description?: string | null
-          icon_url?: string | null
           id?: string
-          is_public?: boolean
-          name?: string
-          rules?: string | null
-          slug?: string
+          personality_score_json?: Json
+          primary_interest?: string | null
+          secondary_interest?: string | null
+          skills_score_json?: Json
+          tertiary_interest?: string | null
           updated_at?: string
-        }
-        Relationships: []
-      }
-      community_bans: {
-        Row: {
-          banned_by: string
-          community_id: string
-          created_at: string
-          expires_at: string | null
-          id: string
-          reason: string | null
-          user_id: string
-        }
-        Insert: {
-          banned_by: string
-          community_id: string
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          reason?: string | null
-          user_id: string
-        }
-        Update: {
-          banned_by?: string
-          community_id?: string
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          reason?: string | null
           user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "community_bans_community_id_fkey"
-            columns: ["community_id"]
-            isOneToOne: false
-            referencedRelation: "communities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      community_members: {
-        Row: {
-          community_id: string
-          id: string
-          is_pinned: boolean
-          joined_at: string
-          role: string
-          user_id: string
-        }
-        Insert: {
-          community_id: string
-          id?: string
-          is_pinned?: boolean
-          joined_at?: string
-          role?: string
-          user_id: string
-        }
-        Update: {
-          community_id?: string
-          id?: string
-          is_pinned?: boolean
-          joined_at?: string
-          role?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "community_members_community_id_fkey"
-            columns: ["community_id"]
-            isOneToOne: false
-            referencedRelation: "communities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      community_post_bookmarks: {
-        Row: {
-          created_at: string
-          id: string
-          post_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          post_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          post_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "community_post_bookmarks_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "community_posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      community_post_comments: {
-        Row: {
-          author_id: string
-          content: string
-          created_at: string
-          id: string
-          parent_id: string | null
-          post_id: string
-          updated_at: string
-          upvotes: number
-        }
-        Insert: {
-          author_id: string
-          content: string
-          created_at?: string
-          id?: string
-          parent_id?: string | null
-          post_id: string
-          updated_at?: string
-          upvotes?: number
-        }
-        Update: {
-          author_id?: string
-          content?: string
-          created_at?: string
-          id?: string
-          parent_id?: string | null
-          post_id?: string
-          updated_at?: string
-          upvotes?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "community_post_comments_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "community_post_comments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "community_post_comments_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "community_posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      community_post_votes: {
-        Row: {
-          created_at: string
-          id: string
-          post_id: string
-          user_id: string
-          vote_type: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          post_id: string
-          user_id: string
-          vote_type: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          post_id?: string
-          user_id?: string
-          vote_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "community_post_votes_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "community_posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      community_posts: {
-        Row: {
-          author_id: string
-          comment_count: number
-          community_id: string
-          content: string
-          cover_image_url: string | null
-          created_at: string
-          downvotes: number
-          id: string
-          is_pinned: boolean
-          tags: string[] | null
-          title: string
-          updated_at: string
-          upvotes: number
-        }
-        Insert: {
-          author_id: string
-          comment_count?: number
-          community_id: string
-          content: string
-          cover_image_url?: string | null
-          created_at?: string
-          downvotes?: number
-          id?: string
-          is_pinned?: boolean
-          tags?: string[] | null
-          title: string
-          updated_at?: string
-          upvotes?: number
-        }
-        Update: {
-          author_id?: string
-          comment_count?: number
-          community_id?: string
-          content?: string
-          cover_image_url?: string | null
-          created_at?: string
-          downvotes?: number
-          id?: string
-          is_pinned?: boolean
-          tags?: string[] | null
-          title?: string
-          updated_at?: string
-          upvotes?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "community_posts_community_id_fkey"
-            columns: ["community_id"]
-            isOneToOne: false
-            referencedRelation: "communities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      content_reports: {
-        Row: {
-          content_id: string
-          content_type: string
-          created_at: string
-          description: string | null
-          id: string
-          reason: string
-          reporter_id: string
-          resolution_note: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          status: string
-        }
-        Insert: {
-          content_id: string
-          content_type: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          reason: string
-          reporter_id: string
-          resolution_note?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-        }
-        Update: {
-          content_id?: string
-          content_type?: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          reason?: string
-          reporter_id?: string
-          resolution_note?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
+          work_interest_score_json?: Json
         }
         Relationships: []
       }

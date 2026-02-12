@@ -16,7 +16,7 @@ const Onboarding = lazy(() => import("./pages/Onboarding"));
 const PublicPortfolio = lazy(() => import("./pages/PublicPortfolio"));
 
 // Core pages
-const Communities = lazy(() => import("./pages/Communities"));
+const Assessment = lazy(() => import("./pages/Assessment"));
 const Stocks = lazy(() => import("./pages/Stocks"));
 const Currencies = lazy(() => import("./pages/Currencies"));
 const Markets = lazy(() => import("./pages/Markets"));
@@ -44,13 +44,6 @@ const CounsellorDashboard = lazy(() => import("./pages/counsellor/CounsellorDash
 const CounsellorAvailability = lazy(() => import("./pages/counsellor/CounsellorAvailability"));
 const CounsellorSessions = lazy(() => import("./pages/counsellor/CounsellorSessions"));
 
-// Community pages
-const ExploreCommunities = lazy(() => import("./pages/ExploreCommunities"));
-const CreateCommunity = lazy(() => import("./pages/CreateCommunity"));
-const CommunityDetail = lazy(() => import("./pages/CommunityDetail"));
-const CommunityModeration = lazy(() => import("./pages/CommunityModeration"));
-const PostDetail = lazy(() => import("./pages/PostDetail"));
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -69,7 +62,7 @@ const App = () => (
                 <Route path="/portfolio/:userId" element={<PublicPortfolio />} />
                 
                 {/* Protected routes */}
-                <Route path="/home" element={<ProtectedRoute><Communities /></ProtectedRoute>} />
+                <Route path="/home" element={<Navigate to="/portfolio" replace />} />
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                 <Route path="/skills" element={<ProtectedRoute><Stocks /></ProtectedRoute>} />
                 <Route path="/learn" element={<ProtectedRoute><Currencies /></ProtectedRoute>} />
@@ -98,14 +91,9 @@ const App = () => (
                 <Route path="/counsellor-availability" element={<ProtectedRoute><CounsellorAvailability /></ProtectedRoute>} />
                 <Route path="/counsellor-sessions" element={<ProtectedRoute><CounsellorSessions /></ProtectedRoute>} />
                 
-                {/* Protected community routes */}
-                <Route path="/communities" element={<ProtectedRoute><Communities /></ProtectedRoute>} />
-                <Route path="/communities/explore" element={<ProtectedRoute><ExploreCommunities /></ProtectedRoute>} />
-                <Route path="/communities/create" element={<ProtectedRoute><CreateCommunity /></ProtectedRoute>} />
-                <Route path="/communities/:slug" element={<ProtectedRoute><CommunityDetail /></ProtectedRoute>} />
-                <Route path="/communities/:slug/moderation" element={<ProtectedRoute><CommunityModeration /></ProtectedRoute>} />
-                <Route path="/communities/post/:postId" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
-                
+                {/* Assessment route */}
+                <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
+
                 {/* Catch-all */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
