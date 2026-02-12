@@ -12,6 +12,8 @@ const MAX_FILENAME_LENGTH = 255;
 
 interface PortfolioRequest {
   cvContent?: string;
+  fileBase64?: string;
+  fileMimeType?: string;
   portfolioContent?: string;
   fileName: string;
 }
@@ -35,19 +37,26 @@ function validatePortfolioRequest(body: unknown): { valid: boolean; error?: stri
     if (request.cvContent.length > MAX_CV_CONTENT_LENGTH) return { valid: false, error: `cvContent exceeds ${MAX_CV_CONTENT_LENGTH} characters` };
   }
 
+  if (request.fileBase64 !== undefined) {
+    if (typeof request.fileBase64 !== "string") return { valid: false, error: "fileBase64 must be a string" };
+    if (typeof request.fileMimeType !== "string") return { valid: false, error: "fileMimeType is required with fileBase64" };
+  }
+
   if (request.portfolioContent !== undefined) {
     if (typeof request.portfolioContent !== "string") return { valid: false, error: "portfolioContent must be a string" };
     if (request.portfolioContent.length > MAX_PORTFOLIO_CONTENT_LENGTH) return { valid: false, error: `portfolioContent exceeds ${MAX_PORTFOLIO_CONTENT_LENGTH} characters` };
   }
 
-  if (!request.cvContent && !request.portfolioContent) {
-    return { valid: false, error: "At least one of cvContent or portfolioContent must be provided" };
+  if (!request.cvContent && !request.portfolioContent && !request.fileBase64) {
+    return { valid: false, error: "At least one of cvContent, fileBase64, or portfolioContent must be provided" };
   }
 
   return {
     valid: true,
     data: {
       cvContent: request.cvContent as string | undefined,
+      fileBase64: request.fileBase64 as string | undefined,
+      fileMimeType: request.fileMimeType as string | undefined,
       portfolioContent: request.portfolioContent as string | undefined,
       fileName: request.fileName as string,
     },
@@ -105,7 +114,7 @@ serve(async (req) => {
       );
     }
 
-    const { cvContent, portfolioContent, fileName } = validation.data!;
+    const { cvContent, fileBase64, fileMimeType, portfolioContent, fileName } = validation.data!;
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -124,12 +133,28 @@ Your analysis must cover:
 
 Be constructive, specific, and practical in your advice. Focus on the South African job market context.`;
 
-    const userPrompt = `Please analyze this career profile:
+    // Build user message parts - supports both text and binary document input
+    const userMessageParts: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
 
-${cvContent ? `**CV/Resume:**\n${cvContent}\n\n` : ''}
-${portfolioContent ? `**Portfolio/Projects:**\n${portfolioContent}` : ''}
-
-File: ${fileName}`;
+    if (fileBase64 && fileMimeType) {
+      // For binary files (PDF/DOCX), send as inline document for AI extraction
+      userMessageParts.push({
+        type: "text",
+        text: `Please extract all text from the attached document and analyze this career profile.\n\n${portfolioContent ? `**Portfolio/Projects:**\n${portfolioContent}\n\n` : ''}File: ${fileName}`
+      });
+      userMessageParts.push({
+        type: "image_url",
+        image_url: {
+          url: `data:${fileMimeType};base64,${fileBase64}`
+        }
+      });
+    } else {
+      // For text content
+      userMessageParts.push({
+        type: "text",
+        text: `Please analyze this career profile:\n\n${cvContent ? `**CV/Resume:**\n${cvContent}\n\n` : ''}${portfolioContent ? `**Portfolio/Projects:**\n${portfolioContent}` : ''}\n\nFile: ${fileName}`
+      });
+    }
 
     // Use tool calling for structured skill extraction
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -142,7 +167,7 @@ File: ${fileName}`;
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
+          { role: "user", content: userMessageParts },
         ],
         tools: [
           {
