@@ -48,8 +48,8 @@ export default function Landing() {
     },
     {
       icon: Users,
-      title: "Professional Communities",
-      description: "Connect with peers, mentors, and industry leaders who share your professional interests."
+      title: "Career Assessment",
+      description: "Discover your strengths with our 45-question RIASEC assessment and get personalized career recommendations."
     },
     {
       icon: TrendingUp,
