@@ -1180,6 +1180,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_skills: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          proficiency: string
+          skill_name: string
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          proficiency?: string
+          skill_name: string
+          source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          proficiency?: string
+          skill_name?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_stats: {
         Row: {
           created_at: string
