@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.send-employee-invite]
 verify_jwt = false
+
+[functions.suggest-courses]
+verify_jwt = false
+
+[functions.cv-ai-assistant]
+verify_jwt = false
