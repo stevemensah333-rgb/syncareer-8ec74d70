@@ -1,69 +1,181 @@
-# Welcome to your Lovable project
+**Syncareer – AI-Powered Career Intelligence Platform**
+**Overview**
 
-## Project info
+Syncareer is an AI-powered career guidance platform designed to help African students discover personalized, actionable career pathways based on their skills, interests, and academic background.
 
-**URL**: https://lovable.dev/projects/a8baea9a-97ae-4008-b023-5de63357c0e2
+The platform leverages AI to generate structured career recommendations, learning roadmaps, and next-step strategies tailored to each individual user.
 
-## How can I edit this code?
+**Problem Statement**
 
-There are several ways of editing your application.
+Across Africa, millions of students lack access to personalized career guidance. Traditional counseling systems are either unavailable, under-resourced, or not scalable.
 
-**Use Lovable**
+Students often:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a8baea9a-97ae-4008-b023-5de63357c0e2) and start prompting.
+Choose careers based on guesswork
 
-Changes made via Lovable will be committed automatically to this repo.
+Lack exposure to emerging tech fields
 
-**Use your preferred IDE**
+Don’t know what skills to develop
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Have no structured roadmap
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+This leads to underemployment and misaligned career paths.
 
-Follow these steps:
+**Solution**
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Syncareer provides:
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+AI-generated personalized career recommendations
 
-# Step 3: Install the necessary dependencies.
-npm i
+Structured skill development roadmaps
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+Required tools & certifications
+
+Suggested learning platforms
+
+Actionable next steps
+
+The system transforms student inputs into structured career intelligence using AI-driven reasoning.
+
+**Core Features**
+
+Secure user authentication
+
+Profile-based career analysis
+
+AI-powered career recommendations
+
+Structured JSON AI output parsing
+
+Career roadmap generation
+
+Email delivery of career reports
+
+Saved reports dashboard
+
+**Technical Architecture**
+
+Frontend:
+
+Next.js (React-based framework)
+
+Backend:
+
+API Routes (Node.js runtime)
+
+Database:
+
+PostgreSQL
+
+AI Integration:
+
+OpenAI API for structured career reasoning
+
+Email Service:
+
+Resend API
+
+**System Flow**
+
+User creates profile
+
+Profile data is validated
+
+Structured prompt is generated
+
+OpenAI API processes request
+
+JSON output is validated and parsed
+
+Career report stored in database
+
+Report displayed to user
+
+Optional: Report emailed to user
+
+**AI Implementation Strategy**
+
+Syncareer uses structured prompt engineering to ensure consistent outputs.
+
+The AI is instructed to:
+
+Return structured JSON
+
+Provide reasoning for recommendations
+
+Generate actionable roadmaps
+
+Avoid generic advice
+
+Response validation is performed before rendering results to users.
+
+AI coding assistants were used to accelerate development, debugging, and optimization, while core architecture and feature design were implemented by the developer.
+
+**Project Structure**
+syncareer/
+│
+├── app/
+├── components/
+├── lib/
+├── prisma/
+├── public/
+├── docs/
+├── .env.example
+├── README.md
+└── package.json
+
+**Setup Instructions**
+
+Clone the repository:
+
+git clone https://github.com/stevemensah333-rgb/skil-bridge.git
+cd syncareer
+
+
+Install dependencies:
+
+npm install
+
+Create environment file:
+
+cp .env.example .env.local
+
+
+Add required keys:
+
+OPENAI_API_KEY=
+DATABASE_URL=
+RESEND_API_KEY=
+
+
+Run development server:
+
 npm run dev
-```
 
-**Edit a file directly in GitHub**
+**Evaluation Criteria Alignment**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+This project demonstrates:
 
-**Use GitHub Codespaces**
+Functional working prototype
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Strong API integration
 
-## What technologies are used for this project?
+Structured AI architecture
 
-This project is built with .
+Clean repository management
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Production-style environment configuration
 
-## How can I deploy this project?
+Clear documentation
 
-Simply open [Lovable](https://lovable.dev/projects/a8baea9a-97ae-4008-b023-5de63357c0e2) and click on Share -> Publish.
+**Future Improvements**
 
-## I want to use a custom domain - is that possible?
+School-level analytics dashboard
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+Scholarship recommendation engine
+
+Internship matching system
+
+Multi-language support
+
+AI interview preparation module
