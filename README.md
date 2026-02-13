@@ -128,7 +128,7 @@ syncareer/
 
 Clone the repository:
 
-git clone https://github.com/stevemensah333-rgb/skil-bridge.git
+git clone https://github.com/stevemensah333-rgb/syncareer.git
 cd syncareer
 
 
