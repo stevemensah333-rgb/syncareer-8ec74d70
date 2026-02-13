@@ -171,7 +171,7 @@ serve(async (req) => {
         "Authorization": `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: "Syncareer <noreply@syncareer.lovable.app>",
+        from: "Syncareer <no-reply@syncareer.me>",
         to: [trimmedEmail],
         subject: `You've been invited to join ${trimmedCompanyName} on Syncareer`,
         html: `
