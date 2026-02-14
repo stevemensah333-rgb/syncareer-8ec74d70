@@ -12,7 +12,9 @@ import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ClipboardCheck, ArrowRight, ArrowLeft, RotateCcw, Calendar, Trophy, Brain } from 'lucide-react';
 import { useAssessment } from '@/hooks/useAssessment';
+import { useCareerRecommendations } from '@/hooks/useCareerRecommendations';
 import { ASSESSMENT_QUESTIONS, LIKERT_OPTIONS, RIASEC_LABELS, RIASEC_DESCRIPTIONS } from '@/data/assessmentQuestions';
+import CareerRecommendations from '@/components/assessment/CareerRecommendations';
 import { format } from 'date-fns';
 
 const QUESTIONS_PER_PAGE = 5;
@@ -30,6 +32,7 @@ const SECTION_COLORS: Record<string, string> = {
 const Assessment = () => {
   const { profile } = useUserProfile();
   const { latestResult, allResults, loading, submitting, canRetake, submitAssessment } = useAssessment();
+  const { recommendations, clusterInsight, loading: careersLoading } = useCareerRecommendations(latestResult);
   const [takingAssessment, setTakingAssessment] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -267,6 +270,16 @@ const Assessment = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Career Recommendations */}
+        <CareerRecommendations
+          recommendations={recommendations}
+          clusterInsight={clusterInsight}
+          primaryInterest={latestResult.primary_interest}
+          secondaryInterest={latestResult.secondary_interest}
+          tertiaryInterest={latestResult.tertiary_interest}
+          loading={careersLoading}
+        />
 
         {/* History */}
         {allResults.length > 1 && (

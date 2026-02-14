@@ -139,6 +139,42 @@ export type Database = {
         }
         Relationships: []
       }
+      careers: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          industry: string
+          required_skills: string[]
+          riasec_profile: Json
+          salary_range: string | null
+          suggested_majors: string[]
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          industry: string
+          required_skills?: string[]
+          riasec_profile?: Json
+          salary_range?: string | null
+          suggested_majors?: string[]
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          industry?: string
+          required_skills?: string[]
+          riasec_profile?: Json
+          salary_range?: string | null
+          suggested_majors?: string[]
+          title?: string
+        }
+        Relationships: []
+      }
       counsellor_availability: {
         Row: {
           counsellor_id: string
