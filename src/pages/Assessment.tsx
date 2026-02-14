@@ -1,4 +1,6 @@
 import React, { useState, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +27,7 @@ const SECTION_COLORS: Record<string, string> = {
 };
 
 const Assessment = () => {
+  const { profile } = useUserProfile();
   const { latestResult, allResults, loading, submitting, canRetake, submitAssessment } = useAssessment();
   const [takingAssessment, setTakingAssessment] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
@@ -65,6 +68,11 @@ const Assessment = () => {
 
   const allCurrentAnswered = currentQuestions.every(q => answers[q.id] !== undefined);
   const isLastPage = currentPage === totalPages - 1;
+
+  // Only students can access assessment
+  if (profile && profile.user_type !== 'student') {
+    return <Navigate to="/portfolio" replace />;
+  }
 
   if (loading) {
     return (
