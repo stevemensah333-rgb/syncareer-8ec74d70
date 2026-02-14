@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { GraduationCap, Briefcase, Users, ChevronRight, ChevronLeft } from 'lucide-react';
 import { z } from 'zod';
 import { countries } from '@/utils/countries';
 
@@ -36,13 +35,6 @@ const counsellorSchema = z.object({
   countryCode: z.string().min(1, 'Country code is required'),
   phoneNumber: z.string().trim().min(1, 'Phone number is required').max(20, 'Phone number must be less than 20 characters'),
 });
-
-
-const USER_TYPES = [
-  { id: 'student', label: 'Student', icon: GraduationCap, description: 'I am currently studying or recently graduated' },
-  { id: 'employer', label: 'Employer / Recruiter', icon: Briefcase, description: 'I represent a company looking to hire or recruit talent' },
-  { id: 'career_counsellor', label: 'Career Counsellor', icon: Users, description: 'I help individuals with career guidance and planning' },
-];
 
 const MAJORS = [
   'Computer Science',
@@ -153,11 +145,11 @@ const years = Array.from({ length: 20 }, (_, i) => currentYear - 10 + i);
 
 const Onboarding = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // User type selection
+  // User type from signup (no longer selected here)
   const [userType, setUserType] = useState<string>('');
 
   // Student fields
@@ -203,36 +195,27 @@ const Onboarding = () => {
         setCounsellorFullName(userFullName);
       }
 
-      // Check if onboarding is already completed
+      // Get user type from profile (set during signup)
       const { data: profile } = await supabase
         .from('profiles')
-        .select('onboarding_completed')
+        .select('onboarding_completed, user_type')
         .eq('id', session.user.id)
         .maybeSingle();
 
       if (profile?.onboarding_completed) {
         navigate('/portfolio');
+        return;
       }
+
+      // Use user_type from profile or from auth metadata
+      const type = profile?.user_type || session.user.user_metadata?.user_type || '';
+      setUserType(type);
+      setInitialLoading(false);
     };
 
     checkSession();
   }, [navigate]);
 
-  const handleUserTypeSelect = (type: string) => {
-    setUserType(type);
-  };
-
-  const handleNext = () => {
-    if (step === 1 && !userType) {
-      toast.error('Please select your role');
-      return;
-    }
-    setStep(2);
-  };
-
-  const handleBack = () => {
-    setStep(1);
-  };
 
   const handleSubmit = async () => {
     if (!userId) return;
@@ -333,59 +316,21 @@ const Onboarding = () => {
     }
   };
 
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl p-8 shadow-xl">
+          <div className="text-center text-muted-foreground">Loading...</div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl p-8 shadow-xl">
-        {/* Progress indicator */}
-        <div className="flex items-center justify-center mb-8">
-          <div className="flex items-center gap-2">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-              1
-            </div>
-            <div className={`w-16 h-1 ${step >= 2 ? 'bg-primary' : 'bg-muted'}`} />
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-              2
-            </div>
-          </div>
-        </div>
 
-        {step === 1 && (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h1 className="text-3xl font-bold text-foreground">Welcome to Syncareer!</h1>
-              <p className="text-muted-foreground mt-2">Tell us about yourself to personalize your experience</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-              {USER_TYPES.map((type) => {
-                const Icon = type.icon;
-                return (
-                  <button
-                    key={type.id}
-                    onClick={() => handleUserTypeSelect(type.id)}
-                    className={`p-6 rounded-xl border-2 transition-all text-left ${
-                      userType === type.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                    }`}
-                  >
-                    <Icon className={`w-8 h-8 mb-3 ${userType === type.id ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <h3 className="font-semibold text-foreground">{type.label}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{type.description}</p>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-end mt-8">
-              <Button onClick={handleNext} disabled={!userType} className="px-8">
-                Continue <ChevronRight className="ml-2 w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {step === 2 && userType === 'student' && (
+        {userType === 'student' && (
           <div className="space-y-6">
             <div className="text-center">
               <h1 className="text-3xl font-bold text-foreground">Academic Details</h1>
@@ -462,10 +407,7 @@ const Onboarding = () => {
               </div>
             </div>
 
-            <div className="flex justify-between mt-8">
-              <Button variant="outline" onClick={handleBack}>
-                <ChevronLeft className="mr-2 w-4 h-4" /> Back
-              </Button>
+            <div className="flex justify-end mt-8">
               <Button onClick={handleSubmit} disabled={loading || !major || !degreeType} className="px-8">
                 {loading ? 'Saving...' : 'Complete Setup'}
               </Button>
@@ -473,7 +415,7 @@ const Onboarding = () => {
           </div>
         )}
 
-        {step === 2 && userType === 'employer' && (
+        {userType === 'employer' && (
           <div className="space-y-6">
             <div className="text-center">
               <h1 className="text-3xl font-bold text-foreground">Company Details</h1>
@@ -540,10 +482,7 @@ const Onboarding = () => {
               </div>
             </div>
 
-            <div className="flex justify-between mt-8">
-              <Button variant="outline" onClick={handleBack}>
-                <ChevronLeft className="mr-2 w-4 h-4" /> Back
-              </Button>
+            <div className="flex justify-end mt-8">
               <Button onClick={handleSubmit} disabled={loading || !companyName} className="px-8">
                 {loading ? 'Saving...' : 'Complete Setup'}
               </Button>
@@ -551,7 +490,7 @@ const Onboarding = () => {
           </div>
         )}
 
-        {step === 2 && userType === 'career_counsellor' && (
+        {userType === 'career_counsellor' && (
           <div className="space-y-6">
             <div className="text-center">
               <h1 className="text-3xl font-bold text-foreground">Counsellor Details</h1>
@@ -606,10 +545,7 @@ const Onboarding = () => {
               </p>
             </div>
 
-            <div className="flex justify-between mt-8">
-              <Button variant="outline" onClick={handleBack}>
-                <ChevronLeft className="mr-2 w-4 h-4" /> Back
-              </Button>
+            <div className="flex justify-end mt-8">
               <Button onClick={handleSubmit} disabled={loading || !counsellorFullName || !countryCode || !phoneNumber} className="px-8">
                 {loading ? 'Saving...' : 'Complete Setup'}
               </Button>

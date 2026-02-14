@@ -93,11 +93,6 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
   // Navigation items for employers
   const employerNavItems: NavItem[] = [
     {
-      title: 'Assessment',
-      icon: ClipboardList,
-      href: '/assessment',
-    },
-    {
       title: 'My Company',
       icon: Building2,
       href: '/my-company',
@@ -136,11 +131,6 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
 
   // Navigation items for counsellors
   const counsellorNavItems: NavItem[] = [
-    {
-      title: 'Assessment',
-      icon: ClipboardList,
-      href: '/assessment',
-    },
     {
       title: 'My Portfolio',
       icon: Users,
