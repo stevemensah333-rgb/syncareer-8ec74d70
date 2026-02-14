@@ -1,63 +1,32 @@
 
-import React, { useState } from 'react';
-import { Navbar } from '@/components/layout/Navbar';
-import { Sidebar } from '@/components/layout/Sidebar';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { GlobalErrorBoundary } from '@/components/GlobalErrorBoundary';
-import {
-  Drawer,
-  DrawerContent,
-} from '@/components/ui/drawer';
+import React from 'react';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { StudentLayout } from '@/components/layout/StudentLayout';
+import { EmployerLayout } from '@/components/layout/EmployerLayout';
+import { CounsellorLayout } from '@/components/layout/CounsellorLayout';
 
 interface PageLayoutProps {
   children: React.ReactNode;
   title: string;
 }
 
+/**
+ * Role-aware PageLayout that delegates to the correct role-specific layout.
+ * The user's role is fetched from UserProfileContext (always from DB, never cached client-side).
+ * ProtectedRoute + RoleRoute ensure the profile is loaded before this renders.
+ */
 export function PageLayout({ children, title }: PageLayoutProps) {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-  const isMobile = useIsMobile();
-  
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(prev => !prev);
-  };
-  
-  return (
-    <div className="min-h-screen flex flex-col">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-foreground"
-      >
-        Skip to main content
-      </a>
-      
-      <Navbar onMobileMenuClick={() => setIsMobileDrawerOpen(true)} />
-      
-      <div className="flex-1 flex">
-        {!isMobile && (
-          <Sidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar} />
-        )}
-        
-        {isMobile && (
-          <Drawer open={isMobileDrawerOpen} onOpenChange={setIsMobileDrawerOpen}>
-            <DrawerContent className="h-[85vh]">
-              <Sidebar 
-                isCollapsed={false} 
-                onToggle={() => setIsMobileDrawerOpen(false)} 
-                className="border-none"
-              />
-            </DrawerContent>
-          </Drawer>
-        )}
-        
-        <main id="main-content" className="flex-1 transition-all duration-300">
-          <div className="container max-w-full p-4 lg:p-6 animate-fade-in">
-            <h1 className="text-2xl font-bold mb-6">{title}</h1>
-            {children}
-          </div>
-        </main>
-      </div>
-    </div>
-  );
+  const { profile } = useUserProfile();
+  const userType = profile?.user_type;
+
+  if (userType === 'employer') {
+    return <EmployerLayout title={title}>{children}</EmployerLayout>;
+  }
+
+  if (userType === 'career_counsellor') {
+    return <CounsellorLayout title={title}>{children}</CounsellorLayout>;
+  }
+
+  // Default: student layout
+  return <StudentLayout title={title}>{children}</StudentLayout>;
 }

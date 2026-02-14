@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   Briefcase, 
@@ -12,11 +13,35 @@ import skillbridgeLogo from "@/assets/skillbridge-logo.png";
 import heroImage from "@/assets/hero-landing.jpg";
 import AuthDialog from "@/components/auth/AuthDialog";
 import VideoModal from "@/components/landing/VideoModal";
+import { supabase } from "@/integrations/supabase/client";
+import { getHomeRouteForRole } from "@/components/auth/RoleRoute";
 
 export default function Landing() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [videoOpen, setVideoOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // Auto-redirect authenticated users to their role-appropriate dashboard
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('user_type, onboarding_completed')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (!profile?.onboarding_completed) {
+          navigate('/onboarding');
+        } else {
+          navigate(getHomeRouteForRole(profile?.user_type || null));
+        }
+      }
+    };
+    checkAuth();
+  }, [navigate]);
 
   const openSignIn = () => {
     setAuthMode('signin');

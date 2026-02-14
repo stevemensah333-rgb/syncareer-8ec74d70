@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { getHomeRouteForRole } from '@/components/auth/RoleRoute';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -203,7 +204,8 @@ const Onboarding = () => {
         .maybeSingle();
 
       if (profile?.onboarding_completed) {
-        navigate('/portfolio');
+        const homeRoute = getHomeRouteForRole(profile.user_type);
+        navigate(homeRoute);
         return;
       }
 
@@ -307,7 +309,8 @@ const Onboarding = () => {
       }
 
       toast.success('Profile setup complete!');
-      navigate('/portfolio');
+      const homeRoute = getHomeRouteForRole(userType);
+      navigate(homeRoute);
     } catch (error: any) {
       console.error('Onboarding error:', error);
       toast.error(error.message || 'Failed to complete setup');

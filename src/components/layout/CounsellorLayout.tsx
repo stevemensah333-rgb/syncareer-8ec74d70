@@ -1,0 +1,99 @@
+import React, { useState } from 'react';
+import { Navbar } from '@/components/layout/Navbar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Link, useLocation } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+import {
+  Users, Calendar, ClipboardList, Settings, ChevronRight, ChevronLeft
+} from 'lucide-react';
+import { Drawer, DrawerContent } from '@/components/ui/drawer';
+
+interface CounsellorLayoutProps {
+  children: React.ReactNode;
+  title: string;
+}
+
+const counsellorNavItems = [
+  { label: 'Main', items: [
+    { title: 'My Portfolio', icon: Users, href: '/counsellor-dashboard' },
+    { title: 'Availability', icon: Calendar, href: '/counsellor-availability' },
+  ]},
+  { label: 'Schedule', items: [
+    { title: 'Sessions', icon: ClipboardList, href: '/counsellor-sessions' },
+  ]},
+  { label: 'Account', items: [
+    { title: 'Settings', icon: Settings, href: '/settings' },
+  ]},
+];
+
+export function CounsellorLayout({ children, title }: CounsellorLayoutProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const location = useLocation();
+
+  const sidebarContent = (
+    <aside className={cn(
+      "bg-sidebar text-sidebar-foreground relative transition-all duration-300 ease-in-out flex flex-col border-r border-sidebar-border h-full",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      <div className="flex h-16 items-center justify-center border-b border-sidebar-border">
+        <h2 className={cn(
+          "font-semibold tracking-tight transition-opacity duration-200 text-sidebar-foreground",
+          isCollapsed ? "opacity-0" : "opacity-100"
+        )}>Syncareer</h2>
+        <Button variant="ghost" size="icon" onClick={() => isMobile ? setIsMobileDrawerOpen(false) : setIsCollapsed(p => !p)}
+          className={cn("absolute right-2 text-sidebar-foreground hover:bg-sidebar-accent h-8 w-8", isCollapsed ? "right-2" : "right-4")}>
+          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
+      </div>
+      <ScrollArea className="flex-1 py-4">
+        <nav className="grid gap-6 px-2">
+          {counsellorNavItems.map((group, gi) => (
+            <div key={gi}>
+              {!isCollapsed && <p className="px-3 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">{group.label}</p>}
+              <div className="grid gap-1">
+                {group.items.map((item, i) => {
+                  const isActive = location.pathname === item.href;
+                  return (
+                    <Link key={i} to={item.href} className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-sidebar-accent",
+                      isActive ? "bg-sidebar-accent text-primary font-medium" : "text-sidebar-foreground",
+                      isCollapsed && "justify-center px-0"
+                    )}>
+                      <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-primary")} />
+                      <span className={cn("text-sm transition-opacity duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100")}>{item.title}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+      </ScrollArea>
+    </aside>
+  );
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-foreground">Skip to main content</a>
+      <Navbar onMobileMenuClick={() => setIsMobileDrawerOpen(true)} />
+      <div className="flex-1 flex">
+        {!isMobile && sidebarContent}
+        {isMobile && (
+          <Drawer open={isMobileDrawerOpen} onOpenChange={setIsMobileDrawerOpen}>
+            <DrawerContent className="h-[85vh]">{sidebarContent}</DrawerContent>
+          </Drawer>
+        )}
+        <main id="main-content" className="flex-1 transition-all duration-300">
+          <div className="container max-w-full p-4 lg:p-6 animate-fade-in">
+            <h1 className="text-2xl font-bold mb-6">{title}</h1>
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
