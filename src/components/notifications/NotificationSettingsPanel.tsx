@@ -1,10 +1,12 @@
 import { useNotificationPreferences, type NotificationPreferences } from '@/hooks/useNotificationPreferences';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useMemo } from 'react';
 
 interface PreferenceRowProps {
   id: keyof NotificationPreferences;
@@ -56,21 +58,12 @@ const CHANNEL_SETTINGS: { id: keyof NotificationPreferences; label: string; desc
   },
 ];
 
-const CATEGORY_SETTINGS: { id: keyof NotificationPreferences; label: string; description: string }[] = [
-  {
-    id: 'community_posts',
-    label: 'Community Posts',
-    description: 'New posts in communities you\'ve joined',
-  },
-  {
-    id: 'community_replies',
-    label: 'Replies & Comments',
-    description: 'When someone replies to your posts or comments',
-  },
+const ALL_CATEGORY_SETTINGS: { id: keyof NotificationPreferences; label: string; description: string; excludeRoles?: string[] }[] = [
   {
     id: 'application_updates',
     label: 'Application Updates',
     description: 'Status changes on your job applications',
+    excludeRoles: ['counsellor'],
   },
   {
     id: 'interview_reminders',
@@ -81,6 +74,7 @@ const CATEGORY_SETTINGS: { id: keyof NotificationPreferences; label: string; des
     id: 'counsellor_bookings',
     label: 'Counsellor Bookings',
     description: 'Booking confirmations and session updates',
+    excludeRoles: ['employer'],
   },
   {
     id: 'system_announcements',
@@ -95,8 +89,14 @@ const CATEGORY_SETTINGS: { id: keyof NotificationPreferences; label: string; des
 ];
 
 export function NotificationSettingsPanel() {
+  const { profile } = useUserProfile();
   const { preferences, loading, saving, error, updatePreference, refetch } =
     useNotificationPreferences();
+
+  const categorySettings = useMemo(() => {
+    const role = profile?.user_type || 'student';
+    return ALL_CATEGORY_SETTINGS.filter(s => !s.excludeRoles?.includes(role));
+  }, [profile?.user_type]);
 
   const handleToggle = async (key: keyof NotificationPreferences, value: boolean) => {
     try {
@@ -159,7 +159,7 @@ export function NotificationSettingsPanel() {
           Choose which types of notifications you want to receive.
         </p>
         <div className="space-y-1">
-          {CATEGORY_SETTINGS.map((setting) => (
+          {categorySettings.map((setting) => (
             <PreferenceRow
               key={setting.id}
               {...setting}
