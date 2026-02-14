@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { getHomeRouteForRole } from '@/components/auth/RoleRoute';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,9 +70,9 @@ const Assessment = () => {
   const allCurrentAnswered = currentQuestions.every(q => answers[q.id] !== undefined);
   const isLastPage = currentPage === totalPages - 1;
 
-  // Only students can access assessment
+  // Only students can access assessment - RoleRoute handles this now
   if (profile && profile.user_type !== 'student') {
-    return <Navigate to="/portfolio" replace />;
+    return <Navigate to={getHomeRouteForRole(profile.user_type)} replace />;
   }
 
   if (loading) {

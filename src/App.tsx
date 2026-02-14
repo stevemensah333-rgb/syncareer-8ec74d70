@@ -8,6 +8,7 @@ import { UserProfileProvider } from "./contexts/UserProfileContext";
 import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import { LoadingFallback } from "./components/LoadingFallback";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import RoleRoute from "./components/auth/RoleRoute";
 
 // Lazy-loaded pages
 const Landing = lazy(() => import("./pages/Landing"));
@@ -15,7 +16,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const PublicPortfolio = lazy(() => import("./pages/PublicPortfolio"));
 
-// Core pages
+// Student pages
 const Assessment = lazy(() => import("./pages/Assessment"));
 const Stocks = lazy(() => import("./pages/Stocks"));
 const Currencies = lazy(() => import("./pages/Currencies"));
@@ -23,13 +24,13 @@ const Markets = lazy(() => import("./pages/Markets"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
 const Performance = lazy(() => import("./pages/Performance"));
 const Analysis = lazy(() => import("./pages/Analysis"));
-const Settings = lazy(() => import("./pages/Settings"));
 const AICoach = lazy(() => import("./pages/AICoach"));
-
-// Feature pages
 const InterviewSimulator = lazy(() => import("./pages/InterviewSimulator"));
 const ApplicationTracker = lazy(() => import("./pages/ApplicationTracker"));
 const CVBuilder = lazy(() => import("./pages/CVBuilder"));
+
+// Shared pages (accessible by all authenticated roles)
+const Settings = lazy(() => import("./pages/Settings"));
 
 // Employer pages
 const MyCompany = lazy(() => import("./pages/employer/MyCompany"));
@@ -61,38 +62,86 @@ const App = () => (
                 <Route path="/auth" element={<Navigate to="/" replace />} />
                 <Route path="/portfolio/:userId" element={<PublicPortfolio />} />
                 
-                {/* Protected routes */}
-                <Route path="/home" element={<Navigate to="/portfolio" replace />} />
+                {/* Onboarding - any authenticated user */}
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-                <Route path="/skills" element={<ProtectedRoute><Stocks /></ProtectedRoute>} />
-                <Route path="/learn" element={<ProtectedRoute><Currencies /></ProtectedRoute>} />
-                <Route path="/opportunities" element={<ProtectedRoute><Markets /></ProtectedRoute>} />
-                <Route path="/portfolio" element={<ProtectedRoute><Portfolio /></ProtectedRoute>} />
-                <Route path="/performance" element={<ProtectedRoute><Performance /></ProtectedRoute>} />
-                <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                <Route path="/ai-coach" element={<ProtectedRoute><AICoach /></ProtectedRoute>} />
                 
-                {/* Protected feature routes */}
-                <Route path="/interview-simulator" element={<ProtectedRoute><InterviewSimulator /></ProtectedRoute>} />
-                <Route path="/applications" element={<ProtectedRoute><ApplicationTracker /></ProtectedRoute>} />
-                <Route path="/cv-builder" element={<ProtectedRoute><CVBuilder /></ProtectedRoute>} />
+                {/* Shared routes - all authenticated roles */}
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <RoleRoute allowedRoles={['student', 'employer', 'career_counsellor']}>
+                      <Settings />
+                    </RoleRoute>
+                  </ProtectedRoute>
+                } />
                 
-                {/* Protected employer routes */}
-                <Route path="/my-company" element={<ProtectedRoute><MyCompany /></ProtectedRoute>} />
-                <Route path="/talent-insights" element={<ProtectedRoute><TalentInsights /></ProtectedRoute>} />
-                <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
-                <Route path="/train" element={<ProtectedRoute><TrainEmployees /></ProtectedRoute>} />
-                <Route path="/hire-ai" element={<ProtectedRoute><HireWithAI /></ProtectedRoute>} />
-                <Route path="/applicants" element={<ProtectedRoute><ApplicantTracker /></ProtectedRoute>} />
+                {/* Legacy redirect */}
+                <Route path="/home" element={<Navigate to="/portfolio" replace />} />
+
+                {/* ============ STUDENT-ONLY ROUTES ============ */}
+                <Route path="/assessment" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['student']}><Assessment /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/skills" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['student']}><Stocks /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/learn" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['student']}><Currencies /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/opportunities" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['student']}><Markets /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/portfolio" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['student']}><Portfolio /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/performance" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['student']}><Performance /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/analysis" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['student']}><Analysis /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/ai-coach" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['student']}><AICoach /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/interview-simulator" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['student']}><InterviewSimulator /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/applications" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['student']}><ApplicationTracker /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/cv-builder" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['student']}><CVBuilder /></RoleRoute></ProtectedRoute>
+                } />
                 
-                {/* Protected counsellor routes */}
-                <Route path="/counsellor-dashboard" element={<ProtectedRoute><CounsellorDashboard /></ProtectedRoute>} />
-                <Route path="/counsellor-availability" element={<ProtectedRoute><CounsellorAvailability /></ProtectedRoute>} />
-                <Route path="/counsellor-sessions" element={<ProtectedRoute><CounsellorSessions /></ProtectedRoute>} />
+                {/* ============ EMPLOYER-ONLY ROUTES ============ */}
+                <Route path="/my-company" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['employer']}><MyCompany /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/talent-insights" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['employer']}><TalentInsights /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/post-job" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['employer']}><PostJob /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/train" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['employer']}><TrainEmployees /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/hire-ai" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['employer']}><HireWithAI /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/applicants" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['employer']}><ApplicantTracker /></RoleRoute></ProtectedRoute>
+                } />
                 
-                {/* Assessment route */}
-                <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
+                {/* ============ COUNSELLOR-ONLY ROUTES ============ */}
+                <Route path="/counsellor-dashboard" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['career_counsellor']}><CounsellorDashboard /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/counsellor-availability" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['career_counsellor']}><CounsellorAvailability /></RoleRoute></ProtectedRoute>
+                } />
+                <Route path="/counsellor-sessions" element={
+                  <ProtectedRoute><RoleRoute allowedRoles={['career_counsellor']}><CounsellorSessions /></RoleRoute></ProtectedRoute>
+                } />
 
                 {/* Catch-all */}
                 <Route path="*" element={<NotFound />} />

@@ -187,7 +187,20 @@ export default function AuthDialog({ open, onOpenChange, defaultMode = 'signin' 
         }
         toast.success('Welcome back!');
         onOpenChange(false);
-        navigate('/portfolio');
+        
+        // Fetch user role from DB and redirect to correct dashboard
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('user_type, onboarding_completed')
+          .eq('id', data.user!.id)
+          .single();
+        
+        if (!profileData?.onboarding_completed) {
+          navigate('/onboarding');
+        } else {
+          const { getHomeRouteForRole } = await import('@/components/auth/RoleRoute');
+          navigate(getHomeRouteForRole(profileData?.user_type || null));
+        }
       }
     } catch (error: any) {
       toast.error(error.message || 'An error occurred during sign in');

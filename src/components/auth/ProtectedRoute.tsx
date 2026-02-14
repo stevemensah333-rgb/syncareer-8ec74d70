@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@supabase/supabase-js';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,49 +10,44 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const { loading: profileLoading } = useUserProfile();
   const location = useLocation();
 
   useEffect(() => {
     const initializeAuth = async () => {
-      // Check if this is a fresh browser session (no sessionStorage marker)
-      // and user had "remember me" unchecked
       const wasSessionOnly = localStorage.getItem('syncareer_session_only');
       const currentSessionMarker = sessionStorage.getItem('syncareer_active_session');
       
-      // If user didn't check "remember me" and this is a new browser session
-      // (sessionStorage is cleared on browser close), sign them out
       if (wasSessionOnly === 'true' && !currentSessionMarker) {
         await supabase.auth.signOut();
         localStorage.removeItem('syncareer_session_only');
         setSession(null);
-        setLoading(false);
+        setAuthLoading(false);
         return;
       }
       
-      // Mark this as an active session
       sessionStorage.setItem('syncareer_active_session', 'true');
       
-      // Check current session
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
-      setLoading(false);
+      setAuthLoading(false);
     };
 
     initializeAuth();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
-        setLoading(false);
+        setAuthLoading(false);
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
 
-  if (loading) {
+  // Wait for BOTH auth AND profile to resolve before rendering anything
+  if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -60,7 +56,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!session) {
-    // Redirect to landing page, saving the attempted location
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
