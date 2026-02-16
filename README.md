@@ -57,47 +57,23 @@ Saved reports dashboard
 
 Frontend:
 
-React.js with TypeScript (Vite build tool)
-
-UI Framework:
-
-Tailwind CSS + shadcn/ui component library
+Next.js (React-based framework)
 
 Backend:
 
-Supabase (PostgreSQL + Edge Functions in Deno/TypeScript)
+API Routes (Node.js runtime)
 
 Database:
 
-PostgreSQL (via Supabase) with Row-Level Security
+PostgreSQL
 
-AI/ML:
+AI Integration:
 
-Google Gemini (career recommendations, CV assistant, interview simulator, portfolio analysis) via Lovable AI Gateway
-
-Authentication:
-
-Supabase Auth (Email/Password + Google OAuth)
+OpenAI API for structured career reasoning
 
 Email Service:
 
-Resend API (transactional emails from syncareer.me)
-
-Voice AI:
-
-ElevenLabs (text-to-speech for interview simulator)
-
-Hosting:
-
-Lovable Cloud (frontend + backend)
-
-State Management:
-
-TanStack React Query + React Context
-
-Routing:
-
-React Router v6 with role-based route guards
+Resend API
 
 **System Flow**
 
