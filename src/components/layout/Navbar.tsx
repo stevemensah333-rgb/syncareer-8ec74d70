@@ -176,11 +176,11 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
                         +233 555 156 128
                       </a>
                       <a 
-                        href="mailto:stephen.mensah@ashesi.edu.gh" 
+                        href="mailto:syncareer01@gmail.com" 
                         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                       >
                         <Mail className="h-3.5 w-3.5" />
-                        stephen.mensah@ashesi.edu.gh
+                        syncareer01@gmail.com
                       </a>
                     </div>
                   </DropdownMenuSubContent>
