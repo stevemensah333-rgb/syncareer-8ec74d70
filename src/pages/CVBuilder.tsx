@@ -14,6 +14,8 @@ import { CVPreview } from '@/components/cv-builder/CVPreview';
 import { CVAIAssistant } from '@/components/cv-builder/CVAIAssistant';
 import { CVStrengthScore } from '@/components/cv-builder/CVStrengthScore';
 import { useCVStrengthScore } from '@/hooks/useCVStrengthScore';
+import { useFeedbackModal } from '@/hooks/useFeedbackModal';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { supabase } from '@/integrations/supabase/client';
 import html2pdf from 'html2pdf.js';
 
@@ -101,6 +103,7 @@ const CVBuilder = () => {
   const [isSaving, setIsSaving] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const strengthResult = useCVStrengthScore(cvData);
+  const feedbackModal = useFeedbackModal('cv_builder');
 
   const updatePersonal = (data: Partial<CVData['personal']>) => {
     setCVData(prev => ({ ...prev, personal: { ...prev.personal, ...data } }));
@@ -150,6 +153,7 @@ const CVBuilder = () => {
 
       await html2pdf().set(opt).from(element).save();
       toast.success('CV downloaded successfully!');
+      feedbackModal.triggerFeedback();
     } catch (error) {
       console.error('PDF generation error:', error);
       toast.error('Failed to generate PDF');
@@ -328,6 +332,13 @@ const CVBuilder = () => {
           </div>
         </div>
       )}
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={feedbackModal.isOpen}
+        onSubmit={feedbackModal.submitFeedback}
+        onDismiss={feedbackModal.dismiss}
+      />
     </PageLayout>
   );
 };

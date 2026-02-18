@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ClipboardCheck, ArrowRight, ArrowLeft, RotateCcw, Calendar, Trophy, Brain } from 'lucide-react';
 import { useAssessment } from '@/hooks/useAssessment';
+import { useFeedbackModal } from '@/hooks/useFeedbackModal';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { useCareerRecommendations } from '@/hooks/useCareerRecommendations';
 import { ASSESSMENT_QUESTIONS, LIKERT_OPTIONS, RIASEC_LABELS, RIASEC_DESCRIPTIONS } from '@/data/assessmentQuestions';
 import CareerRecommendations from '@/components/assessment/CareerRecommendations';
@@ -33,6 +35,7 @@ const Assessment = () => {
   const { profile } = useUserProfile();
   const { latestResult, allResults, loading, submitting, canRetake, submitAssessment } = useAssessment();
   const { recommendations, clusterInsight, loading: careersLoading } = useCareerRecommendations(latestResult);
+  const feedbackModal = useFeedbackModal('assessment');
   const [takingAssessment, setTakingAssessment] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -67,6 +70,7 @@ const Assessment = () => {
       setTakingAssessment(false);
       setAnswers({});
       setCurrentPage(0);
+      feedbackModal.triggerFeedback();
     }
   };
 
@@ -309,6 +313,12 @@ const Assessment = () => {
           </Card>
         )}
       </div>
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={feedbackModal.isOpen}
+        onSubmit={feedbackModal.submitFeedback}
+        onDismiss={feedbackModal.dismiss}
+      />
     </PageLayout>
   );
 };
