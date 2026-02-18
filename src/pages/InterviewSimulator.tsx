@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { InterviewErrorBoundary } from '@/components/interview/InterviewErrorBoundary';
 import { VoiceInterviewMode } from '@/components/interview/VoiceInterviewMode';
+import { useFeedbackModal } from '@/hooks/useFeedbackModal';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 
 import type { InterviewSetupConfig } from '@/types/interview';
 
@@ -55,6 +57,7 @@ const InterviewSimulator = () => {
   const { studentDetails } = useUserProfile();
   const [step, setStep] = useState<'setup' | 'interview'>('setup');
   const [sessionLength, setSessionLength] = useState<SessionLength>('standard');
+  const feedbackModal = useFeedbackModal('interview_simulator');
   const [config, setConfig] = useState<InterviewSetupConfig>({
     jobRole: '',
     industry: '',
@@ -276,11 +279,21 @@ const InterviewSimulator = () => {
               resumeText={config.resumeText}
               jobDescription={config.jobDescription}
               sessionLength={sessionLength}
-              onEnd={() => setStep('setup')}
+              onEnd={() => {
+                setStep('setup');
+                feedbackModal.triggerFeedback();
+              }}
             />
           </InterviewErrorBoundary>
         </div>
       )}
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={feedbackModal.isOpen}
+        onSubmit={feedbackModal.submitFeedback}
+        onDismiss={feedbackModal.dismiss}
+      />
     </PageLayout>
   );
 };

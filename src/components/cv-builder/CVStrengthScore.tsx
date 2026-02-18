@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertTriangle, TrendingUp, Target } from 'lucide-react';
+import { useFeedbackModal } from '@/hooks/useFeedbackModal';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import type { CVStrengthResult } from '@/hooks/useCVStrengthScore';
 
 interface CVStrengthScoreProps {
@@ -26,6 +28,14 @@ const CATEGORY_LABELS: Record<string, string> = {
 export const CVStrengthScore: React.FC<CVStrengthScoreProps> = ({ result }) => {
   const { totalScore, label, breakdown, strengths, suggestions } = result;
   const config = LABEL_CONFIG[label];
+  const feedbackModal = useFeedbackModal('cv_strength_score');
+
+  // Trigger feedback when user has a meaningful score
+  useEffect(() => {
+    if (totalScore >= 30) {
+      feedbackModal.triggerFeedback();
+    }
+  }, [totalScore >= 30]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const circumference = 2 * Math.PI * 54;
   const offset = circumference - (totalScore / 100) * circumference;
@@ -114,6 +124,11 @@ export const CVStrengthScore: React.FC<CVStrengthScoreProps> = ({ result }) => {
           </div>
         )}
       </CardContent>
+      <FeedbackModal
+        isOpen={feedbackModal.isOpen}
+        onSubmit={feedbackModal.submitFeedback}
+        onDismiss={feedbackModal.dismiss}
+      />
     </Card>
   );
 };

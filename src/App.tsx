@@ -29,6 +29,9 @@ const InterviewSimulator = lazy(() => import("./pages/InterviewSimulator"));
 const ApplicationTracker = lazy(() => import("./pages/ApplicationTracker"));
 const CVBuilder = lazy(() => import("./pages/CVBuilder"));
 
+// Admin pages
+const FeedbackDashboard = lazy(() => import("./pages/admin/FeedbackDashboard"));
+
 // Shared pages (accessible by all authenticated roles)
 const Settings = lazy(() => import("./pages/Settings"));
 
@@ -141,6 +144,11 @@ const App = () => (
                 } />
                 <Route path="/counsellor-sessions" element={
                   <ProtectedRoute><RoleRoute allowedRoles={['career_counsellor']}><CounsellorSessions /></RoleRoute></ProtectedRoute>
+                } />
+
+                {/* ============ ADMIN ROUTES ============ */}
+                <Route path="/admin/feedback" element={
+                  <ProtectedRoute><FeedbackDashboard /></ProtectedRoute>
                 } />
 
                 {/* Catch-all */}
