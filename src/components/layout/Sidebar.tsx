@@ -190,23 +190,20 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       groups.push(
         { label: 'Main', items: employerNavItems.slice(0, 4) },
         { label: 'Tools', items: employerNavItems.slice(4, 7) },
-        { label: 'Account', items: employerNavItems.slice(7) },
+        { label: 'Account', items: [...employerNavItems.slice(7), ...adminNavItems] },
       );
     } else if (isCounsellor) {
       groups.push(
         { label: 'Main', items: counsellorNavItems.slice(0, 2) },
         { label: 'Schedule', items: counsellorNavItems.slice(2, 4) },
-        { label: 'Account', items: counsellorNavItems.slice(4) },
+        { label: 'Account', items: [...counsellorNavItems.slice(4), ...adminNavItems] },
       );
     } else {
       groups.push(
         { label: 'Main', items: jobSeekerNavItems.slice(0, 4) },
         { label: 'Growth', items: jobSeekerNavItems.slice(4, 9) },
-        { label: 'Account', items: jobSeekerNavItems.slice(9) },
+        { label: 'Account', items: [...jobSeekerNavItems.slice(9), ...adminNavItems] },
       );
-    }
-    if (adminNavItems.length > 0) {
-      groups.push({ label: 'Admin', items: adminNavItems });
     }
     return groups;
   };
