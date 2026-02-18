@@ -1,16 +1,17 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Users, Briefcase, GraduationCap, 
   BarChart, Settings, ChevronRight, ChevronLeft, Sparkles,
   Building2, TrendingUp, FileText, UserPlus, Star, Calendar,
-  ClipboardList, Mic
+  ClipboardList, Mic, MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Link, useLocation } from 'react-router-dom';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -27,9 +28,25 @@ interface NavItem {
 export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
   const location = useLocation();
   const { profile } = useUserProfile();
+  const [isAdmin, setIsAdmin] = useState(false);
   
   const isEmployer = profile?.user_type === 'employer';
   const isCounsellor = profile?.user_type === 'career_counsellor';
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .eq('role', 'admin')
+        .limit(1);
+      setIsAdmin(!!data && data.length > 0);
+    };
+    checkAdmin();
+  }, []);
   
   // Navigation items for job seekers (students, professionals)
   const jobSeekerNavItems: NavItem[] = [
@@ -162,27 +179,36 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
   const navItems = getNavItems();
 
 
+  const adminNavItems: NavItem[] = isAdmin ? [
+    { title: 'Feedback', icon: MessageSquare, href: '/admin/feedback' },
+  ] : [];
+
   // Group navigation items by section
   const getGroupedNavItems = () => {
+    const groups = [];
     if (isEmployer) {
-      return [
+      groups.push(
         { label: 'Main', items: employerNavItems.slice(0, 4) },
         { label: 'Tools', items: employerNavItems.slice(4, 7) },
         { label: 'Account', items: employerNavItems.slice(7) },
-      ];
-    }
-    if (isCounsellor) {
-      return [
+      );
+    } else if (isCounsellor) {
+      groups.push(
         { label: 'Main', items: counsellorNavItems.slice(0, 2) },
         { label: 'Schedule', items: counsellorNavItems.slice(2, 4) },
         { label: 'Account', items: counsellorNavItems.slice(4) },
-      ];
+      );
+    } else {
+      groups.push(
+        { label: 'Main', items: jobSeekerNavItems.slice(0, 4) },
+        { label: 'Growth', items: jobSeekerNavItems.slice(4, 9) },
+        { label: 'Account', items: jobSeekerNavItems.slice(9) },
+      );
     }
-    return [
-      { label: 'Main', items: jobSeekerNavItems.slice(0, 4) },
-      { label: 'Growth', items: jobSeekerNavItems.slice(4, 9) },
-      { label: 'Account', items: jobSeekerNavItems.slice(9) },
-    ];
+    if (adminNavItems.length > 0) {
+      groups.push({ label: 'Admin', items: adminNavItems });
+    }
+    return groups;
   };
 
   const groupedNav = getGroupedNavItems();
