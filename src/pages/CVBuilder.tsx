@@ -12,6 +12,8 @@ import { CVFormActivities } from '@/components/cv-builder/CVFormActivities';
 import { CVFormSkills } from '@/components/cv-builder/CVFormSkills';
 import { CVPreview } from '@/components/cv-builder/CVPreview';
 import { CVAIAssistant } from '@/components/cv-builder/CVAIAssistant';
+import { CVStrengthScore } from '@/components/cv-builder/CVStrengthScore';
+import { useCVStrengthScore } from '@/hooks/useCVStrengthScore';
 import { supabase } from '@/integrations/supabase/client';
 import html2pdf from 'html2pdf.js';
 
@@ -98,6 +100,7 @@ const CVBuilder = () => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+  const strengthResult = useCVStrengthScore(cvData);
 
   const updatePersonal = (data: Partial<CVData['personal']>) => {
     setCVData(prev => ({ ...prev, personal: { ...prev.personal, ...data } }));
@@ -292,8 +295,9 @@ const CVBuilder = () => {
           </Tabs>
         </div>
 
-        {/* AI Assistant Sidebar */}
+        {/* Sidebar: Score + AI Assistant */}
         <div className="space-y-6">
+          <CVStrengthScore result={strengthResult} />
           <CVAIAssistant
             cvData={cvData}
             activeSection={activeTab}
