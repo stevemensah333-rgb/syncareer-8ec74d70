@@ -1665,6 +1665,14 @@ export type Database = {
         Returns: boolean
       }
       is_counsellor_owner: { Args: { counsellor_id: string }; Returns: boolean }
+      migrate_skills_to_relational: {
+        Args: never
+        Returns: {
+          mapped_count: number
+          source_table: string
+          unmapped_count: number
+        }[]
+      }
       user_has_counsellor_booking: {
         Args: { counsellor_details_id: string }
         Returns: boolean
