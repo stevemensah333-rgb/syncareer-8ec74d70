@@ -139,6 +139,42 @@ export type Database = {
         }
         Relationships: []
       }
+      career_skills: {
+        Row: {
+          career_id: string
+          created_at: string
+          id: string
+          skill_id: string
+        }
+        Insert: {
+          career_id: string
+          created_at?: string
+          id?: string
+          skill_id: string
+        }
+        Update: {
+          career_id?: string
+          created_at?: string
+          id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "career_skills_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "career_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills_taxonomy"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       careers: {
         Row: {
           created_at: string
@@ -571,6 +607,42 @@ export type Database = {
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "job_postings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_posting_skills: {
+        Row: {
+          created_at: string
+          id: string
+          job_posting_id: string
+          skill_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_posting_id: string
+          skill_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_posting_id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_posting_skills_job_posting_id_fkey"
+            columns: ["job_posting_id"]
+            isOneToOne: false
+            referencedRelation: "job_postings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_posting_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills_taxonomy"
             referencedColumns: ["id"]
           },
         ]
@@ -1120,6 +1192,44 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_evidence: {
+        Row: {
+          created_at: string
+          id: string
+          signal_strength: number
+          skill_id: string
+          source_id: string | null
+          source_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          signal_strength?: number
+          skill_id: string
+          source_id?: string | null
+          source_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          signal_strength?: number
+          skill_id?: string
+          source_id?: string | null
+          source_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_evidence_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills_taxonomy"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skills_assessments: {
         Row: {
           created_at: string
@@ -1159,6 +1269,33 @@ export type Database = {
         }
         Relationships: []
       }
+      skills_taxonomy: {
+        Row: {
+          canonical_name: string
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          canonical_name: string
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          canonical_name?: string
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: []
+      }
       student_details: {
         Row: {
           created_at: string | null
@@ -1194,6 +1331,47 @@ export type Database = {
           year_of_admission?: number | null
         }
         Relationships: []
+      }
+      unmapped_skills_log: {
+        Row: {
+          created_at: string
+          id: string
+          raw_skill_text: string
+          resolved: boolean
+          resolved_at: string | null
+          resolved_skill_id: string | null
+          source_id: string
+          source_table: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          raw_skill_text: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_skill_id?: string | null
+          source_id: string
+          source_table: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          raw_skill_text?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_skill_id?: string | null
+          source_id?: string
+          source_table?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unmapped_skills_log_resolved_skill_id_fkey"
+            columns: ["resolved_skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills_taxonomy"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_feedback: {
         Row: {
@@ -1242,6 +1420,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_skill_map: {
+        Row: {
+          confidence_score: number | null
+          last_updated_at: string
+          skill_id: string
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          last_updated_at?: string
+          skill_id: string
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          last_updated_at?: string
+          skill_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_skill_map_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills_taxonomy"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_skills: {
         Row: {
