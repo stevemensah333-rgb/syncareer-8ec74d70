@@ -13,6 +13,19 @@ export default defineConfig(({ mode }) => ({
     outDir: 'dist',
     sourcemap: false,
     minify: 'esbuild',
+    rollupOptions: {
+      external: ['html2pdf.js'],
+      output: {
+        globals: {
+          'html2pdf.js': 'html2pdf'
+        }
+      }
+    }
+  },
+  optimize: {
+    esbuild: {
+      drop: ['console', 'debugger']
+    }
   },
   plugins: [
     react(),
