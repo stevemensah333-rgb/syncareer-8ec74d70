@@ -9,7 +9,7 @@ import {
   ChevronDown,
   Play
 } from "lucide-react";
-import skillbridgeLogo from "@/assets/skillbridge-logo.png";
+import skillbridgeLogo from "@/assets/syncareer-logo.png";
 import heroImage from "@/assets/hero-landing.jpg";
 import AuthDialog from "@/components/auth/AuthDialog";
 import VideoModal from "@/components/landing/VideoModal";
