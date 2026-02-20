@@ -122,10 +122,13 @@ export default function Landing() {
       </header>
 
       {/* Hero Section - Full Bleed */}
-      <section className="relative h-screen w-full overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroImage})` }}
+      <section className="relative h-screen w-full overflow-hidden bg-[hsl(220,14%,10%)]">
+        <img 
+          src={heroImage} 
+          alt="" 
+          className="absolute inset-0 w-full h-full object-cover"
+          loading="eager"
+          fetchPriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/60" />
         
@@ -246,9 +249,29 @@ export default function Landing() {
                 <img src={skillbridgeLogo} alt="Syncareer" className="h-8 w-8 object-contain" />
                 <span className="text-xl font-semibold">Syncareer</span>
               </div>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground mb-4">
                 Empowering careers, connecting futures.
               </p>
+              <div className="flex items-center gap-4">
+                <a 
+                  href="https://www.instagram.com/syncareer?igsh=ZHRtc3Q2dzVxdnJs&utm_source=qr" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Follow us on Instagram"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                </a>
+                <a 
+                  href="https://www.tiktok.com/@syncareer?_r=1&_t=ZS-943Wv7vHgCT" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Follow us on TikTok"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.71a8.19 8.19 0 0 0 4.76 1.52v-3.4a4.85 4.85 0 0 1-1-.14z"/></svg>
+                </a>
+              </div>
             </div>
             <div>
               <h4 className="font-semibold mb-4">For Candidates</h4>
