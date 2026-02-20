@@ -46,13 +46,28 @@ export default function AICoach() {
         return;
       }
 
+      const systemContext = `You are SynAI, an expert career counsellor for the Syncareer platform. Help users with:
+- Career guidance and goal setting
+- Skill development recommendations
+- CV/resume improvements and tips
+- Interview preparation and practice
+- Connecting their skills to job opportunities
+- Professional development advice
+Be encouraging, practical, and focused on helping users advance their careers.`;
+
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ messages: [...messages, { role: "user", content: userMessage }] }),
+        body: JSON.stringify({ 
+          messages: [
+            { role: "system", content: systemContext },
+            ...messages, 
+            { role: "user", content: userMessage }
+          ] 
+        }),
       });
 
       if (resp.status === 429) {
