@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Briefcase, Users, LogOut, MessageCircle, Menu, HelpCircle, Phone, Mail } from 'lucide-react';
-import skillbridgeLogo from '@/assets/skillbridge-logo.png';
+import skillbridgeLogo from '@/assets/syncareer-logo.png';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
