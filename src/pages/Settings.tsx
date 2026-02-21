@@ -3,7 +3,7 @@ import { NotificationSettingsPanel } from '@/components/notifications/Notificati
 import { useSearchParams } from 'react-router-dom';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
-import { Bell, Globe, Lock, User, Settings as SettingsIcon, UserCircle } from 'lucide-react';
+import { Bell, Globe, Lock, User, Settings as SettingsIcon, UserCircle, CreditCard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 import { countries } from '@/utils/countries';
@@ -12,8 +12,9 @@ import { ProfileSection } from '@/components/settings/ProfileSection';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SubscriptionManager } from '@/components/subscription/SubscriptionManager';
 
-type SettingsSection = 'profile' | 'account' | 'notifications' | 'security' | 'regional' | 'preferences';
+type SettingsSection = 'profile' | 'account' | 'notifications' | 'security' | 'regional' | 'preferences' | 'subscription';
 
 const Settings = () => {
   const { toast } = useToast();
@@ -151,6 +152,15 @@ const Settings = () => {
               >
                 <SettingsIcon className="mr-2 h-5 w-5" />
                 {t('settings.preferences')}
+              </Button>
+              <Button 
+                variant={activeSection === 'subscription' ? 'secondary' : 'ghost'} 
+                className="w-full justify-start" 
+                size="lg"
+                onClick={() => setActiveSection('subscription')}
+              >
+                <CreditCard className="mr-2 h-5 w-5" />
+                Subscription
               </Button>
             </nav>
           </div>
@@ -456,6 +466,52 @@ const Settings = () => {
                           <p className="font-medium">{t('settings.darkMode')}</p>
                           <p className="text-sm text-muted-foreground">{t('settings.darkModeDesc')}</p>
                         </div>
+                        <div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              className="sr-only peer" 
+                              checked={isDarkMode}
+                              onChange={(e) => setIsDarkMode(e.target.checked)}
+                            />
+                            <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                          </label>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{t('settings.compactView')}</p>
+                          <p className="text-sm text-muted-foreground">Reduce spacing for a more compact layout</p>
+                        </div>
+                        <div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              className="sr-only peer" 
+                              checked={isCompactView}
+                              onChange={(e) => setIsCompactView(e.target.checked)}
+                            />
+                            <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pt-4 border-t">
+                    <Button onClick={handleSave}>{t('settings.saveChanges')}</Button>
+                    <Button variant="outline" className="ml-2">{t('settings.cancel')}</Button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeSection === 'subscription' && (
+              <div>
+                <h2 className="text-xl font-semibold mb-6">Subscription & Billing</h2>
+                <SubscriptionManager />
+              </div>
+            )}
+          </div>
                         <div>
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input 
