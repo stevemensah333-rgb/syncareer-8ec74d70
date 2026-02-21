@@ -15,6 +15,8 @@ const Landing = lazy(() => import("./pages/Landing"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const PublicPortfolio = lazy(() => import("./pages/PublicPortfolio"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const SubscriptionSuccess = lazy(() => import("./pages/SubscriptionSuccess"));
 
 // Student pages
 const Assessment = lazy(() => import("./pages/Assessment"));
@@ -63,6 +65,8 @@ const App = () => (
                 {/* Public routes */}
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Navigate to="/" replace />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/subscription-success" element={<SubscriptionSuccess />} />
                 <Route path="/portfolio/:userId" element={<PublicPortfolio />} />
                 
                 {/* Onboarding - any authenticated user */}
