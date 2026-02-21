@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Briefcase, Users, LogOut, MessageCircle, Menu, HelpCircle, Phone, Mail } from 'lucide-react';
+import { User, Briefcase, Users, LogOut, MessageCircle, Menu, HelpCircle, Phone, Mail, CreditCard } from 'lucide-react';
 import skillbridgeLogo from '@/assets/skillbridge-logo.png';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -131,6 +131,16 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
           
           <div className="flex items-center gap-2 sm:gap-4">
 
+            {/* Show pricing link for unauthenticated users or authenticated users */}
+            <Button
+              variant="ghost"
+              className="text-sm hidden sm:flex"
+              onClick={() => navigate('/pricing')}
+            >
+              <CreditCard className="h-4 w-4 mr-1" />
+              Pricing
+            </Button>
+
             {/* Mobile Ask Counsellor Button - Only for students */}
             {!isEmployer && !isCounsellor && (
               <Button
@@ -159,6 +169,10 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
                 <DropdownMenuItem onClick={() => navigate('/settings?tab=profile')} className="cursor-pointer">
                   <User className="h-4 w-4 mr-2" />
                   Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/settings?tab=subscription')} className="cursor-pointer">
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Subscription
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuSub>
