@@ -20,6 +20,3 @@ verify_jwt = false
 
 [functions.cv-ai-assistant]
 verify_jwt = false
-
-[functions.update-skill-graph]
-verify_jwt = false
