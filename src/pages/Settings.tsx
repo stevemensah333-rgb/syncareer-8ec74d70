@@ -512,46 +512,6 @@ const Settings = () => {
               </div>
             )}
           </div>
-                        <div>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              className="sr-only peer" 
-                              checked={isDarkMode}
-                              onChange={(e) => setIsDarkMode(e.target.checked)}
-                            />
-                            <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                          </label>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{t('settings.compactView')}</p>
-                          <p className="text-sm text-muted-foreground">{t('settings.compactViewDesc')}</p>
-                        </div>
-                        <div>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              className="sr-only peer" 
-                              checked={isCompactView}
-                              onChange={(e) => setIsCompactView(e.target.checked)}
-                            />
-                            <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="pt-4 border-t">
-                    <Button onClick={handleSave}>{t('settings.saveChanges')}</Button>
-                    <Button variant="outline" className="ml-2">{t('settings.cancel')}</Button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
         </div>
       </div>
     </PageLayout>
