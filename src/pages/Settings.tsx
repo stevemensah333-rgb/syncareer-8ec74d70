@@ -513,7 +513,8 @@ const Settings = () => {
             )}
           </div>
         </div>
-      </PageLayout>
+      </div>
+    </PageLayout>
     );
   };
   
