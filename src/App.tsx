@@ -9,6 +9,7 @@ import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import { LoadingFallback } from "./components/LoadingFallback";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
+import { Analytics } from "@vercel/analytics/react";
 
 // Lazy-loaded pages
 const Landing = lazy(() => import("./pages/Landing"));
@@ -160,6 +161,7 @@ const App = () => (
               </Routes>
             </Suspense>
           </BrowserRouter>
+          <Analytics />
         </TooltipProvider>
       </UserProfileProvider>
     </QueryClientProvider>
