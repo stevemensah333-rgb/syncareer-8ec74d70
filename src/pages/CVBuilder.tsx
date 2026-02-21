@@ -17,6 +17,7 @@ import { useCVStrengthScore } from '@/hooks/useCVStrengthScore';
 import { useFeedbackModal } from '@/hooks/useFeedbackModal';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { supabase } from '@/integrations/supabase/client';
+import html2pdf from 'html2pdf.js';
 
 export interface CVData {
   personal: {
@@ -141,8 +142,6 @@ const CVBuilder = () => {
 
     setIsGeneratingPDF(true);
     try {
-      // Dynamically import html2pdf to avoid build errors
-      const html2pdf = (await import('html2pdf.js')).default;
       const element = previewRef.current;
       const opt = {
         margin: 0,

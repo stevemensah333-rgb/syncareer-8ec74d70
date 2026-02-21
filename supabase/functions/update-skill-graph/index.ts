@@ -25,8 +25,7 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("Authorization") ?? "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-  const token = authHeader.replace("Bearer ", "");
-  if (token !== serviceRoleKey) {
+  if (!authHeader.includes(serviceRoleKey)) {
     return new Response(
       JSON.stringify({ error: "forbidden", detail: "service_role required" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
