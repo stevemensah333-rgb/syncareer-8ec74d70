@@ -512,8 +512,7 @@ const Settings = () => {
               </div>
             )}
           </div>
-        </div>
-      </PageLayout>
+        </PageLayout>
     );
   };
   
