@@ -12,7 +12,7 @@ import { ProfileSection } from '@/components/settings/ProfileSection';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
-import { SubscriptionManager } from '@/components/subscription/SubscriptionManager';
+import SubscriptionManager from '@/components/subscription/SubscriptionManager';
 
 type SettingsSection = 'profile' | 'account' | 'notifications' | 'security' | 'regional' | 'preferences' | 'subscription';
 
