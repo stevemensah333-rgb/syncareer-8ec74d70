@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable/index';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -141,19 +142,15 @@ export default function AuthDialog({ open, onOpenChange, defaultMode = 'signin' 
 
   const handleGoogleSignIn = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
-        }
+      const { error } = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin,
+        extraParams: {
+          prompt: 'select_account',
+        },
       });
 
       if (error) {
-        toast.error(error.message);
+        toast.error(error.message || 'An error occurred with Google sign in');
       }
     } catch (error: any) {
       toast.error(error.message || 'An error occurred with Google sign in');
