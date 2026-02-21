@@ -513,9 +513,8 @@ const Settings = () => {
             )}
           </div>
         </div>
-      </div>
-    </PageLayout>
-  );
-};
-
-export default Settings;
+      </PageLayout>
+    );
+  };
+  
+  export default Settings;
