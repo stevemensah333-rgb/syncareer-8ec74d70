@@ -139,6 +139,48 @@ export type Database = {
         }
         Relationships: []
       }
+      career_guidance_sessions: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          id: string
+          messages: Json
+          risk_notes: string | null
+          session_type: string
+          structured_output: Json | null
+          suggested_next_skill: string | null
+          top_recommendation: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          messages?: Json
+          risk_notes?: string | null
+          session_type?: string
+          structured_output?: Json | null
+          suggested_next_skill?: string | null
+          top_recommendation?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          messages?: Json
+          risk_notes?: string | null
+          session_type?: string
+          structured_output?: Json | null
+          suggested_next_skill?: string | null
+          top_recommendation?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       career_skills: {
         Row: {
           career_id: string
@@ -1159,6 +1201,54 @@ export type Database = {
         }
         Relationships: []
       }
+      recommendation_outcomes: {
+        Row: {
+          acted_at: string | null
+          confidence_score: number
+          created_at: string
+          id: string
+          outcome: string | null
+          outcome_at: string | null
+          outcome_details: Json | null
+          recommendation_category: string
+          recommendation_type: string
+          recommended_item_id: string | null
+          recommended_item_title: string
+          user_action: string | null
+          user_id: string
+        }
+        Insert: {
+          acted_at?: string | null
+          confidence_score?: number
+          created_at?: string
+          id?: string
+          outcome?: string | null
+          outcome_at?: string | null
+          outcome_details?: Json | null
+          recommendation_category?: string
+          recommendation_type?: string
+          recommended_item_id?: string | null
+          recommended_item_title: string
+          user_action?: string | null
+          user_id: string
+        }
+        Update: {
+          acted_at?: string | null
+          confidence_score?: number
+          created_at?: string
+          id?: string
+          outcome?: string | null
+          outcome_at?: string | null
+          outcome_details?: Json | null
+          recommendation_category?: string
+          recommendation_type?: string
+          recommended_item_id?: string | null
+          recommended_item_title?: string
+          user_action?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       resumes: {
         Row: {
           achievements: Json
@@ -1482,6 +1572,51 @@ export type Database = {
           feature_name?: string
           id?: string
           response_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_intelligence_profiles: {
+        Row: {
+          career_clusters: Json
+          created_at: string
+          exploration_score: number
+          feature_weights: Json
+          id: string
+          last_computed_at: string
+          learning_momentum: number
+          maturity_level: string
+          skill_mastery_json: Json
+          success_rate: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          career_clusters?: Json
+          created_at?: string
+          exploration_score?: number
+          feature_weights?: Json
+          id?: string
+          last_computed_at?: string
+          learning_momentum?: number
+          maturity_level?: string
+          skill_mastery_json?: Json
+          success_rate?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          career_clusters?: Json
+          created_at?: string
+          exploration_score?: number
+          feature_weights?: Json
+          id?: string
+          last_computed_at?: string
+          learning_momentum?: number
+          maturity_level?: string
+          skill_mastery_json?: Json
+          success_rate?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
