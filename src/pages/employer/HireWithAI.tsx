@@ -1,23 +1,22 @@
 import { useState, useRef, useEffect } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Sparkles, Users, Target, FileSearch } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ChatMessage } from "@/components/ai-coach/ChatMessage";
+import { ChatInput } from "@/components/ai-coach/ChatInput";
+import { TypingIndicator } from "@/components/ai-coach/TypingIndicator";
+import { TalentRecommendationsPanel } from "@/components/hire-ai/TalentRecommendationsPanel";
+import { HireQuickActions } from "@/components/hire-ai/HireQuickActions";
 
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-};
+type Message = { role: "user" | "assistant"; content: string };
 
 export default function HireWithAI() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "👋 Hi! I'm your AI hiring assistant. I can help you find the perfect candidates, craft job descriptions, screen applications, and provide insights on the talent market. How can I assist you today?"
+      content: "Hi! I'm your AI hiring assistant. I can help you find candidates, craft job descriptions, screen applications, and provide talent market insights. How can I assist you today?"
     }
   ]);
   const [input, setInput] = useState("");
@@ -33,15 +32,11 @@ export default function HireWithAI() {
 
   const streamChat = async (userMessage: string) => {
     const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/skillbridge-chat`;
-    
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        toast({
-          title: "Authentication required",
-          description: "Please sign in to use the AI hiring assistant.",
-          variant: "destructive",
-        });
+        toast({ title: "Authentication required", description: "Please sign in to use the AI hiring assistant.", variant: "destructive" });
         return;
       }
 
@@ -55,37 +50,18 @@ Always be professional and focus on helping employers make great hiring decision
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ 
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({
           messages: [
             { role: "system", content: systemContext },
-            ...messages, 
+            ...messages,
             { role: "user", content: userMessage }
-          ] 
+          ]
         }),
       });
 
-      if (resp.status === 429) {
-        toast({
-          title: "Rate limit exceeded",
-          description: "Please try again in a moment.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (resp.status === 402) {
-        toast({
-          title: "Usage limit reached",
-          description: "Please contact support to continue.",
-          variant: "destructive",
-        });
-        return;
-      }
-
+      if (resp.status === 429) { toast({ title: "Rate limit exceeded", description: "Please try again in a moment.", variant: "destructive" }); return; }
+      if (resp.status === 402) { toast({ title: "Usage limit reached", description: "Please contact support to continue.", variant: "destructive" }); return; }
       if (!resp.ok || !resp.body) throw new Error("Failed to start stream");
 
       const reader = resp.body.getReader();
@@ -111,10 +87,7 @@ Always be professional and focus on helping employers make great hiring decision
           if (!line.startsWith("data: ")) continue;
 
           const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") {
-            streamDone = true;
-            break;
-          }
+          if (jsonStr === "[DONE]") { streamDone = true; break; }
 
           try {
             const parsed = JSON.parse(jsonStr);
@@ -135,109 +108,56 @@ Always be professional and focus on helping employers make great hiring decision
       }
     } catch (error) {
       console.error("Chat error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to send message. Please try again.", variant: "destructive" });
     }
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSend = async (overrideMessage?: string) => {
+    const userMessage = (overrideMessage ?? input).trim();
+    if (!userMessage || isLoading) return;
 
-    const userMessage = input.trim();
     setInput("");
     setMessages(prev => [...prev, { role: "user", content: userMessage }]);
     setIsLoading(true);
-
     await streamChat(userMessage);
     setIsLoading(false);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const quickPrompts = [
-    { icon: FileSearch, text: "Help me write a job description" },
-    { icon: Users, text: "Find candidates with React skills" },
-    { icon: Target, text: "Suggest interview questions" },
-  ];
+  const showQuickActions = messages.length <= 1;
 
   return (
     <PageLayout title="Hire with AI">
-      <div className="h-[calc(100vh-12rem)] flex flex-col">
+      <div className="h-[calc(100vh-12rem)] flex gap-4">
+        {/* Main chat area */}
         <Card className="flex-1 flex flex-col p-4 bg-card">
           <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
             <div className="space-y-4">
               {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {msg.role === "assistant" && (
-                      <Sparkles className="inline-block w-4 h-4 mr-2 mb-1" />
-                    )}
-                    <span className="whitespace-pre-wrap">{msg.content}</span>
-                  </div>
-                </div>
+                <ChatMessage key={idx} role={msg.role} content={msg.content} />
               ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-muted text-muted-foreground rounded-lg px-4 py-2">
-                    <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <span className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <span className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                    </div>
-                  </div>
-                </div>
-              )}
+              {isLoading && <TypingIndicator />}
             </div>
           </ScrollArea>
 
-          {messages.length === 1 && (
-            <div className="flex flex-wrap gap-2 mb-4 mt-4">
-              {quickPrompts.map((prompt, idx) => (
-                <Button
-                  key={idx}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setInput(prompt.text)}
-                  className="text-xs"
-                >
-                  <prompt.icon className="h-3 w-3 mr-1" />
-                  {prompt.text}
-                </Button>
-              ))}
+          {showQuickActions && (
+            <div className="mb-2 mt-2">
+              <p className="text-xs text-muted-foreground mb-2">Quick actions</p>
+              <HireQuickActions onSelect={(prompt) => handleSend(prompt)} disabled={isLoading} />
             </div>
           )}
 
-          <div className="flex gap-2 mt-4">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ask about hiring, candidates, job descriptions..."
-              disabled={isLoading}
-              className="flex-1"
-            />
-            <Button onClick={handleSend} disabled={isLoading || !input.trim()}>
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
+          <ChatInput
+            value={input}
+            onChange={setInput}
+            onSend={() => handleSend()}
+            isLoading={isLoading}
+          />
         </Card>
+
+        {/* Talent insights sidebar - hidden on mobile */}
+        <div className="hidden lg:flex flex-col w-72 shrink-0 gap-3 overflow-y-auto">
+          <TalentRecommendationsPanel />
+        </div>
       </div>
     </PageLayout>
   );

@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.career-guidance]
 verify_jwt = false
+
+[functions.talent-recommend]
+verify_jwt = false
