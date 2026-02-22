@@ -38,13 +38,13 @@ serve(async (req) => {
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
       console.warn(`[interview-tts][${requestId}] JWT verification failed`);
       return errorResponse("Invalid or expired token", 401);
     }
 
-    const userId = claimsData.claims.sub;
+    const userId = user.id;
 
     // ── Parse & Validate ──
     let body: { text?: string; voiceId?: string };
