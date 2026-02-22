@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.verify-paystack-payment]
 verify_jwt = false
+
+[functions.get-paystack-key]
+verify_jwt = false

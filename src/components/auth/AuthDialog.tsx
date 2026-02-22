@@ -267,7 +267,7 @@ export default function AuthDialog({ open, onOpenChange, defaultMode = 'signin' 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
             {showVerificationMessage ? 'Check your email' : isSignUp ? 'Create Account' : 'Welcome Back'}

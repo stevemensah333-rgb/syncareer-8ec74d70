@@ -1,7 +1,9 @@
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 interface VideoModalProps {
   open: boolean;
@@ -11,7 +13,8 @@ interface VideoModalProps {
 export default function VideoModal({ open, onOpenChange }: VideoModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none">
+      <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none" aria-describedby={undefined}>
+        <VisuallyHidden><DialogTitle>Promo Video</DialogTitle></VisuallyHidden>
         <video
           src="/videos/promo-video.mp4"
           controls

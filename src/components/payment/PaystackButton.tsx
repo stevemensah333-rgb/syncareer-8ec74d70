@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -14,8 +14,6 @@ interface PaystackButtonProps {
   disabled?: boolean;
 }
 
-const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || '';
-
 export default function PaystackButton({
   amount,
   plan,
@@ -27,6 +25,29 @@ export default function PaystackButton({
 }: PaystackButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const paystackKeyRef = useRef<string | null>(null);
+
+  // Fetch Paystack public key from edge function on mount
+  useEffect(() => {
+    const fetchKey = async () => {
+      try {
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const res = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/get-paystack-key`,
+          {
+            headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+          }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          paystackKeyRef.current = data.key || null;
+        }
+      } catch (err) {
+        console.error('Failed to fetch Paystack key:', err);
+      }
+    };
+    fetchKey();
+  }, []);
 
   const verifyPayment = useCallback(
     async (reference: string) => {
@@ -80,6 +101,12 @@ export default function PaystackButton({
         return;
       }
 
+      if (!paystackKeyRef.current) {
+        toast.error('Payment service is not configured. Please try again later.');
+        setIsLoading(false);
+        return;
+      }
+
       // Load Paystack inline script if not already loaded
       if (!(window as any).PaystackPop) {
         await new Promise<void>((resolve, reject) => {
@@ -92,7 +119,7 @@ export default function PaystackButton({
       }
 
       const handler = (window as any).PaystackPop.setup({
-        key: PAYSTACK_PUBLIC_KEY,
+        key: paystackKeyRef.current,
         email: user.email,
         amount,
         currency: 'GHS',
