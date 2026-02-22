@@ -52,6 +52,7 @@ export default function AuthDialog({ open, onOpenChange, defaultMode = 'signin' 
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Reset state when dialog opens/closes or defaultMode changes
   React.useEffect(() => {
@@ -65,6 +66,7 @@ export default function AuthDialog({ open, onOpenChange, defaultMode = 'signin' 
       setConfirmPassword('');
       setShowPassword(false);
       setShowConfirmPassword(false);
+      setAgreedToTerms(false);
     }
   }, [open, defaultMode]);
 
@@ -96,6 +98,11 @@ export default function AuthDialog({ open, onOpenChange, defaultMode = 'signin' 
     
     if (password !== confirmPassword) {
       toast.error('Passwords do not match');
+      return;
+    }
+
+    if (!agreedToTerms) {
+      toast.error('You must agree to the Terms and Conditions');
       return;
     }
     
@@ -528,7 +535,26 @@ export default function AuthDialog({ open, onOpenChange, defaultMode = 'signin' 
                     </button>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="terms-agree"
+                      checked={agreedToTerms}
+                      onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+                    />
+                    <Label htmlFor="terms-agree" className="text-xs text-muted-foreground cursor-pointer leading-relaxed">
+                      I agree to the{' '}
+                      <a
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline font-medium"
+                      >
+                        Terms and Conditions
+                      </a>
+                    </Label>
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={loading || !agreedToTerms}>
                     {loading ? 'Creating account...' : 'Create Account'}
                   </Button>
 

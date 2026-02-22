@@ -17,6 +17,7 @@ const Onboarding = lazy(() => import("./pages/Onboarding"));
 const PublicPortfolio = lazy(() => import("./pages/PublicPortfolio"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const SubscriptionSuccess = lazy(() => import("./pages/SubscriptionSuccess"));
+const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
 
 // Student pages
 const Assessment = lazy(() => import("./pages/Assessment"));
@@ -68,6 +69,7 @@ const App = () => (
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/subscription-success" element={<SubscriptionSuccess />} />
                 <Route path="/portfolio/:userId" element={<PublicPortfolio />} />
+                <Route path="/terms" element={<TermsAndConditions />} />
                 
                 {/* Onboarding - any authenticated user */}
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
