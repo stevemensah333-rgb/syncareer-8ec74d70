@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.cv-ai-assistant]
 verify_jwt = false
+
+[functions.verify-paystack-payment]
+verify_jwt = false
