@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.get-paystack-key]
 verify_jwt = false
+
+[functions.compute-user-intelligence]
+verify_jwt = false
