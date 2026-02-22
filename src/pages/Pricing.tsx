@@ -4,25 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { createCheckoutSession } from '@/services/subscriptionService';
-import { toast } from 'sonner';
+import PaystackButton from '@/components/payment/PaystackButton';
 
 export default function PricingPage() {
   const navigate = useNavigate();
-  const { subscription, isPremium, loading } = useSubscription();
+  const { isPremium, loading } = useSubscription();
   const [selectedBilling, setSelectedBilling] = useState<'monthly' | 'yearly'>('monthly');
-  const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
 
   const pricing = {
-    monthly: {
-      free: { price: 0, priceId: '' },
-      premium: { price: 4.99, priceId: process.env.VITE_STRIPE_PRICE_MONTHLY || '' },
-    },
-    yearly: {
-      free: { price: 0, priceId: '' },
-      premium: { price: 49.99, priceId: process.env.VITE_STRIPE_PRICE_YEARLY || '' },
-    },
+    monthly: { price: 49.99, amount: 4999 }, // pesewas
+    yearly: { price: 499.99, amount: 49999 },
   };
 
   const features = {
@@ -46,40 +37,11 @@ export default function PricingPage() {
     ],
   };
 
-  const handleUpgrade = async () => {
-    setIsLoadingCheckout(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        navigate('/');
-        return;
-      }
-
-      const sessionUrl = await createCheckoutSession(
-        user.id,
-        pricing[selectedBilling].premium.priceId,
-        `${window.location.origin}/subscription-success`
-      );
-
-      if (sessionUrl) {
-        window.location.href = sessionUrl;
-      } else {
-        toast.error('Failed to create checkout session');
-      }
-    } catch (error) {
-      console.error('Upgrade error:', error);
-      toast.error('An error occurred during checkout');
-    } finally {
-      setIsLoadingCheckout(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
           <p className="text-muted-foreground">Loading pricing...</p>
         </div>
       </div>
@@ -98,7 +60,7 @@ export default function PricingPage() {
             Unlock Your Career Potential
           </h1>
           <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-            Choose the plan that works for you. Upgrade anytime with no lock-in contracts.
+            Choose the plan that works for you. Pay with Mobile Money or Card.
           </p>
         </div>
 
@@ -138,12 +100,10 @@ export default function PricingPage() {
             <div>
               <h3 className="text-2xl font-bold mb-2">Free</h3>
               <p className="text-slate-400 mb-6">For those just getting started</p>
-
               <div className="mb-8">
-                <span className="text-4xl font-bold">$0</span>
+                <span className="text-4xl font-bold">GH₵0</span>
                 <span className="text-slate-400 ml-2">forever</span>
               </div>
-
               <ul className="space-y-4 mb-8">
                 {features.free.map((feature) => (
                   <li key={feature} className="flex items-start gap-3">
@@ -153,23 +113,13 @@ export default function PricingPage() {
                 ))}
               </ul>
             </div>
-
-            {!isPremium ? (
-              <Button
-                variant="outline"
-                className="w-full bg-slate-700 text-white border-slate-600 hover:bg-slate-600"
-                disabled
-              >
-                Current Plan
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                className="w-full bg-slate-700 text-white border-slate-600 hover:bg-slate-600"
-              >
-                Downgrade
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              className="w-full bg-slate-700 text-white border-slate-600 hover:bg-slate-600"
+              disabled
+            >
+              {isPremium ? 'Downgrade' : 'Current Plan'}
+            </Button>
           </Card>
 
           {/* Premium Tier */}
@@ -177,23 +127,20 @@ export default function PricingPage() {
             <div className="absolute -top-4 right-4 bg-green-500 text-slate-900 px-4 py-1 rounded-full text-sm font-semibold">
               Recommended
             </div>
-
             <div>
               <h3 className="text-2xl font-bold mb-2">Premium</h3>
               <p className="text-slate-300 mb-6">For serious career advancement</p>
-
               <div className="mb-8">
                 <span className="text-4xl font-bold">
-                  ${selectedBilling === 'monthly' ? '4.99' : '49.99'}
+                  GH₵{selectedBilling === 'monthly' ? '49.99' : '499.99'}
                 </span>
                 <span className="text-slate-400 ml-2">
                   {selectedBilling === 'monthly' ? '/month' : '/year'}
                 </span>
                 {selectedBilling === 'yearly' && (
-                  <div className="text-sm text-green-400 mt-2">Save $10/year vs monthly</div>
+                  <div className="text-sm text-green-400 mt-2">Save GH₵100/year vs monthly</div>
                 )}
               </div>
-
               <ul className="space-y-4 mb-8">
                 {features.premium.map((feature) => (
                   <li key={feature} className="flex items-start gap-3">
@@ -204,37 +151,49 @@ export default function PricingPage() {
               </ul>
             </div>
 
-            <Button
-              onClick={handleUpgrade}
-              disabled={isLoadingCheckout || isPremium}
-              className="w-full bg-green-500 text-slate-900 hover:bg-green-600 font-semibold"
-            >
-              {isLoadingCheckout
-                ? 'Processing...'
-                : isPremium
-                  ? 'Already Premium'
-                  : 'Upgrade to Premium'}
-            </Button>
+            {isPremium ? (
+              <Button
+                disabled
+                className="w-full bg-green-500 text-slate-900 font-semibold"
+              >
+                Already Premium
+              </Button>
+            ) : (
+              <PaystackButton
+                amount={pricing[selectedBilling].amount}
+                plan={selectedBilling}
+                onSuccess={() => navigate('/subscription-success')}
+                className="w-full bg-green-500 text-slate-900 hover:bg-green-600 font-semibold"
+              >
+                Upgrade to Premium
+              </PaystackButton>
+            )}
           </Card>
+        </div>
+
+        {/* Payment Methods */}
+        <div className="text-center mb-12">
+          <p className="text-slate-400 text-sm">
+            Accepted: MTN Mobile Money • Telecel Cash • AirtelTigo Money • Visa/Mastercard
+          </p>
         </div>
 
         {/* FAQ Section */}
         <div className="max-w-3xl mx-auto border-t border-slate-700 pt-16">
           <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
-
           <div className="space-y-6">
             {[
               {
+                q: 'What payment methods do you accept?',
+                a: 'We accept MTN Mobile Money, Telecel Cash, AirtelTigo Money, Visa, and Mastercard through Paystack.',
+              },
+              {
                 q: 'Can I change plans anytime?',
-                a: 'Yes! Upgrade or downgrade your plan at any time. Changes take effect immediately.',
+                a: 'Yes! Upgrade your plan at any time. Changes take effect immediately.',
               },
               {
                 q: 'Is there a free trial?',
-                a: 'The free tier gives you full access to core features. No trial needed - start using it right away.',
-              },
-              {
-                q: 'What payment methods do you accept?',
-                a: 'We accept all major credit and debit cards through Stripe, your secure payment processor.',
+                a: 'The free tier gives you full access to core features. No trial needed — start using it right away.',
               },
               {
                 q: 'Do you offer refunds?',
@@ -252,15 +211,19 @@ export default function PricingPage() {
         {/* CTA Section */}
         <div className="text-center mt-16 pt-12 border-t border-slate-700">
           <h3 className="text-2xl font-bold mb-4">Ready to accelerate your career?</h3>
-          <p className="text-slate-300 mb-6">Join thousands of professionals transforming their careers with SynCareer.</p>
-          <Button
-            onClick={handleUpgrade}
-            disabled={isPremium}
-            size="lg"
-            className="bg-green-500 text-slate-900 hover:bg-green-600 font-semibold"
-          >
-            Get Started Today
-          </Button>
+          <p className="text-slate-300 mb-6">
+            Join thousands of professionals transforming their careers with Syncareer.
+          </p>
+          {!isPremium && (
+            <PaystackButton
+              amount={pricing[selectedBilling].amount}
+              plan={selectedBilling}
+              onSuccess={() => navigate('/subscription-success')}
+              className="bg-green-500 text-slate-900 hover:bg-green-600 font-semibold px-8 py-3"
+            >
+              Get Started Today
+            </PaystackButton>
+          )}
         </div>
       </div>
     </div>
