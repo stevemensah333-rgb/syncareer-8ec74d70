@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Briefcase, MapPin, Calendar, Clock, Building2, ExternalLink, Edit, Trash2, Search, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useOutcomeTracking } from '@/hooks/useOutcomeTracking';
 
 interface Application {
   id: string;
@@ -43,6 +44,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const ApplicationTracker = () => {
+  const { updateOutcome, triggerIntelligenceRefresh } = useOutcomeTracking();
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,10 +99,30 @@ const ApplicationTracker = () => {
 
       if (error) throw error;
       
+      const app = applications.find(a => a.id === appId);
       setApplications(apps => 
-        apps.map(app => app.id === appId ? { ...app, status: newStatus } : app)
+        apps.map(a => a.id === appId ? { ...a, status: newStatus } : a)
       );
       toast.success('Status updated');
+
+      // Map application status to outcome for the feedback loop
+      if (app?.job?.title) {
+        const outcomeMap: Record<string, string> = {
+          hired: 'success',
+          offered: 'success',
+          rejected: 'rejected',
+          withdrawn: 'withdrawn',
+        };
+        const outcome = outcomeMap[newStatus];
+        if (outcome) {
+          updateOutcome({
+            itemTitle: app.job.title,
+            outcome: outcome as 'success' | 'rejected' | 'withdrawn',
+            details: { status: newStatus, updated_at: new Date().toISOString() },
+          });
+          triggerIntelligenceRefresh();
+        }
+      }
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error('Failed to update status');

@@ -8,6 +8,7 @@ import { Briefcase, MapPin, Clock, DollarSign, TrendingUp, Building2, CheckCircl
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useOutcomeTracking } from '@/hooks/useOutcomeTracking';
 
 interface JobPosting {
   id: string;
@@ -33,6 +34,7 @@ interface JobWithMatch extends JobPosting {
 
 const Opportunities = () => {
   const { studentDetails, loading: profileLoading } = useUserProfile();
+  const { trackAction, triggerIntelligenceRefresh } = useOutcomeTracking();
   const [jobs, setJobs] = useState<JobWithMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<JobWithMatch | null>(null);
@@ -155,6 +157,16 @@ const Opportunities = () => {
 
       toast.success('Application submitted successfully!');
       setIsDialogOpen(false);
+
+      // Track outcome and refresh intelligence
+      trackAction({
+        itemTitle: job.title,
+        itemId: job.id,
+        type: 'job',
+        action: 'applied',
+        confidence: job.matchPercentage / 100,
+      });
+      triggerIntelligenceRefresh();
     } catch (error) {
       console.error('Error applying:', error);
       toast.error('Failed to submit application');
