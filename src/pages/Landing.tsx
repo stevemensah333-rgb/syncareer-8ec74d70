@@ -29,13 +29,18 @@ export default function Landing() {
           .from('profiles')
           .select('user_type, onboarding_completed')
           .eq('id', session.user.id)
-          .single();
+          .maybeSingle();
         
-        if (!profile?.onboarding_completed) {
-          navigate('/onboarding');
-        } else {
-          navigate(getHomeRouteForRole(profile?.user_type || null));
+        // Only redirect if we actually found a profile
+        if (profile) {
+          if (!profile.onboarding_completed) {
+            navigate('/onboarding');
+          } else {
+            navigate(getHomeRouteForRole(profile.user_type || null));
+          }
         }
+        // If no profile found (e.g. new Google user), stay on landing — 
+        // they'll be directed to onboarding after next auth flow
       }
     };
     checkAuth();
