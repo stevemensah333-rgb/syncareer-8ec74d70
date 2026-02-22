@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.compute-user-intelligence]
 verify_jwt = false
+
+[functions.career-guidance]
+verify_jwt = false
