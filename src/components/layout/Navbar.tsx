@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Briefcase, Users, LogOut, MessageCircle, Menu, HelpCircle, Phone, Mail, CreditCard } from 'lucide-react';
-import skillbridgeLogo from '@/assets/skillbridge-logo.png';
+import syncareerLogo from '@/assets/syncareer-logo.png';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -81,7 +81,7 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
             )}
             
             <div className="flex items-center gap-2">
-              <img src={skillbridgeLogo} alt="Syncareer" className="h-8 w-8 object-contain" />
+              <img src={syncareerLogo} alt="Syncareer" className="h-8 w-auto object-contain" />
               <h1 className="text-lg font-semibold tracking-tight lg:text-xl">Syncareer</h1>
             </div>
             
