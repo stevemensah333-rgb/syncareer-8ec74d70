@@ -557,12 +557,28 @@ const Onboarding = () => {
         )}
 
         {!userType && !initialLoading && (
-          <div className="space-y-6 text-center">
-            <h1 className="text-3xl font-bold text-foreground">Something went wrong</h1>
-            <p className="text-muted-foreground">We couldn't determine your account type. Please sign out and try again.</p>
-            <Button variant="outline" onClick={async () => { await supabase.auth.signOut(); navigate('/'); }}>
-              Sign Out
-            </Button>
+          <div className="space-y-6">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-foreground">Welcome to Syncareer</h1>
+              <p className="text-muted-foreground mt-2">Select your account type to get started</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+              {[
+                { value: 'student', label: 'Student', description: 'Discover careers, build your CV, and prepare for interviews' },
+                { value: 'employer', label: 'Employer', description: 'Post jobs, find talent, and manage hiring' },
+                { value: 'career_counsellor', label: 'Career Counsellor', description: 'Guide students and manage counselling sessions' },
+              ].map((role) => (
+                <button
+                  key={role.value}
+                  onClick={() => setUserType(role.value)}
+                  className="p-6 rounded-lg border-2 border-border hover:border-primary text-left transition-colors space-y-2"
+                >
+                  <h3 className="font-semibold text-lg text-foreground">{role.label}</h3>
+                  <p className="text-sm text-muted-foreground">{role.description}</p>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
