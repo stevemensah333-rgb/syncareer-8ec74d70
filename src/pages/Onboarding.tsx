@@ -556,6 +556,16 @@ const Onboarding = () => {
           </div>
         )}
 
+        {!userType && !initialLoading && (
+          <div className="space-y-6 text-center">
+            <h1 className="text-3xl font-bold text-foreground">Something went wrong</h1>
+            <p className="text-muted-foreground">We couldn't determine your account type. Please sign out and try again.</p>
+            <Button variant="outline" onClick={async () => { await supabase.auth.signOut(); navigate('/'); }}>
+              Sign Out
+            </Button>
+          </div>
+        )}
+
       </Card>
     </div>
   );
