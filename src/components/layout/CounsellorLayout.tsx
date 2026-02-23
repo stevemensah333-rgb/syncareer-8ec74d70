@@ -80,14 +80,18 @@ export function CounsellorLayout({ children, title }: CounsellorLayoutProps) {
     <div className="min-h-screen flex flex-col">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-foreground">Skip to main content</a>
       <Navbar onMobileMenuClick={() => setIsMobileDrawerOpen(true)} />
-      <div className="flex-1 flex">
-        {!isMobile && sidebarContent}
+      <div className="flex-1 flex pt-16">
+        {!isMobile && (
+          <div className={cn("fixed top-16 left-0 bottom-0 z-20 transition-all duration-300", isCollapsed ? "w-16" : "w-64")}>
+            {sidebarContent}
+          </div>
+        )}
         {isMobile && (
           <Drawer open={isMobileDrawerOpen} onOpenChange={setIsMobileDrawerOpen}>
             <DrawerContent className="h-[85vh]">{sidebarContent}</DrawerContent>
           </Drawer>
         )}
-        <main id="main-content" className="flex-1 transition-all duration-300">
+        <main id="main-content" className={cn("flex-1 transition-all duration-300", !isMobile && (isCollapsed ? "ml-16" : "ml-64"))}>
           <div className="container max-w-full p-4 lg:p-6 animate-fade-in">
             <h1 className="text-2xl font-bold mb-6">{title}</h1>
             {children}
