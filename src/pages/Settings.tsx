@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { NotificationSettingsPanel } from '@/components/notifications/NotificationSettingsPanel';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
-import { Bell, Globe, Lock, User, Settings as SettingsIcon, UserCircle, CreditCard } from 'lucide-react';
+import { Bell, Globe, Lock, User, Settings as SettingsIcon, UserCircle, CreditCard, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 import { countries } from '@/utils/countries';
@@ -23,7 +34,9 @@ const Settings = () => {
   const initialTab = (searchParams.get('tab') as SettingsSection) || 'account';
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialTab);
   const { profile, studentDetails, employerDetails, loading: profileLoading } = useUserProfile();
+  const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState<string>('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -90,6 +103,35 @@ const Settings = () => {
       title: t('settings.settingsSaved'),
       description: t('settings.settingsSavedDesc'),
     });
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await supabase.functions.invoke('delete-account');
+      
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to delete account');
+      }
+
+      await supabase.auth.signOut();
+      navigate('/');
+      toast({
+        title: 'Account deleted',
+        description: 'Your account has been permanently deleted.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete account. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingAccount(false);
+    }
   };
 
   return (
@@ -335,6 +377,41 @@ const Settings = () => {
                         To edit your profile information, please visit the Profile section.
                       </p>
                       <Button onClick={() => setActiveSection('profile')}>Edit Profile</Button>
+                    </div>
+
+                    {/* Delete Account */}
+                    <div className="pt-6 border-t">
+                      <h3 className="text-lg font-medium text-destructive mb-2 flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5" />
+                        Danger Zone
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Permanently delete your account and all associated data. This action cannot be undone.
+                      </p>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" disabled={deletingAccount}>
+                            {deletingAccount ? 'Deleting...' : 'Delete Account'}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete your account, profile, resumes, assessments, and all other data. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleDeleteAccount}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Yes, delete my account
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 )}
