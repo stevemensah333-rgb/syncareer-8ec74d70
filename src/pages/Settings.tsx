@@ -24,6 +24,7 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import SubscriptionManager from '@/components/subscription/SubscriptionManager';
+import { SecuritySection } from '@/components/settings/SecuritySection';
 
 type SettingsSection = 'profile' | 'account' | 'notifications' | 'security' | 'regional' | 'preferences' | 'subscription';
 
@@ -426,46 +427,7 @@ const Settings = () => {
             )}
 
             {activeSection === 'security' && (
-              <>
-                <h2 className="text-xl font-semibold mb-6">{t('settings.securitySettings')}</h2>
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">{t('settings.changePassword')}</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">{t('settings.currentPassword')}</label>
-                        <input 
-                          type="password" 
-                          className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground" 
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">{t('settings.newPassword')}</label>
-                        <input 
-                          type="password" 
-                          className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground" 
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">{t('settings.confirmPassword')}</label>
-                        <input 
-                          type="password" 
-                          className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground" 
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="pt-4 border-t">
-                    <h3 className="text-lg font-medium mb-4">{t('settings.twoFactorAuth')}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{t('settings.twoFactorAuthDesc')}</p>
-                    <Button variant="outline">{t('settings.enable2FA')}</Button>
-                  </div>
-                  <div className="pt-4 border-t">
-                    <Button onClick={handleSave}>{t('settings.saveChanges')}</Button>
-                    <Button variant="outline" className="ml-2">{t('settings.cancel')}</Button>
-                  </div>
-                </div>
-              </>
+              <SecuritySection />
             )}
 
             {activeSection === 'regional' && (
