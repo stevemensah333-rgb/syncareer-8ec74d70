@@ -7,7 +7,7 @@ export default function LandingFooter() {
         <div className="grid md:grid-cols-4 gap-10 mb-12">
           <div>
             <div className="mb-3">
-              <SyncareerLogo iconSize={24} />
+              <SyncareerLogo height={30} />
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               AI-powered career intelligence for students and early professionals.
