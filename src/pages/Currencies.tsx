@@ -135,6 +135,23 @@ const Learn = () => {
     }
   };
 
+  const handleUnsaveCourse = async (courseTitle: string, skillName: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      await (supabase.from('user_course_progress' as any) as any)
+        .delete()
+        .eq('user_id', session.user.id)
+        .eq('course_title', courseTitle)
+        .eq('skill_name', skillName);
+      toast.success('Course unsaved');
+      readiness.refetch();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to unsave course');
+    }
+  };
+
   const handleValidateCourse = async (course: SkillCourse, skillName: string) => {
     // Cooldown check
     if (Date.now() - lastValidation < COOLDOWN_MINUTES * 60 * 1000) {
@@ -307,6 +324,7 @@ const Learn = () => {
                   courses={getCoursesForSkill(skill.skillName, major)}
                   savedCourses={readiness.savedCourses}
                   onSaveCourse={(course) => handleSaveCourse(course, skill.skillName)}
+                  onUnsaveCourse={(courseTitle) => handleUnsaveCourse(courseTitle, skill.skillName)}
                   onValidateCourse={(course) => handleValidateCourse(course, skill.skillName)}
                   validating={quizLoading}
                 />
@@ -318,6 +336,7 @@ const Learn = () => {
           <SavedCoursesSection
             courses={readiness.savedCourses}
             onValidateCourse={handleValidateSavedCourse}
+            onUnsaveCourse={handleUnsaveCourse}
             validating={quizLoading}
           />
 

@@ -9,12 +9,14 @@ import type { CourseProgress } from '@/hooks/useCareerReadiness';
 interface SavedCoursesSectionProps {
   courses: CourseProgress[];
   onValidateCourse: (course: CourseProgress) => void;
+  onUnsaveCourse: (courseTitle: string, skillName: string) => void;
   validating: boolean;
 }
 
 const SavedCoursesSection: React.FC<SavedCoursesSectionProps> = ({
   courses,
   onValidateCourse,
+  onUnsaveCourse,
   validating,
 }) => {
   const [open, setOpen] = useState(true);
@@ -81,6 +83,15 @@ const SavedCoursesSection: React.FC<SavedCoursesSectionProps> = ({
                       >
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Validate
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-muted-foreground"
+                        onClick={() => onUnsaveCourse(course.course_title, course.skill_name)}
+                      >
+                        <Bookmark className="h-3 w-3 mr-1 fill-current" />
+                        Unsave
                       </Button>
                     </div>
                   </div>
