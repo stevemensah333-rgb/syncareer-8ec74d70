@@ -1,4 +1,4 @@
-import { Bell, Briefcase, Calendar, MessageSquare, Star, Trash2, AlertTriangle, Users } from 'lucide-react';
+import { Bell, Briefcase, Calendar, MessageSquare, Star, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { Notification } from '@/hooks/useNotifications';
@@ -16,7 +16,6 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   message: <MessageSquare className="h-4 w-4" />,
   booking: <Calendar className="h-4 w-4" />,
   review: <Star className="h-4 w-4" />,
-  community: <Users className="h-4 w-4" />,
   system: <AlertTriangle className="h-4 w-4" />,
 };
 

@@ -4,8 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 export interface NotificationPreferences {
   email_enabled: boolean;
   push_enabled: boolean;
-  community_posts: boolean;
-  community_replies: boolean;
   application_updates: boolean;
   interview_reminders: boolean;
   counsellor_bookings: boolean;
@@ -17,8 +15,6 @@ export interface NotificationPreferences {
 const DEFAULT_PREFERENCES: NotificationPreferences = {
   email_enabled: true,
   push_enabled: true,
-  community_posts: true,
-  community_replies: true,
   application_updates: true,
   interview_reminders: true,
   counsellor_bookings: true,
@@ -51,8 +47,6 @@ export function useNotificationPreferences() {
         setPreferences({
           email_enabled: data.email_enabled,
           push_enabled: data.push_enabled,
-          community_posts: data.community_posts,
-          community_replies: data.community_replies,
           application_updates: data.application_updates,
           interview_reminders: data.interview_reminders,
           counsellor_bookings: data.counsellor_bookings,
