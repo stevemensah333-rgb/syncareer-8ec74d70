@@ -803,11 +803,60 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_module_completions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          module_number: number
+          passed: boolean
+          path_id: string
+          quiz_answers: Json
+          quiz_questions: Json
+          score: number | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          module_number: number
+          passed?: boolean
+          path_id: string
+          quiz_answers?: Json
+          quiz_questions?: Json
+          score?: number | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          module_number?: number
+          passed?: boolean
+          path_id?: string
+          quiz_answers?: Json
+          quiz_questions?: Json
+          score?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_module_completions_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "learning_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       learning_paths: {
         Row: {
           completed_modules: number
           created_at: string
           id: string
+          last_module_completed_at: string | null
+          milestone_level: string
           path_title: string
           total_modules: number
           updated_at: string
@@ -817,6 +866,8 @@ export type Database = {
           completed_modules?: number
           created_at?: string
           id?: string
+          last_module_completed_at?: string | null
+          milestone_level?: string
           path_title: string
           total_modules?: number
           updated_at?: string
@@ -826,6 +877,8 @@ export type Database = {
           completed_modules?: number
           created_at?: string
           id?: string
+          last_module_completed_at?: string | null
+          milestone_level?: string
           path_title?: string
           total_modules?: number
           updated_at?: string
