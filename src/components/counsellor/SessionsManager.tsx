@@ -8,6 +8,7 @@ import {
   Video, FileText, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { sendNotification } from '@/utils/notifications';
 import { toast } from 'sonner';
 import {
   Collapsible,
@@ -111,25 +112,23 @@ export function SessionsManager({ counsellorId }: SessionsManagerProps) {
         const counsellorName = counsellorData?.full_name || 'A counsellor';
         
         if (status === 'confirmed') {
-          await supabase
-            .from('notifications')
-            .insert({
-              user_id: booking.user_id,
-              type: 'booking_accepted',
-              title: 'Booking Request Accepted!',
-              message: `${counsellorName} has accepted your session request. Check your bookings for details.`,
-              link: '/portfolio',
-            });
+          sendNotification({
+            user_id: booking.user_id,
+            type: 'booking',
+            title: 'Booking Request Accepted!',
+            message: `${counsellorName} has accepted your session request. Check your bookings for details.`,
+            category: 'booking',
+            link: '/portfolio',
+          });
         } else if (status === 'cancelled') {
-          await supabase
-            .from('notifications')
-            .insert({
-              user_id: booking.user_id,
-              type: 'booking_declined',
-              title: 'Booking Request Declined',
-              message: `${counsellorName} was unable to accommodate your session request. Please try booking a different time.`,
-              link: '/portfolio',
-            });
+          sendNotification({
+            user_id: booking.user_id,
+            type: 'booking',
+            title: 'Booking Request Declined',
+            message: `${counsellorName} was unable to accommodate your session request. Please try booking a different time.`,
+            category: 'booking',
+            link: '/portfolio',
+          });
         }
       }
 

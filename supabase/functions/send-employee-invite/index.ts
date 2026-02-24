@@ -197,7 +197,7 @@ serve(async (req) => {
                 <li>Professional training courses</li>
                 <li>AI-powered interview preparation</li>
                 <li>Career development resources</li>
-                <li>Community networking</li>
+                <li>Skills assessment tools</li>
               </ul>
               
               <a href="https://syncareer.lovable.app/" 
