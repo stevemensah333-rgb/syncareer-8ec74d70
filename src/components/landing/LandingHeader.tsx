@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import syncareerLogo from "@/assets/syncareer-logo.png";
+import { SyncareerLogo } from "@/components/brand/SyncareerLogo";
 
 interface LandingHeaderProps {
   onSignIn: () => void;
@@ -10,10 +10,7 @@ export default function LandingHeader({ onSignIn, onSignUp }: LandingHeaderProps
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/70 backdrop-blur-xl border-b border-border/50">
       <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <img src={syncareerLogo} alt="Syncareer" className="h-8 w-auto object-contain" />
-          <span className="text-xl font-bold text-foreground tracking-tight">Syncareer</span>
-        </div>
+        <SyncareerLogo iconSize={28} />
         <nav className="hidden md:flex items-center gap-8">
           <a href="#problem" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Why Syncareer
