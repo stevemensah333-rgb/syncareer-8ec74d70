@@ -18,6 +18,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Star, MapPin, DollarSign, ChevronRight, ArrowLeft, User, MessageSquare, Search, CalendarIcon, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { sendNotification } from '@/utils/notifications';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { format, addDays, isBefore, startOfDay } from 'date-fns';
@@ -241,11 +242,12 @@ const AskCounsellorDialog: React.FC<AskCounsellorDialogProps> = ({ open, onOpenC
 
       // Notify the counsellor about the new booking request
       const formattedDate = format(selectedDate, 'PPP');
-      await supabase.from('notifications').insert({
+      sendNotification({
         user_id: selectedCounsellor.user_id,
-        type: 'new_booking_request',
+        type: 'booking',
         title: 'New Session Request',
         message: `${userName} has requested a session on ${formattedDate}. Please review and respond.`,
+        category: 'booking',
         link: '/counsellor-sessions',
       });
 

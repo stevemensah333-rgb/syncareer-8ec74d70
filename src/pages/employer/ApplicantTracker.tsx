@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { sendNotification } from '@/utils/notifications';
 import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -166,11 +167,12 @@ const ApplicantTracker = () => {
       // Notify the applicant about the status change
       if (app) {
         const stageName = PIPELINE_STAGES.find(s => s.id === newStatus)?.label || newStatus;
-        await supabase.from('notifications').insert({
+        sendNotification({
           user_id: app.applicant_id,
+          type: 'application',
           title: 'Application Update',
           message: `Your application for "${app.job?.title}" has moved to: ${stageName}`,
-          type: 'application',
+          category: 'application',
           link: '/applications',
         });
       }
@@ -210,15 +212,14 @@ const ApplicantTracker = () => {
 
       // Send notification to applicant
       const formattedDate = format(scheduledAt, 'PPp');
-      await supabase
-        .from('notifications')
-        .insert({
-          user_id: selectedApplication.applicant_id,
-          title: 'Interview Scheduled',
-          message: `Your interview for "${selectedApplication.job?.title}" has been scheduled for ${formattedDate}. Interview type: ${interviewType}.`,
-          type: 'interview_scheduled',
-          link: '/applications',
-        });
+      sendNotification({
+        user_id: selectedApplication.applicant_id,
+        type: 'interview',
+        title: 'Interview Scheduled',
+        message: `Your interview for "${selectedApplication.job?.title}" has been scheduled for ${formattedDate}. Interview type: ${interviewType}.`,
+        category: 'interview',
+        link: '/applications',
+      });
 
       toast.success('Interview scheduled successfully!');
       setScheduleDialogOpen(false);
