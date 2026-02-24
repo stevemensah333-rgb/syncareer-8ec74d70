@@ -11,7 +11,8 @@ import ReadinessOverview from '@/components/learn/ReadinessOverview';
 import ReadinessRadar from '@/components/learn/ReadinessRadar';
 import PillarCards from '@/components/learn/PillarCards';
 import SkillGapCard, { type SkillCourse } from '@/components/learn/SkillGapCard';
-import { useCareerReadiness } from '@/hooks/useCareerReadiness';
+import SavedCoursesSection from '@/components/learn/SavedCoursesSection';
+import { useCareerReadiness, type CourseProgress } from '@/hooks/useCareerReadiness';
 
 interface LearningStreak {
   current_streak: number;
@@ -171,6 +172,18 @@ const Learn = () => {
     }
   };
 
+  const handleValidateSavedCourse = (courseProgress: CourseProgress) => {
+    const course: SkillCourse = {
+      title: courseProgress.course_title,
+      provider: '',
+      url: courseProgress.course_url || '',
+      difficulty: 'Intermediate',
+      estimatedImpact: 15,
+      duration: '',
+    };
+    handleValidateCourse(course, courseProgress.skill_name);
+  };
+
   const handleQuizPass = async (score: number) => {
     if (!activeSkill || !major) return;
 
@@ -300,6 +313,13 @@ const Learn = () => {
               ))}
             </div>
           )}
+
+          {/* Saved Courses */}
+          <SavedCoursesSection
+            courses={readiness.savedCourses}
+            onValidateCourse={handleValidateSavedCourse}
+            validating={quizLoading}
+          />
 
           {!hasSkills && (
             <Card>
