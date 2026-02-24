@@ -19,6 +19,7 @@ interface SkillGapCardProps {
   courses: SkillCourse[];
   savedCourses: CourseProgress[];
   onSaveCourse: (course: SkillCourse) => void;
+  onUnsaveCourse: (courseTitle: string) => void;
   onValidateCourse: (course: SkillCourse) => void;
   validating: boolean;
 }
@@ -30,7 +31,7 @@ const difficultyColor: Record<string, string> = {
 };
 
 const SkillGapCard: React.FC<SkillGapCardProps> = ({
-  skill, courses, savedCourses, onSaveCourse, onValidateCourse, validating,
+  skill, courses, savedCourses, onSaveCourse, onUnsaveCourse, onValidateCourse, validating,
 }) => {
   const [expanded, setExpanded] = useState(skill.mastery < 50);
 
@@ -123,9 +124,15 @@ const SkillGapCard: React.FC<SkillGapCardProps> = ({
                     )}
 
                     {saved && !completed && (
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Bookmark className="h-3 w-3" /> Saved
-                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-muted-foreground"
+                        onClick={() => onUnsaveCourse(course.title)}
+                      >
+                        <Bookmark className="h-3 w-3 mr-1 fill-current" />
+                        Unsave
+                      </Button>
                     )}
 
                     {completed ? (
