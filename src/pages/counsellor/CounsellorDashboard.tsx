@@ -291,7 +291,7 @@ const CounsellorDashboard = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/communities')}
+              onClick={() => navigate(-1)}
               className="h-9 w-9"
             >
               <ArrowLeft className="h-5 w-5" />
