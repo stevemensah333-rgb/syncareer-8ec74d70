@@ -1,4 +1,4 @@
-import SyncareerLogo from "@/components/SyncareerLogo";
+import syncareerLogo from "@/assets/syncareer-logo.png";
 
 export default function LandingFooter() {
   return (
@@ -6,7 +6,10 @@ export default function LandingFooter() {
       <div className="container mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-10 mb-12">
           <div>
-            <SyncareerLogo size="md" className="mb-3" />
+            <div className="flex items-center gap-2 mb-3">
+              <img src={syncareerLogo} alt="Syncareer" className="h-7 w-auto object-contain" />
+              <span className="text-lg font-semibold text-foreground">Syncareer</span>
+            </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               AI-powered career intelligence for students and early professionals.
             </p>
