@@ -195,8 +195,8 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
     } else if (isCounsellor) {
       groups.push(
         { label: 'Main', items: counsellorNavItems.slice(0, 2) },
-        { label: 'Schedule', items: counsellorNavItems.slice(2, 4) },
-        { label: 'Account', items: counsellorNavItems.slice(4) },
+        { label: 'Schedule', items: counsellorNavItems.slice(2, 3) },
+        { label: 'Account', items: counsellorNavItems.slice(3) },
       );
     } else {
       groups.push(

@@ -210,8 +210,7 @@ export function ProfileSection() {
     switch (profile?.user_type) {
       case 'student': return 'Student';
       case 'employer': return 'Employer';
-      case 'manager': return 'Manager';
-      case 'recruiter': return 'Recruiter';
+      case 'career_counsellor': return 'Career Counsellor';
       default: return 'User';
     }
   };
