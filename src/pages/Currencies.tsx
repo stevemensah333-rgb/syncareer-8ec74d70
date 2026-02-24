@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { BookOpen, Target, Clock, Star, Flame, CheckCircle, Lock } from 'lucide-react';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { getMajorContent } from '@/utils/majorContent';
+import { getSkillForModule, getDifficultyForModule, calculateSkillMastery, getCareerSkills } from '@/utils/careerSkillFramework';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ModuleQuizDialog, { type QuizQuestion } from '@/components/learn/ModuleQuizDialog';
@@ -41,6 +42,7 @@ const Learn = () => {
   const [quizLoading, setQuizLoading] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [activePath, setActivePath] = useState<LearningPath | null>(null);
+  const [activeSkillName, setActiveSkillName] = useState<string | null>(null);
 
   // Auto-log activity on page visit (once per day)
   const autoLogActivity = useCallback(async () => {
@@ -146,7 +148,13 @@ const Learn = () => {
       return;
     }
 
+    const nextModule = path.completed_modules + 1;
+    const major = studentDetails?.major || 'General';
+    const skillName = getSkillForModule(major, nextModule);
+    const difficulty = getDifficultyForModule(major, nextModule);
+
     setActivePath(path);
+    setActiveSkillName(skillName);
     setQuizOpen(true);
     setQuizLoading(true);
     setQuizQuestions([]);
@@ -155,9 +163,11 @@ const Learn = () => {
       const { data, error } = await supabase.functions.invoke('generate-module-quiz', {
         body: {
           pathTitle: path.path_title,
-          moduleNumber: path.completed_modules + 1,
+          moduleNumber: nextModule,
           totalModules: path.total_modules,
-          major: studentDetails?.major || 'General',
+          major,
+          skillName,
+          difficulty,
         },
       });
 
@@ -176,7 +186,7 @@ const Learn = () => {
     }
   };
 
-  const handleQuizPass = async () => {
+  const handleQuizPass = async (quizScore: number) => {
     if (!activePath) return;
 
     try {
@@ -186,6 +196,7 @@ const Learn = () => {
       const newCompleted = activePath.completed_modules + 1;
       const progress = Math.round((newCompleted / activePath.total_modules) * 100);
       const newMilestone = getMilestoneLevel(progress);
+      const major = studentDetails?.major || 'General';
 
       // Save completion record
       await supabase.from('learning_module_completions').upsert([{
@@ -194,7 +205,7 @@ const Learn = () => {
         module_number: newCompleted,
         quiz_questions: quizQuestions as any,
         quiz_answers: [] as any,
-        score: 100,
+        score: quizScore,
         passed: true,
         completed_at: new Date().toISOString(),
       }], { onConflict: 'user_id,path_id,module_number' });
@@ -213,6 +224,36 @@ const Learn = () => {
         duration_minutes: 15,
       });
 
+      // Update skill mastery in user_skills
+      if (activeSkillName) {
+        const mastery = calculateSkillMastery(major, activeSkillName, newCompleted);
+        const proficiency = mastery >= 100 ? 'expert' : mastery >= 75 ? 'advanced' : mastery >= 50 ? 'intermediate' : 'beginner';
+        
+        // Upsert skill record
+        const { data: existingSkill } = await supabase
+          .from('user_skills')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .eq('skill_name', activeSkillName)
+          .eq('source', 'mastery_path')
+          .maybeSingle();
+
+        if (existingSkill) {
+          await supabase.from('user_skills').update({
+            proficiency,
+            updated_at: new Date().toISOString(),
+          }).eq('id', existingSkill.id);
+        } else {
+          await supabase.from('user_skills').insert({
+            user_id: session.user.id,
+            skill_name: activeSkillName,
+            category: major,
+            proficiency,
+            source: 'mastery_path',
+          });
+        }
+      }
+
       // Update local state
       setPaths(prev => prev.map(p =>
         p.id === activePath.id
@@ -228,7 +269,7 @@ const Learn = () => {
         toast.success('📈 Developing level reached!');
       else if (progress >= 25 && activePath.completed_modules < activePath.total_modules * 0.25)
         toast.success('📚 Foundation level reached!');
-      else toast.success('Module completed!');
+      else toast.success(`Module completed! ${activeSkillName ? `${activeSkillName} skill updated.` : ''}`);
 
     } catch (error) {
       console.error('Error saving completion:', error);
@@ -475,6 +516,7 @@ const Learn = () => {
         loading={quizLoading}
         pathTitle={activePath?.path_title || ''}
         moduleNumber={(activePath?.completed_modules || 0) + 1}
+        skillName={activeSkillName}
         onPass={handleQuizPass}
         onRetry={handleQuizRetry}
       />

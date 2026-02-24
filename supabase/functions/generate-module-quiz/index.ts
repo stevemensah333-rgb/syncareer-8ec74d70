@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { pathTitle, moduleNumber, totalModules, major } = await req.json();
+    const { pathTitle, moduleNumber, totalModules, major, skillName, difficulty } = await req.json();
 
     if (!pathTitle || !moduleNumber) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -44,13 +44,47 @@ Deno.serve(async (req) => {
       });
     }
 
-    const progressPercent = Math.round((moduleNumber / totalModules) * 100);
-    let difficulty = "foundational";
-    if (progressPercent > 75) difficulty = "advanced";
-    else if (progressPercent > 50) difficulty = "intermediate";
-    else if (progressPercent > 25) difficulty = "developing";
+    // Strategy 1: Try to pull from structured question bank first
+    if (skillName && major) {
+      const { data: bankQuestions, error: bankError } = await supabaseClient
+        .from('skill_question_bank')
+        .select('question, options, correct_index, explanation, difficulty')
+        .eq('career_path', major)
+        .eq('skill_name', skillName);
 
-    const prompt = `Generate exactly 3 multiple-choice quiz questions for a student studying "${major || 'General Studies'}" who is on learning path "${pathTitle}", currently at module ${moduleNumber} of ${totalModules} (${difficulty} level).
+      if (!bankError && bankQuestions && bankQuestions.length >= 3) {
+        // Shuffle and pick 3-5 questions
+        const shuffled = bankQuestions.sort(() => Math.random() - 0.5);
+        const count = Math.min(shuffled.length, Math.random() > 0.5 ? 5 : 3);
+        const selected = shuffled.slice(0, count).map(q => ({
+          question: q.question,
+          options: q.options as string[],
+          correctIndex: q.correct_index,
+          explanation: q.explanation,
+        }));
+
+        return new Response(JSON.stringify({ 
+          questions: selected, 
+          source: 'question_bank',
+          skillName,
+          difficulty: difficulty || 'foundational',
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // Strategy 2: AI-generated questions as fallback (for unsupported career paths)
+    const progressPercent = Math.round((moduleNumber / totalModules) * 100);
+    let diffLevel = difficulty || "foundational";
+    if (!difficulty) {
+      if (progressPercent > 75) diffLevel = "advanced";
+      else if (progressPercent > 50) diffLevel = "intermediate";
+      else if (progressPercent > 25) diffLevel = "developing";
+    }
+
+    const skillContext = skillName ? ` focusing on the skill "${skillName}"` : '';
+    const prompt = `Generate exactly 3 multiple-choice quiz questions for a student studying "${major || 'General Studies'}" who is on learning path "${pathTitle}", currently at module ${moduleNumber} of ${totalModules} (${diffLevel} level)${skillContext}.
 
 Each question must:
 - Be relevant to the path topic and difficulty level
@@ -104,7 +138,6 @@ Return ONLY valid JSON (no markdown, no code fences) in this exact format:
     const aiData = await aiResponse.json();
     const content = aiData.choices?.[0]?.message?.content || "";
 
-    // Extract JSON from potential markdown fences
     let jsonStr = content.trim();
     const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (fenceMatch) jsonStr = fenceMatch[1].trim();
@@ -127,7 +160,12 @@ Return ONLY valid JSON (no markdown, no code fences) in this exact format:
       });
     }
 
-    return new Response(JSON.stringify({ questions: questions.slice(0, 3) }), {
+    return new Response(JSON.stringify({ 
+      questions: questions.slice(0, 5),
+      source: 'ai_generated',
+      skillName: skillName || null,
+      difficulty: diffLevel,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
