@@ -917,8 +917,6 @@ export type Database = {
       notification_preferences: {
         Row: {
           application_updates: boolean
-          community_posts: boolean
-          community_replies: boolean
           counsellor_bookings: boolean
           created_at: string
           email_enabled: boolean
@@ -933,8 +931,6 @@ export type Database = {
         }
         Insert: {
           application_updates?: boolean
-          community_posts?: boolean
-          community_replies?: boolean
           counsellor_bookings?: boolean
           created_at?: string
           email_enabled?: boolean
@@ -949,8 +945,6 @@ export type Database = {
         }
         Update: {
           application_updates?: boolean
-          community_posts?: boolean
-          community_replies?: boolean
           counsellor_bookings?: boolean
           created_at?: string
           email_enabled?: boolean

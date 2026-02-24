@@ -22,7 +22,7 @@ export default function PricingPage() {
       'Limited AI coach sessions',
       'Interview simulator (basic mode)',
       'CV builder (essential features)',
-      'Community access',
+      'Career assessment tools',
       'Monthly analytics report',
     ],
     premium: [
