@@ -611,19 +611,22 @@ const ApplicantTracker = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Meeting Link (optional)</Label>
+                <Label>Meeting Link {interviewType === 'video' ? '(required)' : '(optional)'}</Label>
                 <Input
                   value={meetingLink}
                   onChange={(e) => setMeetingLink(e.target.value)}
-                  placeholder="https://zoom.us/j/... or Google Meet link"
+                  placeholder="https://zoom.us/j/... or https://meet.google.com/..."
                 />
+                {interviewType === 'video' && !meetingLink && (
+                  <p className="text-xs text-muted-foreground">A Zoom or Google Meet link is required for video interviews</p>
+                )}
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setScheduleDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={scheduleInterview} disabled={!interviewDate}>
+              <Button onClick={scheduleInterview} disabled={!interviewDate || (interviewType === 'video' && !meetingLink)}>
                 Schedule Interview
               </Button>
             </DialogFooter>

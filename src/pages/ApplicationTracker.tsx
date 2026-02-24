@@ -3,16 +3,23 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Briefcase, MapPin, Calendar, Clock, Building2, ExternalLink, Edit, Trash2, Search, Filter } from 'lucide-react';
+import { Briefcase, MapPin, Calendar, Clock, ExternalLink, Trash2, Search, Filter, Video } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useOutcomeTracking } from '@/hooks/useOutcomeTracking';
+import { format } from 'date-fns';
+
+interface InterviewSession {
+  id: string;
+  application_id: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  interview_type: string;
+  meeting_link: string | null;
+  status: string;
+}
 
 interface Application {
   id: string;
@@ -30,6 +37,7 @@ interface Application {
     salary_max: number | null;
     employer_name?: string;
   };
+  interview?: InterviewSession;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -49,18 +57,6 @@ const ApplicationTracker = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingApp, setEditingApp] = useState<Application | null>(null);
-  
-  // Form state for manual entry
-  const [formData, setFormData] = useState({
-    companyName: '',
-    jobTitle: '',
-    location: '',
-    status: 'pending',
-    notes: '',
-    applicationUrl: '',
-  });
 
   useEffect(() => {
     fetchApplications();
@@ -81,7 +77,30 @@ const ApplicationTracker = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setApplications(data || []);
+
+      // Fetch interview sessions for these applications
+      const appIds = (data || []).map(a => a.id);
+      let interviewMap: Record<string, InterviewSession> = {};
+      
+      if (appIds.length > 0) {
+        const { data: interviews } = await supabase
+          .from('interview_sessions')
+          .select('*')
+          .in('application_id', appIds)
+          .order('scheduled_at', { ascending: true });
+
+        if (interviews) {
+          interviews.forEach(iv => {
+            // Keep the latest interview per application
+            interviewMap[iv.application_id] = iv;
+          });
+        }
+      }
+
+      setApplications((data || []).map(app => ({
+        ...app,
+        interview: interviewMap[app.id] || undefined,
+      })));
     } catch (error) {
       console.error('Error fetching applications:', error);
       toast.error('Failed to load applications');
@@ -315,6 +334,44 @@ const ApplicationTracker = () => {
                           <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                             {app.notes}
                           </p>
+                        )}
+
+                        {/* Interview Details */}
+                        {app.interview && (
+                          <div className="mt-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Video className="h-4 w-4 text-primary" />
+                              <span className="text-sm font-medium text-primary">
+                                Interview Scheduled
+                              </span>
+                              <Badge variant="outline" className="text-xs capitalize">
+                                {app.interview.interview_type}
+                              </Badge>
+                            </div>
+                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3.5 w-3.5" />
+                                {format(new Date(app.interview.scheduled_at), 'PPP')}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3.5 w-3.5" />
+                                {format(new Date(app.interview.scheduled_at), 'p')} • {app.interview.duration_minutes} min
+                              </span>
+                            </div>
+                            {app.interview.meeting_link && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="mt-2"
+                                asChild
+                              >
+                                <a href={app.interview.meeting_link} target="_blank" rel="noopener noreferrer">
+                                  <Video className="h-3.5 w-3.5 mr-1" />
+                                  Join Meeting
+                                </a>
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </div>
 
