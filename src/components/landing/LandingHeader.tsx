@@ -10,7 +10,7 @@ export default function LandingHeader({ onSignIn, onSignUp }: LandingHeaderProps
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/70 backdrop-blur-xl border-b border-border/50">
       <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-        <SyncareerLogo iconSize={28} />
+        <SyncareerLogo height={36} />
         <nav className="hidden md:flex items-center gap-8">
           <a href="#problem" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Why Syncareer

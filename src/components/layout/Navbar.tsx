@@ -80,7 +80,7 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
               </Button>
             )}
             
-            <SyncareerLogo iconSize={28} />
+            <SyncareerLogo height={36} />
             
 
             <div className="hidden lg:flex items-center gap-2">
