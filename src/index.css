@@ -165,6 +165,11 @@
   .loading-pulse {
     @apply animate-pulse-gentle;
   }
+
+  /* Safe area for notched phones */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 /* Compact view mode - reduces spacing throughout the app */

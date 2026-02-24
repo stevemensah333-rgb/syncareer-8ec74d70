@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,6 @@ import { cn } from '@/lib/utils';
 import {
   Users, Calendar, ClipboardList, Settings, ChevronRight, ChevronLeft
 } from 'lucide-react';
-import { Drawer, DrawerContent } from '@/components/ui/drawer';
 
 interface CounsellorLayoutProps {
   children: React.ReactNode;
@@ -30,7 +30,6 @@ const counsellorNavItems = [
 
 export function CounsellorLayout({ children, title }: CounsellorLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const isMobile = useIsMobile();
   const location = useLocation();
 
@@ -44,7 +43,7 @@ export function CounsellorLayout({ children, title }: CounsellorLayoutProps) {
           "font-semibold tracking-tight transition-opacity duration-200 text-sidebar-foreground",
           isCollapsed ? "opacity-0" : "opacity-100"
         )}>Syncareer</h2>
-        <Button variant="ghost" size="icon" onClick={() => isMobile ? setIsMobileDrawerOpen(false) : setIsCollapsed(p => !p)}
+        <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(p => !p)}
           className={cn("absolute right-2 text-sidebar-foreground hover:bg-sidebar-accent h-8 w-8", isCollapsed ? "right-2" : "right-4")}>
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
@@ -79,25 +78,21 @@ export function CounsellorLayout({ children, title }: CounsellorLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-foreground">Skip to main content</a>
-      <Navbar onMobileMenuClick={() => setIsMobileDrawerOpen(true)} />
+      <Navbar onMobileMenuClick={() => {}} />
       <div className="flex-1 flex pt-16">
         {!isMobile && (
           <div className={cn("fixed top-16 left-0 bottom-0 z-20 transition-all duration-300", isCollapsed ? "w-16" : "w-64")}>
             {sidebarContent}
           </div>
         )}
-        {isMobile && (
-          <Drawer open={isMobileDrawerOpen} onOpenChange={setIsMobileDrawerOpen}>
-            <DrawerContent className="h-[85vh]">{sidebarContent}</DrawerContent>
-          </Drawer>
-        )}
-        <main id="main-content" className={cn("flex-1 transition-all duration-300", !isMobile && (isCollapsed ? "ml-16" : "ml-64"))}>
+        <main id="main-content" className={cn("flex-1 transition-all duration-300", !isMobile && (isCollapsed ? "ml-16" : "ml-64"), isMobile && "pb-16")}>
           <div className="container max-w-full p-4 lg:p-6 animate-fade-in">
             <h1 className="text-2xl font-bold mb-6">{title}</h1>
             {children}
           </div>
         </main>
       </div>
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 }
