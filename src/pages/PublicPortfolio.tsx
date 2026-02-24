@@ -50,7 +50,7 @@ export default function PublicPortfolio() {
 
   const fetchData = async () => {
     if (!userId) {
-      navigate('/communities');
+      navigate('/');
       return;
     }
 
@@ -68,7 +68,7 @@ export default function PublicPortfolio() {
 
       if (profileError || !profileData) {
         toast.error('User not found');
-        navigate('/communities');
+        navigate('/');
         return;
       }
 
