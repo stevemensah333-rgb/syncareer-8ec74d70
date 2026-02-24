@@ -1635,6 +1635,45 @@ export type Database = {
           },
         ]
       }
+      user_course_progress: {
+        Row: {
+          career_path: string
+          course_title: string
+          course_url: string | null
+          created_at: string
+          id: string
+          skill_name: string
+          status: string
+          updated_at: string
+          user_id: string
+          validated_at: string | null
+        }
+        Insert: {
+          career_path: string
+          course_title: string
+          course_url?: string | null
+          created_at?: string
+          id?: string
+          skill_name: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          validated_at?: string | null
+        }
+        Update: {
+          career_path?: string
+          course_title?: string
+          course_url?: string | null
+          created_at?: string
+          id?: string
+          skill_name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          validated_at?: string | null
+        }
+        Relationships: []
+      }
       user_feedback: {
         Row: {
           comment: string | null
