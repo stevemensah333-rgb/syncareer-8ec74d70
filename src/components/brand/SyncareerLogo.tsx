@@ -1,27 +1,40 @@
 import { cn } from '@/lib/utils';
-import syncareerBrand from '@/assets/syncareer-brand.png';
+import syncareerLogo from '@/assets/syncareer-logo.png';
 
 interface SyncareerLogoProps {
-  /** Height of the logo in pixels */
+  /** Height of the logo icon in pixels */
   height?: number;
+  /** Whether to show the wordmark text */
+  showText?: boolean;
   className?: string;
 }
 
 /**
- * Syncareer brand logo — icon + wordmark rendered as a single image.
- * Uses mix-blend-multiply to eliminate white background on light themes
- * and mix-blend-screen + invert for dark themes, making it feel native.
+ * Syncareer logo — renders the S icon mark from the brand image
+ * with CSS cropping, plus system-font wordmark.
+ * mix-blend-multiply removes the white background so it feels native.
  */
-export function SyncareerLogo({ height = 28, className }: SyncareerLogoProps) {
+export function SyncareerLogo({ height = 30, showText = true, className }: SyncareerLogoProps) {
   return (
-    <div className={cn("flex items-center", className)}>
-      <img
-        src={syncareerBrand}
-        alt="Syncareer"
-        style={{ height, width: 'auto' }}
-        className="object-contain mix-blend-multiply dark:mix-blend-screen dark:invert shrink-0 select-none"
-        draggable={false}
-      />
+    <div className={cn("flex items-center gap-2", className)}>
+      {/* Crop container: only shows the left icon portion of the full logo image */}
+      <div
+        className="overflow-hidden shrink-0"
+        style={{ height, width: height }}
+      >
+        <img
+          src={syncareerLogo}
+          alt=""
+          style={{ height: height * 1.6, width: 'auto', marginTop: -height * 0.1, marginLeft: -height * 0.05 }}
+          className="object-contain mix-blend-multiply dark:brightness-0 dark:invert select-none"
+          draggable={false}
+        />
+      </div>
+      {showText && (
+        <span className="text-lg font-semibold tracking-tight text-foreground leading-none">
+          Syncareer
+        </span>
+      )}
     </div>
   );
 }
