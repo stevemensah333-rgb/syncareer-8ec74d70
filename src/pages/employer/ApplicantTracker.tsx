@@ -341,25 +341,25 @@ const ApplicantTracker = () => {
                               </p>
                             </div>
                           </div>
-                          <div className="flex gap-1">
+                        <div className="flex flex-wrap gap-1">
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-7 text-xs flex-1"
+                              className="h-7 text-xs flex-1 min-w-0"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 navigate(`/portfolio/${app.applicant_id}`);
                               }}
                             >
-                              <ExternalLink className="h-3 w-3 mr-1" />
-                              Portfolio
+                              <ExternalLink className="h-3 w-3 mr-1 shrink-0" />
+                              <span className="truncate">Portfolio</span>
                             </Button>
                             {stage.id !== 'rejected' && stage.id !== 'offered' && (
-                              <>
+                              <div className="flex gap-1">
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-7 text-xs"
+                                  className="h-7 w-7 p-0 shrink-0"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     const nextStage = PIPELINE_STAGES[
@@ -369,6 +369,7 @@ const ApplicantTracker = () => {
                                       updateApplicationStatus(app.id, nextStage.id);
                                     }
                                   }}
+                                  title="Move to next stage"
                                 >
                                   <ArrowRight className="h-3 w-3" />
                                 </Button>
@@ -376,7 +377,7 @@ const ApplicantTracker = () => {
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    className="h-7 text-xs"
+                                    className="h-7 w-7 p-0 shrink-0"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setSelectedApplication(app);
@@ -390,7 +391,7 @@ const ApplicantTracker = () => {
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  className="h-7 w-7 p-0 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     updateApplicationStatus(app.id, 'rejected');
@@ -399,7 +400,7 @@ const ApplicantTracker = () => {
                                 >
                                   <XCircle className="h-3 w-3" />
                                 </Button>
-                              </>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -576,12 +577,14 @@ const ApplicantTracker = () => {
                       {interviewDate ? format(interviewDate, "PPP") : "Pick a date"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto p-0 z-[60]" align="start">
                     <CalendarComponent
                       mode="single"
                       selected={interviewDate}
                       onSelect={setInterviewDate}
-                      disabled={(date) => date < new Date()}
+                      disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
                     />
                   </PopoverContent>
                 </Popover>
