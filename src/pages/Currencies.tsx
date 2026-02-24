@@ -2,11 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Target, Clock, Star, Flame, CheckCircle } from 'lucide-react';
+import { BookOpen, Target, Clock, Star, Flame, CheckCircle, Lock } from 'lucide-react';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { getMajorContent } from '@/utils/majorContent';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ModuleQuizDialog, { type QuizQuestion } from '@/components/learn/ModuleQuizDialog';
+import MilestoneIndicator, { getMilestoneLevel } from '@/components/learn/MilestoneIndicator';
 
 interface LearningStreak {
   current_streak: number;
@@ -15,29 +17,30 @@ interface LearningStreak {
   total_learning_days: number;
 }
 
-interface LearningGoal {
-  id: string;
-  goal_type: string;
-  target_count: number;
-  current_count: number;
-}
-
 interface LearningPath {
   id: string;
   path_title: string;
   total_modules: number;
   completed_modules: number;
+  milestone_level: string;
+  last_module_completed_at: string | null;
 }
+
+const COOLDOWN_MINUTES = 5;
 
 const Learn = () => {
   const { studentDetails, loading } = useUserProfile();
   const majorContent = getMajorContent(studentDetails?.major);
   const [streak, setStreak] = useState<LearningStreak | null>(null);
-  const [goals, setGoals] = useState<LearningGoal[]>([]);
   const [paths, setPaths] = useState<LearningPath[]>([]);
   const [streakLoading, setStreakLoading] = useState(true);
-  const [recordingActivity, setRecordingActivity] = useState(false);
   const [hasLoggedToday, setHasLoggedToday] = useState(false);
+
+  // Quiz state
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [quizLoading, setQuizLoading] = useState(false);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [activePath, setActivePath] = useState<LearningPath | null>(null);
 
   // Auto-log activity on page visit (once per day)
   const autoLogActivity = useCallback(async () => {
@@ -46,8 +49,6 @@ const Learn = () => {
       if (!session?.user) return;
 
       const today = new Date().toISOString().split('T')[0];
-      
-      // Check if already logged today
       const { data: existingActivity } = await supabase
         .from('learning_activities')
         .select('id')
@@ -60,14 +61,9 @@ const Learn = () => {
         return;
       }
 
-      // Auto-log visit activity
       await supabase
         .from('learning_activities')
-        .insert({
-          user_id: session.user.id,
-          activity_type: 'page_visit',
-          duration_minutes: 1,
-        });
+        .insert({ user_id: session.user.id, activity_type: 'page_visit', duration_minutes: 1 });
 
       setHasLoggedToday(true);
     } catch (error) {
@@ -75,55 +71,30 @@ const Learn = () => {
     }
   }, []);
 
-  useEffect(() => {
-    autoLogActivity();
-  }, [autoLogActivity]);
-
-  useEffect(() => {
-    fetchData();
-  }, [studentDetails, hasLoggedToday]);
+  useEffect(() => { autoLogActivity(); }, [autoLogActivity]);
+  useEffect(() => { fetchData(); }, [studentDetails, hasLoggedToday]);
 
   const fetchData = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
-      // Fetch streak data
       const { data: streakData } = await supabase
         .from('learning_streaks')
         .select('*')
         .eq('user_id', session.user.id)
         .single();
 
-      if (streakData) {
-        setStreak(streakData);
-      }
+      if (streakData) setStreak(streakData);
 
-      // Fetch weekly goals
-      const weekStart = getWeekStart();
-      const { data: goalsData } = await supabase
-        .from('learning_goals')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .eq('week_start', weekStart);
-
-      if (goalsData && goalsData.length > 0) {
-        setGoals(goalsData);
-      } else {
-        // Create default goals for this week
-        await createDefaultGoals(session.user.id, weekStart);
-      }
-
-      // Fetch or create learning paths
       const { data: pathsData } = await supabase
         .from('learning_paths')
         .select('*')
         .eq('user_id', session.user.id);
 
       if (pathsData && pathsData.length > 0) {
-        setPaths(pathsData);
+        setPaths(pathsData as LearningPath[]);
       } else if (studentDetails?.major) {
-        // Create default paths based on major
         await createDefaultPaths(session.user.id);
       }
     } catch (error) {
@@ -133,41 +104,12 @@ const Learn = () => {
     }
   };
 
-  const getWeekStart = () => {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    return new Date(now.setDate(diff)).toISOString().split('T')[0];
-  };
-
-  const createDefaultGoals = async (userId: string, weekStart: string) => {
-    const defaultGoals = [
-      { goal_type: 'lessons', target_count: 5, current_count: 0 },
-      { goal_type: 'practice', target_count: 7, current_count: 0 },
-      { goal_type: 'projects', target_count: 1, current_count: 0 },
-    ];
-
-    try {
-      const { data, error } = await supabase
-        .from('learning_goals')
-        .insert(defaultGoals.map(g => ({ ...g, user_id: userId, week_start: weekStart })))
-        .select();
-
-      if (!error && data) {
-        setGoals(data);
-      }
-    } catch (error) {
-      console.error('Error creating goals:', error);
-    }
-  };
-
   const createDefaultPaths = async (userId: string) => {
     const major = studentDetails?.major || 'General';
     const skills = majorContent.skills.slice(0, 1);
-    
     const defaultPaths = [
-      { path_title: `${major} Career Path`, total_modules: 24, completed_modules: 0 },
-      { path_title: `${skills[0] || 'Core Skills'} Mastery`, total_modules: 18, completed_modules: 0 },
+      { path_title: `${major} Career Path`, total_modules: 24, completed_modules: 0, milestone_level: 'beginner' },
+      { path_title: `${skills[0] || 'Core Skills'} Mastery`, total_modules: 18, completed_modules: 0, milestone_level: 'beginner' },
     ];
 
     try {
@@ -176,89 +118,143 @@ const Learn = () => {
         .insert(defaultPaths.map(p => ({ ...p, user_id: userId })))
         .select();
 
-      if (!error && data) {
-        setPaths(data);
-      }
+      if (!error && data) setPaths(data as LearningPath[]);
     } catch (error) {
       console.error('Error creating paths:', error);
     }
   };
 
-  const recordActivity = async (activityType: string) => {
-    setRecordingActivity(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        toast.error('Please sign in to track your learning');
-        return;
-      }
+  const isOnCooldown = (path: LearningPath): boolean => {
+    if (!path.last_module_completed_at) return false;
+    const lastCompleted = new Date(path.last_module_completed_at).getTime();
+    const cooldownMs = COOLDOWN_MINUTES * 60 * 1000;
+    return Date.now() - lastCompleted < cooldownMs;
+  };
 
-      const { error } = await supabase
-        .from('learning_activities')
-        .insert({
-          user_id: session.user.id,
-          activity_type: activityType,
-          duration_minutes: 15,
-        });
+  const getCooldownRemaining = (path: LearningPath): string => {
+    if (!path.last_module_completed_at) return '';
+    const lastCompleted = new Date(path.last_module_completed_at).getTime();
+    const cooldownMs = COOLDOWN_MINUTES * 60 * 1000;
+    const remaining = Math.max(0, cooldownMs - (Date.now() - lastCompleted));
+    const mins = Math.ceil(remaining / 60000);
+    return `${mins} min`;
+  };
+
+  const startQuiz = async (path: LearningPath) => {
+    if (isOnCooldown(path)) {
+      toast.error(`Please wait ${getCooldownRemaining(path)} before completing another module.`);
+      return;
+    }
+
+    setActivePath(path);
+    setQuizOpen(true);
+    setQuizLoading(true);
+    setQuizQuestions([]);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-module-quiz', {
+        body: {
+          pathTitle: path.path_title,
+          moduleNumber: path.completed_modules + 1,
+          totalModules: path.total_modules,
+          major: studentDetails?.major || 'General',
+        },
+      });
 
       if (error) throw error;
-
-      // Update relevant goal
-      const goalType = activityType === 'video' || activityType === 'lesson' ? 'lessons' 
-        : activityType === 'quiz' ? 'practice' : 'projects';
-      
-      const weekStart = getWeekStart();
-      const { data: goalData } = await supabase
-        .from('learning_goals')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .eq('goal_type', goalType)
-        .eq('week_start', weekStart)
-        .single();
-
-      if (goalData) {
-        await supabase
-          .from('learning_goals')
-          .update({ current_count: goalData.current_count + 1 })
-          .eq('id', goalData.id);
+      if (data?.questions) {
+        setQuizQuestions(data.questions);
+      } else {
+        throw new Error('No questions returned');
       }
-
-      toast.success('Activity recorded! Keep learning! 🔥');
-      fetchData();
-    } catch (error: any) {
-      console.error('Error recording activity:', error);
-      toast.error('Failed to record activity');
+    } catch (error) {
+      console.error('Error generating quiz:', error);
+      toast.error('Failed to generate quiz. Please try again.');
+      setQuizOpen(false);
     } finally {
-      setRecordingActivity(false);
+      setQuizLoading(false);
     }
   };
 
-  const updatePathProgress = async (pathId: string) => {
+  const handleQuizPass = async () => {
+    if (!activePath) return;
+
     try {
-      const path = paths.find(p => p.id === pathId);
-      if (!path || path.completed_modules >= path.total_modules) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
 
-      const { error } = await supabase
-        .from('learning_paths')
-        .update({ completed_modules: path.completed_modules + 1 })
-        .eq('id', pathId);
+      const newCompleted = activePath.completed_modules + 1;
+      const progress = Math.round((newCompleted / activePath.total_modules) * 100);
+      const newMilestone = getMilestoneLevel(progress);
 
-      if (error) throw error;
+      // Save completion record
+      await supabase.from('learning_module_completions').upsert([{
+        user_id: session.user.id,
+        path_id: activePath.id,
+        module_number: newCompleted,
+        quiz_questions: quizQuestions as any,
+        quiz_answers: [] as any,
+        score: 100,
+        passed: true,
+        completed_at: new Date().toISOString(),
+      }], { onConflict: 'user_id,path_id,module_number' });
 
-      setPaths(paths.map(p => 
-        p.id === pathId 
-          ? { ...p, completed_modules: p.completed_modules + 1 }
+      // Update path progress + cooldown + milestone
+      await supabase.from('learning_paths').update({
+        completed_modules: newCompleted,
+        milestone_level: newMilestone,
+        last_module_completed_at: new Date().toISOString(),
+      }).eq('id', activePath.id);
+
+      // Record learning activity
+      await supabase.from('learning_activities').insert({
+        user_id: session.user.id,
+        activity_type: 'module_completion',
+        duration_minutes: 15,
+      });
+
+      // Update local state
+      setPaths(prev => prev.map(p =>
+        p.id === activePath.id
+          ? { ...p, completed_modules: newCompleted, milestone_level: newMilestone, last_module_completed_at: new Date().toISOString() }
           : p
       ));
 
-      await recordActivity('lesson');
+      // Milestone toasts
+      if (progress >= 100) toast.success('🎓 Mastery Achieved! Certificate unlocked.');
+      else if (progress >= 75 && activePath.completed_modules < activePath.total_modules * 0.75)
+        toast.success('⭐ Advanced level reached!');
+      else if (progress >= 50 && activePath.completed_modules < activePath.total_modules * 0.50)
+        toast.success('📈 Developing level reached!');
+      else if (progress >= 25 && activePath.completed_modules < activePath.total_modules * 0.25)
+        toast.success('📚 Foundation level reached!');
+      else toast.success('Module completed!');
+
     } catch (error) {
-      console.error('Error updating path:', error);
-      toast.error('Failed to update progress');
+      console.error('Error saving completion:', error);
+      toast.error('Failed to save progress.');
     }
   };
 
-  // Course URL mappings for each provider
+  const handleQuizRetry = () => {
+    if (activePath) startQuiz(activePath);
+  };
+
+  const recordCourseActivity = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      await supabase.from('learning_activities').insert({
+        user_id: session.user.id,
+        activity_type: 'course',
+        duration_minutes: 15,
+      });
+    } catch (error) {
+      console.error('Error recording activity:', error);
+    }
+  };
+
+  // Course URL mappings
   const getCourseUrl = (course: string, provider: string): string => {
     const searchQuery = encodeURIComponent(course);
     const providerUrls: Record<string, string> = {
@@ -273,7 +269,6 @@ const Learn = () => {
     return providerUrls[provider] || `https://www.google.com/search?q=${searchQuery}+online+course`;
   };
 
-  // Generate recommended courses based on major
   const getRecommendedCourses = () => {
     const providers = ['Coursera', 'DataCamp', 'Udemy', 'edX', 'LinkedIn Learning', 'WorldQuant'];
     return majorContent.suggestedCourses.map((course, index) => {
@@ -283,24 +278,12 @@ const Learn = () => {
         provider,
         duration: ['12 hours', '8 weeks', '15 hours', '6 weeks', '10 hours', '4 weeks'][index % 6],
         rating: [4.8, 4.9, 4.7, 4.8, 4.6, 4.9][index % 6],
-        type: ['Video', 'Course', 'Video', 'Course', 'Course', 'Program'][index % 6],
         url: getCourseUrl(course, provider),
       };
     });
   };
 
   const recommendedCourses = getRecommendedCourses();
-
-  // Get goal display info
-  const getGoalDisplay = (goalType: string) => {
-    switch (goalType) {
-      case 'lessons': return { label: 'Complete lessons' };
-      case 'practice': return { label: 'Practice sessions' };
-      case 'projects': return { label: 'Upload projects' };
-      default: return { label: goalType };
-    }
-  };
-
 
   if (loading) {
     return (
@@ -325,9 +308,7 @@ const Learn = () => {
                   <Target className="h-10 w-10 text-primary" />
                   <div>
                     <h3 className="text-lg font-semibold">Personalized for {studentDetails.major}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Content tailored to your field of study
-                    </p>
+                    <p className="text-sm text-muted-foreground">Content tailored to your field of study</p>
                   </div>
                 </div>
               </CardContent>
@@ -344,18 +325,18 @@ const Learn = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {paths.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">
-                  Complete your profile to get personalized learning paths
-                </p>
+                <p className="text-muted-foreground text-center py-4">Complete your profile to get personalized learning paths</p>
               ) : (
                 paths.map((path) => {
                   const progress = Math.round((path.completed_modules / path.total_modules) * 100);
+                  const onCooldown = isOnCooldown(path);
+                  const isComplete = path.completed_modules >= path.total_modules;
                   return (
                     <div key={path.id} className="p-4 border rounded-lg">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <h3 className="font-semibold text-lg mb-1">{path.path_title}</h3>
-                          <div className="flex gap-2 flex-wrap">
+                          <div className="flex gap-2 flex-wrap items-center">
                             <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
                               {path.total_modules} modules
                             </span>
@@ -363,10 +344,12 @@ const Learn = () => {
                               <Clock className="h-3 w-3 inline mr-1" />
                               {Math.ceil((path.total_modules - path.completed_modules) / 2)} weeks left
                             </span>
+                            <MilestoneIndicator progress={progress} compact />
                           </div>
                         </div>
                         <Target className="h-8 w-8 text-primary" />
                       </div>
+
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Progress</span>
@@ -374,20 +357,28 @@ const Learn = () => {
                         </div>
                         <div className="w-full bg-muted rounded-full h-2">
                           <div
-                            className="bg-primary h-2 rounded-full transition-all"
+                            className="bg-primary h-2 rounded-full transition-all duration-500"
                             style={{ width: `${progress}%` }}
                           />
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {path.completed_modules} of {path.total_modules} modules completed
                         </p>
+                        <MilestoneIndicator progress={progress} />
                       </div>
-                      <Button 
+
+                      <Button
                         className="w-full mt-3"
-                        onClick={() => updatePathProgress(path.id)}
-                        disabled={recordingActivity || path.completed_modules >= path.total_modules}
+                        onClick={() => startQuiz(path)}
+                        disabled={isComplete || onCooldown || quizLoading}
                       >
-                        {path.completed_modules >= path.total_modules ? 'Completed! 🎉' : 'Complete Next Module'}
+                        {isComplete ? (
+                          '🎓 Mastery Achieved'
+                        ) : onCooldown ? (
+                          <><Lock className="h-4 w-4 mr-2" />Available in {getCooldownRemaining(path)}</>
+                        ) : (
+                          'Complete Next Module'
+                        )}
                       </Button>
                     </div>
                   );
@@ -413,14 +404,12 @@ const Learn = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block p-4 border rounded-lg hover:border-primary/50 hover:bg-accent/50 transition-colors cursor-pointer"
-                    onClick={() => recordActivity('course')}
+                    onClick={() => recordCourseActivity()}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h4 className="font-semibold mb-1">{course.title}</h4>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {course.provider}
-                        </p>
+                        <p className="text-sm text-muted-foreground mb-2">{course.provider}</p>
                         <div className="flex gap-2 items-center">
                           <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
                             {course.duration}
@@ -431,13 +420,7 @@ const Learn = () => {
                           </div>
                         </div>
                       </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        disabled={recordingActivity}
-                      >
-                        Start →
-                      </Button>
+                      <Button variant="outline" size="sm">Start →</Button>
                     </div>
                   </a>
                 ))}
@@ -448,7 +431,6 @@ const Learn = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Learning Streak - Compact */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -458,9 +440,7 @@ const Learn = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Current Streak</p>
-                    <p className="text-2xl font-bold">
-                      {streakLoading ? '...' : `${streak?.current_streak || 0} days`}
-                    </p>
+                    <p className="text-2xl font-bold">{streakLoading ? '...' : `${streak?.current_streak || 0} days`}</p>
                   </div>
                 </div>
                 {hasLoggedToday && (
@@ -484,10 +464,20 @@ const Learn = () => {
               )}
             </CardContent>
           </Card>
-
-
         </div>
       </div>
+
+      {/* Quiz Dialog */}
+      <ModuleQuizDialog
+        open={quizOpen}
+        onOpenChange={setQuizOpen}
+        questions={quizQuestions}
+        loading={quizLoading}
+        pathTitle={activePath?.path_title || ''}
+        moduleNumber={(activePath?.completed_modules || 0) + 1}
+        onPass={handleQuizPass}
+        onRetry={handleQuizRetry}
+      />
     </PageLayout>
   );
 };
