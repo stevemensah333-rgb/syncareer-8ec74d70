@@ -1409,6 +1409,45 @@ export type Database = {
           },
         ]
       }
+      skill_question_bank: {
+        Row: {
+          career_path: string
+          correct_index: number
+          created_at: string
+          difficulty: string
+          explanation: string
+          id: string
+          module_level: number
+          options: Json
+          question: string
+          skill_name: string
+        }
+        Insert: {
+          career_path: string
+          correct_index: number
+          created_at?: string
+          difficulty?: string
+          explanation?: string
+          id?: string
+          module_level?: number
+          options?: Json
+          question: string
+          skill_name: string
+        }
+        Update: {
+          career_path?: string
+          correct_index?: number
+          created_at?: string
+          difficulty?: string
+          explanation?: string
+          id?: string
+          module_level?: number
+          options?: Json
+          question?: string
+          skill_name?: string
+        }
+        Relationships: []
+      }
       skills_assessments: {
         Row: {
           created_at: string

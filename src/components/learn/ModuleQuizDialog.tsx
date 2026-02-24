@@ -20,14 +20,15 @@ interface ModuleQuizDialogProps {
   loading: boolean;
   pathTitle: string;
   moduleNumber: number;
-  onPass: () => void;
+  skillName?: string | null;
+  onPass: (score: number) => void;
   onRetry: () => void;
 }
 
 type QuizPhase = 'answering' | 'reviewing' | 'result';
 
 const ModuleQuizDialog: React.FC<ModuleQuizDialogProps> = ({
-  open, onOpenChange, questions, loading, pathTitle, moduleNumber, onPass, onRetry,
+  open, onOpenChange, questions, loading, pathTitle, moduleNumber, skillName, onPass, onRetry,
 }) => {
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>([null, null, null]);
@@ -97,7 +98,9 @@ const ModuleQuizDialog: React.FC<ModuleQuizDialogProps> = ({
           <DialogTitle className="text-lg">
             {phase === 'result' ? 'Quiz Results' : `Module ${moduleNumber} Validation`}
           </DialogTitle>
-          <DialogDescription className="text-sm">{pathTitle}</DialogDescription>
+          <DialogDescription className="text-sm">
+            {pathTitle}{skillName ? ` — ${skillName}` : ''}
+          </DialogDescription>
         </DialogHeader>
 
         {phase === 'answering' && questions.length > 0 && (
@@ -209,7 +212,7 @@ const ModuleQuizDialog: React.FC<ModuleQuizDialogProps> = ({
               </p>
             </div>
             {passed ? (
-              <Button className="w-full" onClick={() => { onPass(); handleClose(false); }}>
+              <Button className="w-full" onClick={() => { onPass(score); handleClose(false); }}>
                 Continue Learning
               </Button>
             ) : (
