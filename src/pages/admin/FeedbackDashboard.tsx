@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageLayout } from '@/components/layout/PageLayout';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -127,16 +127,16 @@ const FeedbackDashboard = () => {
 
   if (loading) {
     return (
-      <PageLayout title="Feedback Dashboard">
+      <AdminLayout title="Feedback Dashboard">
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Loading feedback data...</p>
         </div>
-      </PageLayout>
+      </AdminLayout>
     );
   }
 
   return (
-    <PageLayout title="Feedback Dashboard">
+    <AdminLayout title="Feedback Dashboard">
       <div className="space-y-6">
         {/* Filters */}
         <div className="flex flex-wrap gap-3 items-center">
@@ -337,7 +337,7 @@ const FeedbackDashboard = () => {
           </CardContent>
         </Card>
       </div>
-    </PageLayout>
+    </AdminLayout>
   );
 };
 
