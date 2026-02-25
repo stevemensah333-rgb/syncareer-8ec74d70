@@ -155,9 +155,7 @@ const App = () => (
                 } />
 
                 {/* ============ ADMIN ROUTES ============ */}
-                <Route path="/admin/feedback" element={
-                  <ProtectedRoute><FeedbackDashboard /></ProtectedRoute>
-                } />
+                <Route path="/admin/feedback" element={<FeedbackDashboard />} />
 
                 {/* Catch-all */}
                 <Route path="*" element={<NotFound />} />

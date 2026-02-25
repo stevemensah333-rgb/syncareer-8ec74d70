@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,8 +28,15 @@ const FEATURE_LABELS: Record<string, string> = {
 };
 
 const FeedbackDashboard = () => {
+  const navigate = useNavigate();
   const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (sessionStorage.getItem("syncareer_admin_access") !== "true") {
+      navigate("/", { replace: true });
+    }
+  }, [navigate]);
   const [featureFilter, setFeatureFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('30');
   const [searchQuery, setSearchQuery] = useState('');

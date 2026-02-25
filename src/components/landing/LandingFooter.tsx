@@ -14,6 +14,7 @@ export default function LandingFooter() {
   const handleAdminSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (passphrase === "@synergy") {
+      sessionStorage.setItem("syncareer_admin_access", "true");
       setAdminOpen(false);
       setPassphrase("");
       setError("");
