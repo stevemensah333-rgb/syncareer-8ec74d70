@@ -13,7 +13,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { passphrase, feature_filter, date_range } = await req.json();
+    const body = await req.json();
+    const { passphrase, feature_filter, date_range, action, feedback_id } = body;
 
     if (passphrase !== ADMIN_PASSPHRASE) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -26,6 +27,20 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
+
+    // Handle delete action
+    if (action === 'delete' && feedback_id) {
+      const { error: deleteError } = await supabase
+        .from('user_feedback')
+        .delete()
+        .eq('id', feedback_id);
+
+      if (deleteError) throw deleteError;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - parseInt(date_range || '30'));
