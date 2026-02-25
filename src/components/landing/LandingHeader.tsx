@@ -12,7 +12,7 @@ export default function LandingHeader({ onSignIn, onSignUp }: LandingHeaderProps
       <div className="container mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <img src={syncareerLogo} alt="Syncareer" className="h-8 w-auto object-contain" />
-          <span className="text-xl font-bold text-foreground tracking-tight">Syncareer</span>
+          <span className="hidden sm:inline text-xl font-bold text-foreground tracking-tight">Syncareer</span>
         </div>
         <nav className="hidden md:flex items-center gap-8">
           <a href="#problem" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
