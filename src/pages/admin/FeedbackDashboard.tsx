@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { ThumbsUp, ThumbsDown, MessageSquare, TrendingUp, Filter, Search } from 'lucide-react';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
 
 interface FeedbackRow {
   id: string;
@@ -27,16 +27,20 @@ const FEATURE_LABELS: Record<string, string> = {
   cv_strength_score: 'CV Strength Score',
 };
 
+const ADMIN_PASSPHRASE = '@synergy';
+
 const FeedbackDashboard = () => {
   const navigate = useNavigate();
   const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (sessionStorage.getItem("syncareer_admin_access") !== "true") {
       navigate("/", { replace: true });
     }
   }, [navigate]);
+
   const [featureFilter, setFeatureFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('30');
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,23 +48,27 @@ const FeedbackDashboard = () => {
   useEffect(() => {
     const fetchFeedback = async () => {
       setLoading(true);
-      const sinceDate = subDays(new Date(), parseInt(dateRange)).toISOString();
-      
-      let query = supabase
-        .from('user_feedback')
-        .select('*')
-        .gte('created_at', sinceDate)
-        .order('created_at', { ascending: false });
+      setError(null);
 
-      if (featureFilter !== 'all') {
-        query = query.eq('feature_name', featureFilter);
-      }
+      try {
+        const { data, error: fnError } = await supabase.functions.invoke('admin-feedback', {
+          body: {
+            passphrase: ADMIN_PASSPHRASE,
+            feature_filter: featureFilter,
+            date_range: dateRange,
+          },
+        });
 
-      const { data, error } = await query;
-      if (!error && data) {
-        setFeedback(data as FeedbackRow[]);
+        if (fnError) throw fnError;
+        if (data?.error) throw new Error(data.error);
+
+        setFeedback((data?.data as FeedbackRow[]) || []);
+      } catch (err: any) {
+        setError('Failed to load feedback data.');
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchFeedback();
@@ -130,6 +138,16 @@ const FeedbackDashboard = () => {
       <AdminLayout title="Feedback Dashboard">
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Loading feedback data...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout title="Feedback Dashboard">
+        <div className="flex items-center justify-center h-64">
+          <p className="text-destructive">{error}</p>
         </div>
       </AdminLayout>
     );
