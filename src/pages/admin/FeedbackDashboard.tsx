@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { ThumbsUp, ThumbsDown, MessageSquare, TrendingUp, Filter, Search } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, MessageSquare, TrendingUp, Filter, Search, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface FeedbackRow {
@@ -44,6 +44,21 @@ const FeedbackDashboard = () => {
   const [featureFilter, setFeatureFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('30');
   const [searchQuery, setSearchQuery] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await supabase.functions.invoke('admin-feedback', {
+        body: { passphrase: ADMIN_PASSPHRASE, action: 'delete', feedback_id: id },
+      });
+      setFeedback(prev => prev.filter(f => f.id !== id));
+    } catch (err) {
+      console.error('Failed to delete feedback:', err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   useEffect(() => {
     const fetchFeedback = async () => {
@@ -346,6 +361,16 @@ const FeedbackDashboard = () => {
                       </div>
                       <p className="text-sm text-foreground">{f.comment}</p>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0"
+                      onClick={() => handleDelete(f.id)}
+                      disabled={deletingId === f.id}
+                      title="Delete feedback"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 ))}
               </div>
