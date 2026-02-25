@@ -1,7 +1,30 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import syncareerLogo from "@/assets/syncareer-logo.png";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function LandingFooter() {
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [passphrase, setPassphrase] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const handleAdminSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passphrase === "@synergy") {
+      setAdminOpen(false);
+      setPassphrase("");
+      setError("");
+      navigate("/admin/feedback");
+    } else {
+      setError("Incorrect passphrase. Access denied.");
+    }
+  };
+
   return (
+    <>
     <footer className="py-14 border-t border-border">
       <div className="container mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-10 mb-12">
@@ -40,9 +63,17 @@ export default function LandingFooter() {
           </div>
         </div>
         <div className="border-t border-border pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Syncareer. All rights reserved.
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-xs text-muted-foreground">
+              © {new Date().getFullYear()} Syncareer. All rights reserved.
+            </p>
+            <button
+              onClick={() => { setAdminOpen(true); setError(""); setPassphrase(""); }}
+              className="text-xs text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+            >
+              Admin?
+            </button>
+          </div>
           <div className="flex items-center gap-3 text-muted-foreground">
             <a
               href="https://www.tiktok.com/@syncareer?_r=1&_t=ZS-943Wv7vHgCT"
@@ -70,5 +101,28 @@ export default function LandingFooter() {
         </div>
       </div>
     </footer>
+
+      <Dialog open={adminOpen} onOpenChange={setAdminOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Admin Access</DialogTitle>
+            <DialogDescription>
+              Enter the passphrase to access the admin dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAdminSubmit} className="space-y-4 pt-2">
+            <Input
+              type="password"
+              placeholder="Passphrase"
+              value={passphrase}
+              onChange={(e) => { setPassphrase(e.target.value); setError(""); }}
+              autoFocus
+            />
+            {error && <p className="text-xs text-destructive">{error}</p>}
+            <Button type="submit" className="w-full">Access Dashboard</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
