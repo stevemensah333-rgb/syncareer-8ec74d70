@@ -222,7 +222,7 @@ export default function AuthDialog({ open, onOpenChange, defaultMode = 'signin' 
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/?reset=true`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) {
