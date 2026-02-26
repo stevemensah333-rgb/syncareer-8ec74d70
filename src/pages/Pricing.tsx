@@ -18,22 +18,24 @@ export default function PricingPage() {
 
   const features = {
     free: [
-      'Basic portfolio creation',
-      'Limited AI coach sessions',
-      'Interview simulator (basic mode)',
-      'CV builder (essential features)',
-      'Career assessment tools',
-      'Monthly analytics report',
+      'Portfolio projects: 3 uploads max',
+      'AI Coach sessions: 5 per month',
+      'Mock interviews: 3 per month (basic roles only)',
+      'CV downloads: 2 exports per month (PDF only)',
+      'Career assessments: 2 full assessments',
+      'Job applications tracked: 10 active',
+      'Analytics: Monthly summary report only',
     ],
     premium: [
-      'Advanced portfolio analytics',
-      'Unlimited AI coach sessions',
-      'Interview simulator (advanced modes)',
-      'CV builder (all features)',
-      'Priority support',
-      'Real-time analytics dashboard',
-      'Early access to new features',
-      'Personalized career recommendations',
+      'Portfolio projects: Unlimited uploads',
+      'AI Coach sessions: Unlimited',
+      'Mock interviews: Unlimited + advanced role simulation',
+      'CV downloads: Unlimited (multiple formats)',
+      'Career assessments: Unlimited retakes',
+      'Job applications tracked: Unlimited',
+      'Analytics: Real-time dashboard',
+      'Personalized AI career recommendations',
+      'Priority support & early feature access',
     ],
   };
 
@@ -99,7 +101,7 @@ export default function PricingPage() {
           <Card className="bg-slate-800/50 border-slate-700 p-8 flex flex-col justify-between hover:bg-slate-800/70 transition-colors">
             <div>
               <h3 className="text-2xl font-bold mb-2">Free</h3>
-              <p className="text-slate-400 mb-6">For those just getting started</p>
+              <p className="text-slate-400 mb-6">For exploration and early-stage students.</p>
               <div className="mb-8">
                 <span className="text-4xl font-bold">GH₵0</span>
                 <span className="text-slate-400 ml-2">forever</span>
@@ -129,7 +131,7 @@ export default function PricingPage() {
             </div>
             <div>
               <h3 className="text-2xl font-bold mb-2">Premium</h3>
-              <p className="text-slate-300 mb-6">For serious career advancement</p>
+              <p className="text-slate-300 mb-6">For committed students serious about their careers.</p>
               <div className="mb-8">
                 <span className="text-4xl font-bold">
                   GH₵{selectedBilling === 'monthly' ? '30' : '300'}
