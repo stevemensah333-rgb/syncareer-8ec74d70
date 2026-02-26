@@ -76,6 +76,26 @@ serve(async (req) => {
       );
     }
 
+    // Authorization: users can only send notifications to themselves
+    // unless they have an admin role
+    if (payload.user_id !== user.id) {
+      // Use service role client to check admin role
+      const adminClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: isAdmin } = await adminClient.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin',
+      });
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: "Not authorized to send notifications to other users" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Validate field lengths
     if (payload.title.length > 200 || payload.message.length > 1000) {
       return new Response(

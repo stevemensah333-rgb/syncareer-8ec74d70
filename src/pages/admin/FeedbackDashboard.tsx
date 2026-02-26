@@ -27,30 +27,48 @@ const FEATURE_LABELS: Record<string, string> = {
   cv_strength_score: 'CV Strength Score',
 };
 
-const ADMIN_PASSPHRASE = '@synergy';
-
 const FeedbackDashboard = () => {
   const navigate = useNavigate();
   const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (sessionStorage.getItem("syncareer_admin_access") !== "true") {
-      navigate("/", { replace: true });
-    }
-  }, [navigate]);
+  const [authorized, setAuthorized] = useState(false);
 
   const [featureFilter, setFeatureFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('30');
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Check admin role on mount
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        navigate("/", { replace: true });
+        return;
+      }
+      // Try fetching feedback - if 403, user is not admin
+      const { data, error: fnError } = await supabase.functions.invoke('admin-feedback', {
+        body: { feature_filter: 'all', date_range: '30' },
+      });
+
+      if (fnError || data?.error) {
+        navigate("/", { replace: true });
+        return;
+      }
+
+      setAuthorized(true);
+      setFeedback((data?.data as FeedbackRow[]) || []);
+      setLoading(false);
+    };
+    checkAdmin();
+  }, [navigate]);
+
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
       await supabase.functions.invoke('admin-feedback', {
-        body: { passphrase: ADMIN_PASSPHRASE, action: 'delete', feedback_id: id },
+        body: { action: 'delete', feedback_id: id },
       });
       setFeedback(prev => prev.filter(f => f.id !== id));
     } catch (err) {
@@ -60,7 +78,9 @@ const FeedbackDashboard = () => {
     }
   };
 
+  // Refetch when filters change
   useEffect(() => {
+    if (!authorized) return;
     const fetchFeedback = async () => {
       setLoading(true);
       setError(null);
@@ -68,7 +88,6 @@ const FeedbackDashboard = () => {
       try {
         const { data, error: fnError } = await supabase.functions.invoke('admin-feedback', {
           body: {
-            passphrase: ADMIN_PASSPHRASE,
             feature_filter: featureFilter,
             date_range: dateRange,
           },
@@ -87,7 +106,7 @@ const FeedbackDashboard = () => {
     };
 
     fetchFeedback();
-  }, [featureFilter, dateRange]);
+  }, [featureFilter, dateRange, authorized]);
 
   // Stats
   const stats = useMemo(() => {
@@ -148,7 +167,7 @@ const FeedbackDashboard = () => {
     { name: 'Negative', value: stats.negative, color: 'hsl(0, 84%, 60%)' },
   ];
 
-  if (loading) {
+  if (!authorized || loading) {
     return (
       <AdminLayout title="Feedback Dashboard">
         <div className="flex items-center justify-center h-64">
