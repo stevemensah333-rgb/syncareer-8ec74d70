@@ -12,8 +12,8 @@ export default function PricingPage() {
   const [selectedBilling, setSelectedBilling] = useState<'monthly' | 'yearly'>('monthly');
 
   const pricing = {
-    monthly: { price: 49.99, amount: 4999 }, // pesewas
-    yearly: { price: 499.99, amount: 49999 },
+    monthly: { price: 30, amount: 3000 }, // pesewas
+    yearly: { price: 300, amount: 30000 },
   };
 
   const features = {
@@ -132,13 +132,13 @@ export default function PricingPage() {
               <p className="text-slate-300 mb-6">For serious career advancement</p>
               <div className="mb-8">
                 <span className="text-4xl font-bold">
-                  GH₵{selectedBilling === 'monthly' ? '49.99' : '499.99'}
+                  GH₵{selectedBilling === 'monthly' ? '30' : '300'}
                 </span>
                 <span className="text-slate-400 ml-2">
                   {selectedBilling === 'monthly' ? '/month' : '/year'}
                 </span>
                 {selectedBilling === 'yearly' && (
-                  <div className="text-sm text-green-400 mt-2">Save GH₵100/year vs monthly</div>
+                  <div className="text-sm text-green-400 mt-2">Save GH₵60/year vs monthly</div>
                 )}
               </div>
               <ul className="space-y-4 mb-8">
