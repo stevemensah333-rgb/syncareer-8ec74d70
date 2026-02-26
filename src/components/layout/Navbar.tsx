@@ -135,15 +135,17 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
           
           <div className="flex items-center gap-2 sm:gap-4">
 
-            {/* Show pricing link for unauthenticated users or authenticated users */}
-            <Button
-              variant="ghost"
-              className="text-sm hidden sm:flex"
-              onClick={() => navigate('/pricing')}
-            >
-              <CreditCard className="h-4 w-4 mr-1" />
-              Pricing
-            </Button>
+            {/* Pricing link — students only */}
+            {!isEmployer && !isCounsellor && (
+              <Button
+                variant="ghost"
+                className="text-sm hidden sm:flex"
+                onClick={() => navigate('/pricing')}
+              >
+                <CreditCard className="h-4 w-4 mr-1" />
+                Pricing
+              </Button>
+            )}
 
             {/* Mobile Ask Counsellor Button - Only for students */}
             {!isEmployer && !isCounsellor && (
@@ -159,8 +161,8 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
 
             <NotificationsDropdown />
 
-            {/* Plan badge */}
-            {!subLoading && (
+            {/* Plan badge — students only */}
+            {!isEmployer && !isCounsellor && !subLoading && (
               isPremium ? (
                 <Badge variant="outline" className="hidden sm:flex items-center gap-1 border-primary/40 text-primary text-xs px-2 py-0.5">
                   <Sparkles className="h-3 w-3" />
@@ -192,10 +194,12 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
                   <User className="h-4 w-4 mr-2" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/settings?tab=subscription')} className="cursor-pointer">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Subscription
-                </DropdownMenuItem>
+                {!isEmployer && !isCounsellor && (
+                  <DropdownMenuItem onClick={() => navigate('/settings?tab=subscription')} className="cursor-pointer">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Subscription
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger className="cursor-pointer">
