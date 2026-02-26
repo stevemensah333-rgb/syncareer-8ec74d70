@@ -35,6 +35,50 @@ serve(async (req) => {
     }
 
     const userId = user.id;
+
+    // ── Server-side feature gate: ai_coach_session ──
+    const serviceSupabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('tier, status, current_period_end')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    let isPremium = false;
+    if (subscription?.tier === 'premium' && subscription?.status === 'active') {
+      isPremium = !subscription.current_period_end || new Date(subscription.current_period_end) > new Date();
+    }
+
+    if (!isPremium) {
+      // Check monthly usage
+      const now = new Date();
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const { data: usageRow } = await supabase
+        .from('usage_logs')
+        .select('usage_count')
+        .eq('user_id', userId)
+        .eq('feature_key', 'ai_coach_session')
+        .eq('month', month)
+        .maybeSingle();
+
+      const used = usageRow?.usage_count ?? 0;
+      if (used >= 5) {
+        return new Response(
+          JSON.stringify({
+            error: 'limit_reached',
+            message: 'You have used all 5 AI Coach sessions for this month. Upgrade to Premium for unlimited sessions.',
+            used,
+            limit: 5,
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const body = await req.json().catch(() => ({}));
     const queryType = body.query_type || 'general'; // general | explore | specific
     const userQuery = body.query || '';
@@ -220,6 +264,30 @@ Query type: ${queryType}`;
 
       const { error: outcomeErr } = await supabase.from('recommendation_outcomes').insert(outcomeRows);
       if (outcomeErr) console.error('Failed to log recommendation outcomes:', outcomeErr);
+    }
+
+    // ── Increment usage count (server-side, service role) ──
+    if (!isPremium) {
+      const now = new Date();
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const { data: existingLog } = await serviceSupabase
+        .from('usage_logs')
+        .select('id, usage_count')
+        .eq('user_id', userId)
+        .eq('feature_key', 'ai_coach_session')
+        .eq('month', month)
+        .maybeSingle();
+
+      if (existingLog) {
+        await serviceSupabase
+          .from('usage_logs')
+          .update({ usage_count: existingLog.usage_count + 1, updated_at: new Date().toISOString() })
+          .eq('id', existingLog.id);
+      } else {
+        await serviceSupabase
+          .from('usage_logs')
+          .insert({ user_id: userId, feature_key: 'ai_coach_session', month, usage_count: 1 });
+      }
     }
 
     // ── Save session ──

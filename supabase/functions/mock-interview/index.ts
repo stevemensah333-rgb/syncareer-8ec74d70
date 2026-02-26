@@ -368,6 +368,82 @@ serve(async (req) => {
       return errorResponse('AI service not configured', 500);
     }
 
+    // ── Server-side feature gate ──────────────────────────────────
+    const serviceSupabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('tier, status, current_period_end')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    let isPremiumUser = false;
+    if (subscription?.tier === 'premium' && subscription?.status === 'active') {
+      isPremiumUser = !subscription.current_period_end || new Date(subscription.current_period_end) > new Date();
+    }
+
+    // Gate 'start' action: check monthly mock_interview usage
+    if (body.action === 'start') {
+      if (!isPremiumUser) {
+        const now = new Date();
+        const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const { data: usageRow } = await supabase
+          .from('usage_logs')
+          .select('usage_count')
+          .eq('user_id', userId)
+          .eq('feature_key', 'mock_interview')
+          .eq('month', month)
+          .maybeSingle();
+
+        const used = usageRow?.usage_count ?? 0;
+        if (used >= 3) {
+          return new Response(
+            JSON.stringify({
+              error: 'limit_reached',
+              message: 'You have used all 3 mock interview sessions for this month. Upgrade to Premium for unlimited interviews.',
+              used,
+              limit: 3,
+            }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Block advanced modes for free users
+        if (body.interviewType === 'voice') {
+          return new Response(
+            JSON.stringify({
+              error: 'premium_required',
+              message: 'Voice interview mode is a Premium feature. Upgrade to unlock advanced interview modes.',
+            }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Increment usage
+        const { data: existingLog } = await serviceSupabase
+          .from('usage_logs')
+          .select('id, usage_count')
+          .eq('user_id', userId)
+          .eq('feature_key', 'mock_interview')
+          .eq('month', month)
+          .maybeSingle();
+
+        if (existingLog) {
+          await serviceSupabase
+            .from('usage_logs')
+            .update({ usage_count: existingLog.usage_count + 1, updated_at: new Date().toISOString() })
+            .eq('id', existingLog.id);
+        } else {
+          await serviceSupabase
+            .from('usage_logs')
+            .insert({ user_id: userId, feature_key: 'mock_interview', month, usage_count: 1 });
+        }
+      }
+    }
+
     // ══════════════════════════════════════════════════════════════
     // ACTION: START
     // ══════════════════════════════════════════════════════════════
