@@ -1642,6 +1642,36 @@ export type Database = {
           },
         ]
       }
+      usage_logs: {
+        Row: {
+          created_at: string
+          feature_key: string
+          id: string
+          month: string
+          updated_at: string
+          usage_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feature_key: string
+          id?: string
+          month: string
+          updated_at?: string
+          usage_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feature_key?: string
+          id?: string
+          month?: string
+          updated_at?: string
+          usage_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_course_progress: {
         Row: {
           career_path: string

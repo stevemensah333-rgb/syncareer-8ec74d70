@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+
+import React, { useState, useRef, useEffect } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,6 +10,13 @@ import { ChatInput } from "@/components/ai-coach/ChatInput";
 import { TypingIndicator } from "@/components/ai-coach/TypingIndicator";
 import { QuickActions } from "@/components/ai-coach/QuickActions";
 import { CareerInsightsPanel } from "@/components/ai-coach/CareerInsightsPanel";
+import { useAICoachAccess } from "@/hooks/useSubscription";
+import { incrementAICoachUsage } from "@/lib/featureAccess";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { Sparkles, AlertCircle } from "lucide-react";
+import { FREE_AI_COACH_MONTHLY_LIMIT } from "@/lib/featureAccess";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -16,13 +24,16 @@ export default function AICoach() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hi! I'm SynAI, your career counsellor. I can help with career guidance, skill development, CV tips, interview prep, and connecting your skills to opportunities. How can I assist you today?"
-    }
+      content:
+        "Hi! I'm SynAI, your career counsellor. I can help with career guidance, skill development, CV tips, interview prep, and connecting your skills to opportunities. How can I assist you today?",
+    },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { allowed, used, limit, loading: accessLoading, isPremium, refetchUsage } = useAICoachAccess();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -38,6 +49,12 @@ export default function AICoach() {
       if (!session?.access_token) {
         toast({ title: "Authentication required", description: "Please sign in to use the AI coach.", variant: "destructive" });
         return;
+      }
+
+      // Track usage for free users
+      if (!isPremium && session.user) {
+        await incrementAICoachUsage(session.user.id);
+        refetchUsage?.();
       }
 
       const resp = await fetch(CHAT_URL, {
@@ -102,6 +119,16 @@ export default function AICoach() {
     const userMessage = (overrideMessage ?? input).trim();
     if (!userMessage || isLoading) return;
 
+    // Block free users who've hit the limit
+    if (!accessLoading && !isPremium && !allowed) {
+      toast({
+        title: "Monthly limit reached",
+        description: `Free plan allows ${FREE_AI_COACH_MONTHLY_LIMIT} sessions/month. Upgrade to Premium for unlimited access.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setInput("");
     setMessages(prev => [...prev, { role: "user", content: userMessage }]);
     setIsLoading(true);
@@ -110,12 +137,40 @@ export default function AICoach() {
   };
 
   const showQuickActions = messages.length <= 1;
+  const isLimited = !accessLoading && !isPremium && typeof used === "number" && typeof limit === "number";
+  const sessionsLeft = isLimited ? Math.max(0, (limit as number) - (used as number)) : null;
 
   return (
     <PageLayout title="SynAI">
       <div className="h-[calc(100vh-12rem)] flex gap-4">
         {/* Main chat area */}
-        <Card className="flex-1 flex flex-col p-4 bg-card">
+        <Card className="flex-1 flex flex-col p-4 bg-card overflow-hidden">
+          {/* Usage banner for free users */}
+          {isLimited && (
+            <div className={`flex items-center justify-between px-3 py-2 rounded-md mb-3 text-sm ${
+              sessionsLeft === 0
+                ? "bg-destructive/10 border border-destructive/20 text-destructive"
+                : sessionsLeft! <= 2
+                ? "bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400"
+                : "bg-muted border border-border text-muted-foreground"
+            }`}>
+              <div className="flex items-center gap-2">
+                {sessionsLeft === 0
+                  ? <AlertCircle className="h-4 w-4" />
+                  : <Sparkles className="h-4 w-4" />
+                }
+                <span>
+                  {sessionsLeft === 0
+                    ? "Monthly session limit reached"
+                    : `${sessionsLeft} of ${limit} free sessions remaining this month`}
+                </span>
+              </div>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate('/pricing')}>
+                Upgrade
+              </Button>
+            </div>
+          )}
+
           <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
             <div className="space-y-4">
               {messages.map((msg, idx) => (
@@ -128,7 +183,7 @@ export default function AICoach() {
           {showQuickActions && (
             <div className="mb-2 mt-2">
               <p className="text-xs text-muted-foreground mb-2">Quick actions</p>
-              <QuickActions onSelect={(prompt) => handleSend(prompt)} disabled={isLoading} />
+              <QuickActions onSelect={(prompt) => handleSend(prompt)} disabled={isLoading || (!isPremium && !allowed && !accessLoading)} />
             </div>
           )}
 
@@ -137,10 +192,11 @@ export default function AICoach() {
             onChange={setInput}
             onSend={() => handleSend()}
             isLoading={isLoading}
+            disabled={!accessLoading && !isPremium && !allowed}
           />
         </Card>
 
-        {/* Career insights sidebar - hidden on mobile */}
+        {/* Career insights sidebar */}
         <div className="hidden lg:flex flex-col w-72 shrink-0 gap-3 overflow-y-auto">
           <CareerInsightsPanel />
         </div>
