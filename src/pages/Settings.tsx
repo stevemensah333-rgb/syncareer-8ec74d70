@@ -4,6 +4,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Bell, Globe, Lock, User, Settings as SettingsIcon, UserCircle, CreditCard, AlertTriangle } from 'lucide-react';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +36,7 @@ const Settings = () => {
   const initialTab = (searchParams.get('tab') as SettingsSection) || 'account';
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialTab);
   const { profile, studentDetails, employerDetails, loading: profileLoading } = useUserProfile();
+  const isStudentRole = !profile?.user_type || profile.user_type === 'student';
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState<string>('');
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -196,15 +198,17 @@ const Settings = () => {
                 <SettingsIcon className="mr-2 h-5 w-5" />
                 {t('settings.preferences')}
               </Button>
-              <Button 
-                variant={activeSection === 'subscription' ? 'secondary' : 'ghost'} 
-                className="w-full justify-start" 
-                size="lg"
-                onClick={() => setActiveSection('subscription')}
-              >
-                <CreditCard className="mr-2 h-5 w-5" />
-                Subscription
-              </Button>
+              {isStudentRole && (
+                <Button 
+                  variant={activeSection === 'subscription' ? 'secondary' : 'ghost'} 
+                  className="w-full justify-start" 
+                  size="lg"
+                  onClick={() => setActiveSection('subscription')}
+                >
+                  <CreditCard className="mr-2 h-5 w-5" />
+                  Subscription
+                </Button>
+              )}
             </nav>
           </div>
         </div>
@@ -544,7 +548,7 @@ const Settings = () => {
               </>
             )}
 
-            {activeSection === 'subscription' && (
+            {activeSection === 'subscription' && isStudentRole && (
               <div>
                 <h2 className="text-xl font-semibold mb-6">Subscription & Billing</h2>
                 <SubscriptionManager />
