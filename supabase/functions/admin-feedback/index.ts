@@ -11,49 +11,21 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate via JWT
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Authentication required' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    const body = await req.json();
+    const { passphrase, feature_filter, date_range, action, feedback_id } = body;
 
-    const supabaseAuth = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Check admin role using the has_role function via service client
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
-
-    const { data: isAdmin } = await supabase.rpc('has_role', {
-      _user_id: user.id,
-      _role: 'admin',
-    });
-
-    if (!isAdmin) {
+    const adminPassphrase = Deno.env.get('ADMIN_PASSPHRASE');
+    if (!adminPassphrase || passphrase !== adminPassphrase) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const body = await req.json();
-    const { feature_filter, date_range, action, feedback_id } = body;
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
 
     // Handle delete action
     if (action === 'delete' && feedback_id) {

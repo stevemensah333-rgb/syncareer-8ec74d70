@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { ThumbsUp, ThumbsDown, MessageSquare, TrendingUp, Filter, Search, Trash2 } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, MessageSquare, TrendingUp, Filter, Search, Trash2, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface FeedbackRow {
@@ -28,47 +27,43 @@ const FEATURE_LABELS: Record<string, string> = {
 };
 
 const FeedbackDashboard = () => {
-  const navigate = useNavigate();
-  const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [passphrase, setPassphrase] = useState('');
   const [authorized, setAuthorized] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [featureFilter, setFeatureFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('30');
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Check admin role on mount
-  useEffect(() => {
-    const checkAdmin = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        navigate("/", { replace: true });
-        return;
-      }
-      // Try fetching feedback - if 403, user is not admin
-      const { data, error: fnError } = await supabase.functions.invoke('admin-feedback', {
-        body: { feature_filter: 'all', date_range: '30' },
-      });
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setAuthError('');
 
-      if (fnError || data?.error) {
-        navigate("/", { replace: true });
-        return;
-      }
+    const { data, error: fnError } = await supabase.functions.invoke('admin-feedback', {
+      body: { passphrase, feature_filter: 'all', date_range: '30' },
+    });
 
-      setAuthorized(true);
-      setFeedback((data?.data as FeedbackRow[]) || []);
+    if (fnError || data?.error) {
+      setAuthError('Incorrect passphrase.');
       setLoading(false);
-    };
-    checkAdmin();
-  }, [navigate]);
+      return;
+    }
+
+    setAuthorized(true);
+    setFeedback((data?.data as FeedbackRow[]) || []);
+    setLoading(false);
+  };
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
       await supabase.functions.invoke('admin-feedback', {
-        body: { action: 'delete', feedback_id: id },
+        body: { passphrase, action: 'delete', feedback_id: id },
       });
       setFeedback(prev => prev.filter(f => f.id !== id));
     } catch (err) {
@@ -78,7 +73,6 @@ const FeedbackDashboard = () => {
     }
   };
 
-  // Refetch when filters change
   useEffect(() => {
     if (!authorized) return;
     const fetchFeedback = async () => {
@@ -87,10 +81,7 @@ const FeedbackDashboard = () => {
 
       try {
         const { data, error: fnError } = await supabase.functions.invoke('admin-feedback', {
-          body: {
-            feature_filter: featureFilter,
-            date_range: dateRange,
-          },
+          body: { passphrase, feature_filter: featureFilter, date_range: dateRange },
         });
 
         if (fnError) throw fnError;
@@ -99,7 +90,6 @@ const FeedbackDashboard = () => {
         setFeedback((data?.data as FeedbackRow[]) || []);
       } catch (err: any) {
         setError('Failed to load feedback data.');
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -108,7 +98,6 @@ const FeedbackDashboard = () => {
     fetchFeedback();
   }, [featureFilter, dateRange, authorized]);
 
-  // Stats
   const stats = useMemo(() => {
     const total = feedback.length;
     const positive = feedback.filter(f => f.response_type === 'positive').length;
@@ -117,7 +106,6 @@ const FeedbackDashboard = () => {
     return { total, positive, negative, withComments, positiveRate: total ? Math.round((positive / total) * 100) : 0 };
   }, [feedback]);
 
-  // Per-feature breakdown
   const featureBreakdown = useMemo(() => {
     const map: Record<string, { positive: number; negative: number }> = {};
     feedback.forEach(f => {
@@ -133,7 +121,6 @@ const FeedbackDashboard = () => {
     }));
   }, [feedback]);
 
-  // Keyword extraction from negative comments
   const topKeywords = useMemo(() => {
     const stopWords = new Set(['the', 'a', 'an', 'is', 'it', 'to', 'and', 'of', 'in', 'for', 'was', 'not', 'i', 'my', 'me', 'this', 'that', 'with', 'on', 'but', 'be', 'have', 'had', 'do', 'did', 'so', 'too', 'very']);
     const words: Record<string, number> = {};
@@ -152,7 +139,6 @@ const FeedbackDashboard = () => {
       .map(([word, count]) => ({ word, count }));
   }, [feedback]);
 
-  // Filtered comments
   const filteredComments = useMemo(() => {
     let items = feedback.filter(f => f.comment);
     if (searchQuery) {
@@ -167,7 +153,39 @@ const FeedbackDashboard = () => {
     { name: 'Negative', value: stats.negative, color: 'hsl(0, 84%, 60%)' },
   ];
 
-  if (!authorized || loading) {
+  if (!authorized) {
+    return (
+      <AdminLayout title="Admin Access">
+        <div className="flex items-center justify-center h-[60vh]">
+          <Card className="w-full max-w-sm">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Lock className="h-5 w-5 text-muted-foreground" />
+                <CardTitle className="text-base">Enter Passphrase</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleAuth} className="space-y-4">
+                <Input
+                  type="password"
+                  placeholder="Admin passphrase"
+                  value={passphrase}
+                  onChange={e => setPassphrase(e.target.value)}
+                  autoFocus
+                />
+                {authError && <p className="text-xs text-destructive">{authError}</p>}
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Verifying...' : 'Access Dashboard'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (loading) {
     return (
       <AdminLayout title="Feedback Dashboard">
         <div className="flex items-center justify-center h-64">
@@ -190,7 +208,6 @@ const FeedbackDashboard = () => {
   return (
     <AdminLayout title="Feedback Dashboard">
       <div className="space-y-6">
-        {/* Filters */}
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
@@ -219,7 +236,6 @@ const FeedbackDashboard = () => {
           </Select>
         </div>
 
-        {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
@@ -268,7 +284,6 @@ const FeedbackDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Feature Breakdown Chart */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Feedback by Feature</CardTitle>
@@ -293,7 +308,6 @@ const FeedbackDashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Sentiment Pie */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Overall Sentiment</CardTitle>
@@ -303,13 +317,7 @@ const FeedbackDashboard = () => {
                 <div className="h-64 flex items-center justify-center">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%" cy="50%"
-                        outerRadius={80}
-                        dataKey="value"
-                        label={({ name, value }) => `${name}: ${value}`}
-                      >
+                      <Pie data={pieData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                         {pieData.map((entry, i) => (
                           <Cell key={i} fill={entry.color} />
                         ))}
@@ -325,7 +333,6 @@ const FeedbackDashboard = () => {
           </Card>
         </div>
 
-        {/* Top Complaint Keywords */}
         {topKeywords.length > 0 && (
           <Card>
             <CardHeader>
@@ -343,7 +350,6 @@ const FeedbackDashboard = () => {
           </Card>
         )}
 
-        {/* Recent Comments */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
