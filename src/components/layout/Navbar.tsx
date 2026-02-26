@@ -1,7 +1,10 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Briefcase, Users, LogOut, MessageCircle, Menu, HelpCircle, Phone, Mail, CreditCard } from 'lucide-react';
+import { User, Briefcase, Users, LogOut, MessageCircle, Menu, HelpCircle, Phone, Mail, CreditCard, Sparkles } from 'lucide-react';
+import { useSubscription } from '@/hooks/useSubscription';
+import { Badge } from '@/components/ui/badge';
 import syncareerLogo from '@/assets/syncareer-logo.png';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -37,6 +40,7 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { profile } = useUserProfile();
+  const { isPremium, loading: subLoading } = useSubscription();
 
   const isEmployer = profile?.user_type === 'employer';
   const isCounsellor = profile?.user_type === 'career_counsellor';
@@ -154,6 +158,24 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
             )}
 
             <NotificationsDropdown />
+
+            {/* Plan badge */}
+            {!subLoading && (
+              isPremium ? (
+                <Badge variant="outline" className="hidden sm:flex items-center gap-1 border-primary/40 text-primary text-xs px-2 py-0.5">
+                  <Sparkles className="h-3 w-3" />
+                  Premium
+                </Badge>
+              ) : (
+                <Badge
+                  variant="outline"
+                  className="hidden sm:flex items-center gap-1 border-border text-muted-foreground text-xs px-2 py-0.5 cursor-pointer hover:border-primary/40 hover:text-primary transition-colors"
+                  onClick={() => navigate('/pricing')}
+                >
+                  Free
+                </Badge>
+              )
+            )}
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

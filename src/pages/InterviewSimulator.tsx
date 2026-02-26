@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Mic, CheckCircle, Phone, Clock, Zap, Target } from 'lucide-react';
+import { Mic, CheckCircle, Phone, Clock, Zap, Target, Lock, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -15,6 +15,8 @@ import { InterviewErrorBoundary } from '@/components/interview/InterviewErrorBou
 import { VoiceInterviewMode } from '@/components/interview/VoiceInterviewMode';
 import { useFeedbackModal } from '@/hooks/useFeedbackModal';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useNavigate } from 'react-router-dom';
 
 import type { InterviewSetupConfig } from '@/types/interview';
 
@@ -55,6 +57,8 @@ const MAJOR_ROLE_MAP: Record<string, { role: string; industry: string }> = {
 
 const InterviewSimulator = () => {
   const { studentDetails } = useUserProfile();
+  const { isPremium } = useSubscription();
+  const navigate = useNavigate();
   const [step, setStep] = useState<'setup' | 'interview'>('setup');
   const [sessionLength, setSessionLength] = useState<SessionLength>('standard');
   const feedbackModal = useFeedbackModal('interview_simulator');
@@ -219,14 +223,27 @@ const InterviewSimulator = () => {
                     />
                   </div>
 
+                  {!isPremium && (
+                    <div className="flex items-center gap-2 p-3 rounded-md bg-muted border border-border text-sm text-muted-foreground">
+                      <Lock className="h-4 w-4 flex-shrink-0 text-primary" />
+                      <span>Voice interview is a <strong className="text-foreground">Premium feature</strong>.</span>
+                      <Button size="sm" variant="outline" className="ml-auto h-7 text-xs" onClick={() => navigate('/pricing')}>
+                        Upgrade
+                      </Button>
+                    </div>
+                  )}
+
                   <Button
                     className="w-full"
                     size="lg"
-                    onClick={startInterview}
+                    onClick={isPremium ? startInterview : () => navigate('/pricing')}
                     aria-label="Start voice interview session"
                   >
-                    <Phone className="h-4 w-4 mr-2" aria-hidden="true" />
-                    Start Voice Interview
+                    {isPremium ? (
+                      <><Phone className="h-4 w-4 mr-2" aria-hidden="true" />Start Voice Interview</>
+                    ) : (
+                      <><Sparkles className="h-4 w-4 mr-2" aria-hidden="true" />Upgrade to Unlock</>
+                    )}
                   </Button>
                 </CardContent>
               </Card>

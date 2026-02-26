@@ -7,9 +7,10 @@ interface ChatInputProps {
   onChange: (value: string) => void;
   onSend: () => void;
   isLoading: boolean;
+  disabled?: boolean;
 }
 
-export function ChatInput({ value, onChange, onSend, isLoading }: ChatInputProps) {
+export function ChatInput({ value, onChange, onSend, isLoading, disabled = false }: ChatInputProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -23,11 +24,11 @@ export function ChatInput({ value, onChange, onSend, isLoading }: ChatInputProps
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Ask about careers, skills, CVs, interviews..."
-        disabled={isLoading}
+        placeholder={disabled ? "Upgrade to Premium to continue chatting" : "Ask about careers, skills, CVs, interviews..."}
+        disabled={isLoading || disabled}
         className="flex-1"
       />
-      <Button onClick={onSend} disabled={isLoading || !value.trim()}>
+      <Button onClick={onSend} disabled={isLoading || disabled || !value.trim()}>
         <Send className="w-4 h-4" />
       </Button>
     </div>
