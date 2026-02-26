@@ -95,6 +95,13 @@ export type Database = {
             referencedRelation: "skills_assessments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "assessment_results_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "skills_assessments_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       assessments: {
@@ -1998,6 +2005,42 @@ export type Database = {
           specialization?: string | null
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      skills_assessments_public: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          employer_id: string | null
+          id: string | null
+          is_active: boolean | null
+          passing_score: number | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          employer_id?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          passing_score?: number | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          employer_id?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          passing_score?: number | null
+          title?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
