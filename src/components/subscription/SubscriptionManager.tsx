@@ -18,14 +18,15 @@ import { FREE_AI_COACH_MONTHLY_LIMIT } from '@/lib/featureAccess';
 import PaystackButton from '@/components/payment/PaystackButton';
 
 const PREMIUM_FEATURES = [
-  'Unlimited AI coach sessions',
-  'Interview simulator (Voice mode)',
-  'CV builder (all features)',
-  'Real-time analytics dashboard',
-  'Advanced portfolio analytics',
-  'Personalized career recommendations',
-  'Priority support',
-  'Early access to new features',
+  'Portfolio projects: Unlimited uploads',
+  'AI Coach sessions: Unlimited',
+  'Mock interviews: Unlimited + advanced role simulation',
+  'CV downloads: Unlimited (multiple formats)',
+  'Career assessments: Unlimited retakes',
+  'Job applications tracked: Unlimited',
+  'Analytics: Real-time dashboard',
+  'Personalized AI career recommendations',
+  'Priority support & early feature access',
 ];
 
 export default function SubscriptionManager() {
@@ -117,7 +118,7 @@ export default function SubscriptionManager() {
               <div>
                 <p className="font-medium">Free Plan</p>
                 <p className="text-sm text-muted-foreground">
-                  {FREE_AI_COACH_MONTHLY_LIMIT} AI sessions/month · Basic features only
+                  3 portfolio uploads · 5 AI sessions/month · 3 mock interviews/month · 10 job applications
                 </p>
               </div>
             </div>
