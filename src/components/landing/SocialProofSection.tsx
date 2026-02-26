@@ -29,18 +29,6 @@ export default function SocialProofSection() {
   return (
     <section className="py-24">
       <div className="container mx-auto px-6">
-        {/* Metrics */}
-        <AnimatedSection>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto mb-20">
-            {metrics.map((m) => (
-              <div key={m.label} className="text-center">
-                <p className="text-3xl sm:text-4xl font-bold text-foreground mb-1">{m.value}</p>
-                <p className="text-sm text-muted-foreground">{m.label}</p>
-              </div>
-            ))}
-          </div>
-        </AnimatedSection>
-
         {/* Testimonials */}
         <AnimatedSection className="text-center mb-12">
           <p className="text-sm font-medium text-primary mb-3 uppercase tracking-wider">Testimonials</p>
