@@ -23,6 +23,10 @@ export default function Landing() {
   // Auto-redirect authenticated users to their role-appropriate dashboard
   useEffect(() => {
     const checkAuth = async () => {
+      // Don't redirect during a password recovery flow
+      const hash = window.location.hash;
+      if (hash.includes('type=recovery')) return;
+
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         const { data: profile } = await supabase

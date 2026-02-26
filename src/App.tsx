@@ -12,6 +12,7 @@ import RoleRoute from "./components/auth/RoleRoute";
 
 // Lazy-loaded pages
 const Landing = lazy(() => import("./pages/Landing"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const PublicPortfolio = lazy(() => import("./pages/PublicPortfolio"));
@@ -67,6 +68,7 @@ const App = () => (
                 {/* Public routes */}
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Navigate to="/" replace />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/subscription-success" element={<SubscriptionSuccess />} />
                 <Route path="/portfolio/:userId" element={<PublicPortfolio />} />
