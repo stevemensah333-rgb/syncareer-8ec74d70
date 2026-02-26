@@ -26,7 +26,7 @@ const plans = [
   },
   {
     name: "Premium",
-    price: "GH₵ 49.99",
+    price: "GH₵ 30",
     period: "/month",
     description: "For serious career advancement",
     features: [
