@@ -30,6 +30,7 @@ export function AvailabilityCalendar({ counsellorId }: AvailabilityCalendarProps
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [meetingLink, setMeetingLink] = useState('');
+  const [counsellorDetailsId, setCounsellorDetailsId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAvailability();
@@ -37,6 +38,18 @@ export function AvailabilityCalendar({ counsellorId }: AvailabilityCalendarProps
 
   const fetchAvailability = async () => {
     try {
+      // Fetch meeting link from counsellor_details
+      const { data: detailsData } = await supabase
+        .from('counsellor_details')
+        .select('id, meeting_link')
+        .eq('id', counsellorId)
+        .single();
+
+      if (detailsData) {
+        setCounsellorDetailsId(detailsData.id);
+        setMeetingLink(detailsData.meeting_link || '');
+      }
+
       const { data, error } = await supabase
         .from('counsellor_availability')
         .select('*')
@@ -79,6 +92,14 @@ export function AvailabilityCalendar({ counsellorId }: AvailabilityCalendarProps
   const saveAvailability = async () => {
     setSaving(true);
     try {
+      // Save meeting link to counsellor_details
+      if (counsellorDetailsId) {
+        await supabase
+          .from('counsellor_details')
+          .update({ meeting_link: meetingLink || null })
+          .eq('id', counsellorDetailsId);
+      }
+
       // Delete existing slots and insert new ones
       await supabase
         .from('counsellor_availability')

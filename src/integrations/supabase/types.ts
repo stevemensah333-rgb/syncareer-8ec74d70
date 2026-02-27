@@ -372,6 +372,7 @@ export type Database = {
           hiring_price: number | null
           id: string
           location: string | null
+          meeting_link: string | null
           phone_number: string
           specialization: string | null
           updated_at: string
@@ -386,6 +387,7 @@ export type Database = {
           hiring_price?: number | null
           id?: string
           location?: string | null
+          meeting_link?: string | null
           phone_number: string
           specialization?: string | null
           updated_at?: string
@@ -400,6 +402,7 @@ export type Database = {
           hiring_price?: number | null
           id?: string
           location?: string | null
+          meeting_link?: string | null
           phone_number?: string
           specialization?: string | null
           updated_at?: string

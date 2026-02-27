@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Briefcase, MapPin, Calendar, Clock, ExternalLink, Trash2, Search, Filter, Video } from 'lucide-react';
+import { Briefcase, MapPin, Calendar, Clock, ExternalLink, Trash2, Search, Filter, Video, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useOutcomeTracking } from '@/hooks/useOutcomeTracking';
@@ -58,9 +58,50 @@ const ApplicationTracker = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
+  // Counsellor bookings
+  interface CounsellorBooking {
+    id: string;
+    counsellor_id: string;
+    status: string;
+    scheduled_date: string | null;
+    scheduled_time: string | null;
+    created_at: string;
+    counsellor?: { full_name: string | null; meeting_link: string | null };
+  }
+  const [counsellorBookings, setCounsellorBookings] = useState<CounsellorBooking[]>([]);
+
   useEffect(() => {
     fetchApplications();
+    fetchCounsellorBookings();
   }, []);
+
+  const fetchCounsellorBookings = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data } = await supabase
+        .from('counsellor_bookings')
+        .select('id, counsellor_id, status, scheduled_date, scheduled_time, created_at')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      if (data && data.length > 0) {
+        // Fetch counsellor details (name + meeting link) for each booking
+        const enriched = await Promise.all(data.map(async (b) => {
+          const { data: cd } = await supabase
+            .from('counsellor_details')
+            .select('full_name, meeting_link')
+            .eq('id', b.counsellor_id)
+            .single();
+          return { ...b, counsellor: cd };
+        }));
+        setCounsellorBookings(enriched);
+      }
+    } catch (err) {
+      console.error('Error fetching counsellor bookings:', err);
+    }
+  };
 
   const fetchApplications = async () => {
     try {
@@ -396,6 +437,56 @@ const ApplicationTracker = () => {
                         </Button>
                       </div>
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        {/* Counsellor Sessions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Counsellor Sessions
+            </CardTitle>
+            <CardDescription>Your booked career counselling sessions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {counsellorBookings.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                No counsellor sessions booked yet.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {counsellorBookings.map((b) => (
+                  <div key={b.id} className="p-4 border rounded-lg flex items-center justify-between gap-4">
+                    <div className="space-y-1 min-w-0">
+                      <p className="font-medium">{b.counsellor?.full_name || 'Counsellor'}</p>
+                      {b.scheduled_date && b.scheduled_time && (
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(b.scheduled_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {b.scheduled_time.toString().slice(0, 5)}
+                        </p>
+                      )}
+                      <Badge
+                        variant={b.status === 'confirmed' ? 'default' : b.status === 'cancelled' ? 'destructive' : 'outline'}
+                        className="text-xs"
+                      >
+                        {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
+                      </Badge>
+                    </div>
+                    {b.status === 'confirmed' && b.counsellor?.meeting_link && (
+                      <Button size="sm" asChild>
+                        <a href={b.counsellor.meeting_link} target="_blank" rel="noopener noreferrer">
+                          <Video className="h-4 w-4 mr-1" />
+                          Join Session
+                        </a>
+                      </Button>
+                    )}
+                    {b.status === 'confirmed' && !b.counsellor?.meeting_link && (
+                      <span className="text-xs text-muted-foreground">Link pending</span>
+                    )}
                   </div>
                 ))}
               </div>
