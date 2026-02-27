@@ -487,6 +487,27 @@ const ApplicationTracker = () => {
                     {b.status === 'confirmed' && !b.counsellor?.meeting_link && (
                       <span className="text-xs text-muted-foreground">Link pending</span>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive ml-2"
+                      onClick={async () => {
+                        try {
+                          const { error } = await supabase
+                            .from('counsellor_bookings')
+                            .delete()
+                            .eq('id', b.id);
+                          if (error) throw error;
+                          setCounsellorBookings(prev => prev.filter(x => x.id !== b.id));
+                          toast.success('Session removed');
+                        } catch (err) {
+                          console.error(err);
+                          toast.error('Failed to remove session');
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 ))}
               </div>
