@@ -99,26 +99,31 @@ export function SessionsManager({ counsellorId }: SessionsManagerProps) {
         .update({ status })
         .eq('id', bookingId);
 
+
       if (error) throw error;
 
       // Send notification to the user about their booking status
       if (booking) {
         const { data: counsellorData } = await supabase
-          .from('counsellor_profiles_public')
-          .select('full_name')
+          .from('counsellor_details')
+          .select('full_name, meeting_link')
           .eq('id', counsellorId)
           .single();
 
         const counsellorName = counsellorData?.full_name || 'A counsellor';
+        const meetingLink = counsellorData?.meeting_link;
         
         if (status === 'confirmed') {
+          const meetingMsg = meetingLink
+            ? ` Your session link: ${meetingLink}`
+            : ' The counsellor will share a meeting link with you.';
           sendNotification({
             user_id: booking.user_id,
             type: 'booking',
-            title: 'Booking Request Accepted!',
-            message: `${counsellorName} has accepted your session request. Check your bookings for details.`,
+            title: 'Booking Confirmed!',
+            message: `${counsellorName} has confirmed your session request.${meetingMsg}`,
             category: 'booking',
-            link: '/portfolio',
+            link: '/applications',
           });
         } else if (status === 'cancelled') {
           sendNotification({
@@ -127,7 +132,7 @@ export function SessionsManager({ counsellorId }: SessionsManagerProps) {
             title: 'Booking Request Declined',
             message: `${counsellorName} was unable to accommodate your session request. Please try booking a different time.`,
             category: 'booking',
-            link: '/portfolio',
+            link: '/applications',
           });
         }
       }
