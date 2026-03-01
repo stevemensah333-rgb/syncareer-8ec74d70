@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Briefcase, MapPin, Calendar, Clock, ExternalLink, Trash2, Search, Filter, Video, User } from 'lucide-react';
+import { Briefcase, MapPin, Calendar, Clock, ExternalLink, Trash2, Search, Filter, Video, User, Star } from 'lucide-react';
+import { RateCounsellorDialog } from '@/components/counsellor/RateCounsellorDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useOutcomeTracking } from '@/hooks/useOutcomeTracking';
@@ -69,6 +70,8 @@ const ApplicationTracker = () => {
     counsellor?: { full_name: string | null; meeting_link: string | null };
   }
   const [counsellorBookings, setCounsellorBookings] = useState<CounsellorBooking[]>([]);
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [selectedBookingForRating, setSelectedBookingForRating] = useState<CounsellorBooking | null>(null);
 
   useEffect(() => {
     fetchApplications();
@@ -476,6 +479,7 @@ const ApplicationTracker = () => {
                         {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
                       </Badge>
                     </div>
+                    <div className="flex items-center gap-2 flex-wrap">
                     {b.status === 'confirmed' && b.counsellor?.meeting_link && (
                       <Button size="sm" asChild>
                         <a href={b.counsellor.meeting_link} target="_blank" rel="noopener noreferrer">
@@ -487,6 +491,20 @@ const ApplicationTracker = () => {
                     {b.status === 'confirmed' && !b.counsellor?.meeting_link && (
                       <span className="text-xs text-muted-foreground">Link pending</span>
                     )}
+                    {(b.status === 'confirmed' || b.status === 'cancelled') && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedBookingForRating(b);
+                          setRatingDialogOpen(true);
+                        }}
+                      >
+                        <Star className="h-4 w-4 mr-1" />
+                        Rate
+                      </Button>
+                    )}
+                    </div>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -515,6 +533,16 @@ const ApplicationTracker = () => {
           </CardContent>
         </Card>
       </div>
+
+      {selectedBookingForRating && (
+        <RateCounsellorDialog
+          open={ratingDialogOpen}
+          onOpenChange={setRatingDialogOpen}
+          counsellorId={selectedBookingForRating.counsellor_id}
+          counsellorName={selectedBookingForRating.counsellor?.full_name || 'Counsellor'}
+          onRatingSubmitted={() => setSelectedBookingForRating(null)}
+        />
+      )}
     </PageLayout>
   );
 };
