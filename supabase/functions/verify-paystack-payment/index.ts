@@ -25,16 +25,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabaseClient = createClient(supabaseUrl, serviceRoleKey);
-    const anonClient = createClient(
-      supabaseUrl,
-      Deno.env.get("SUPABASE_ANON_KEY")!
-    );
+    // Service client for all DB writes (bypasses RLS)
+    const serviceClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const {
-      data: { user },
-      error: authError,
-    } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    // Anon client only for auth token verification
+    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+    const { data: { user }, error: authError } = await anonClient.auth.getUser(
+      authHeader.replace("Bearer ", "")
+    );
 
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Invalid token" }), {
@@ -52,14 +50,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check for duplicate reference
-    const { data: existingPayment } = await supabaseClient
+    // Check for duplicate reference — return early with success if already processed
+    const { data: existingPayment } = await serviceClient
       .from("payments")
       .select("id, status")
       .eq("paystack_reference", reference)
-      .single();
+      .maybeSingle();
 
     if (existingPayment?.status === "success") {
+      // Still ensure subscription is premium (idempotent fix)
+      await serviceClient
+        .from("subscriptions")
+        .update({ tier: "premium", status: "active" })
+        .eq("user_id", user.id);
+
       return new Response(
         JSON.stringify({ status: "success", message: "Payment already verified" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -69,21 +73,14 @@ Deno.serve(async (req) => {
     // Verify with Paystack API
     const verifyRes = await fetch(
       `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${paystackSecret}`,
-        },
-      }
+      { headers: { Authorization: `Bearer ${paystackSecret}` } }
     );
 
     if (!verifyRes.ok) {
       console.error("Paystack verify failed:", verifyRes.status);
       return new Response(
         JSON.stringify({ error: "Paystack verification failed" }),
-        {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -92,7 +89,7 @@ Deno.serve(async (req) => {
 
     if (!txData || txData.status !== "success") {
       // Record failed payment
-      await supabaseClient.from("payments").upsert(
+      await serviceClient.from("payments").upsert(
         {
           user_id: user.id,
           email: user.email || "",
@@ -112,8 +109,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Insert successful payment
-    const { data: payment, error: paymentError } = await supabaseClient
+    // ── Record successful payment ────────────────────────────────
+    const { data: payment, error: paymentError } = await serviceClient
       .from("payments")
       .upsert(
         {
@@ -127,7 +124,8 @@ Deno.serve(async (req) => {
           metadata: {
             paystack_id: txData.id,
             paid_at: txData.paid_at,
-            plan: plan || "premium",
+            plan: plan || "monthly",
+            plan_code: txData.plan_object?.plan_code || null,
             authorization: txData.authorization
               ? {
                   channel: txData.authorization.channel,
@@ -147,14 +145,11 @@ Deno.serve(async (req) => {
       console.error("Payment insert error:", paymentError);
       return new Response(
         JSON.stringify({ error: "Failed to record payment" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Calculate period end based on plan
+    // ── Calculate subscription period ───────────────────────────
     const now = new Date();
     const periodEnd = new Date(now);
     if (plan === "yearly") {
@@ -163,8 +158,9 @@ Deno.serve(async (req) => {
       periodEnd.setMonth(periodEnd.getMonth() + 1);
     }
 
-    // Upsert subscription
-    const { error: subError } = await supabaseClient
+    // ── Upsert subscription to premium IMMEDIATELY ───────────────
+    // Uses service role key so it bypasses RLS restrictions on subscriptions table
+    const { error: subError } = await serviceClient
       .from("subscriptions")
       .upsert(
         {
@@ -174,13 +170,30 @@ Deno.serve(async (req) => {
           payment_id: payment.id,
           current_period_start: now.toISOString(),
           current_period_end: periodEnd.toISOString(),
+          updated_at: now.toISOString(),
         },
         { onConflict: "user_id" }
       );
 
     if (subError) {
       console.error("Subscription upsert error:", subError);
+      // Still return success since payment was recorded — we can fix sub manually
+      return new Response(
+        JSON.stringify({ error: "Payment recorded but subscription update failed. Contact support." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    // ── Send in-app premium activation notification ──────────────
+    await serviceClient.from("notifications").insert({
+      user_id: user.id,
+      title: "Premium Activated",
+      message: `Your Syncareer Premium (${plan === "yearly" ? "Annual" : "Monthly"}) plan is now active. Enjoy unlimited access to all features.`,
+      type: "system",
+      category: "subscription",
+      priority: "high",
+      link: "/settings",
+    }).catch((e: any) => console.warn("Notification insert failed:", e));
 
     return new Response(
       JSON.stringify({
@@ -188,6 +201,7 @@ Deno.serve(async (req) => {
         message: "Payment verified and subscription activated",
         subscription: {
           tier: "premium",
+          status: "active",
           period_end: periodEnd.toISOString(),
         },
       }),
@@ -197,10 +211,7 @@ Deno.serve(async (req) => {
     console.error("Verify payment error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

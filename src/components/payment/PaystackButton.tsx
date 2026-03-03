@@ -74,10 +74,13 @@ export default function PaystackButton({
         const result = await response.json();
 
         if (result.status === 'success') {
-          toast.success('Payment verified! Premium features unlocked.');
-          onSuccess?.();
+          toast.success('Premium activated! All features are now unlocked.', { duration: 5000 });
+          // Small delay to let DB propagate, then trigger refetch
+          setTimeout(() => {
+            onSuccess?.();
+          }, 800);
         } else {
-          toast.error(result.message || 'Payment verification failed');
+          toast.error(result.message || result.error || 'Payment verification failed. Contact support.');
         }
       } catch (error) {
         console.error('Verification error:', error);
@@ -119,18 +122,14 @@ export default function PaystackButton({
       const handler = (window as any).PaystackPop.setup({
         key: paystackKeyRef.current,
         email: user.email,
-        plan: PAYSTACK_PLAN_CODES[plan], // Use plan code for subscription billing
+        plan: PAYSTACK_PLAN_CODES[plan], // Paystack plan code — handles amount & currency
         currency: 'GHS',
         channels: ['card', 'mobile_money'],
         metadata: {
           user_id: user.id,
           plan,
           custom_fields: [
-            {
-              display_name: 'Plan',
-              variable_name: 'plan',
-              value: plan,
-            },
+            { display_name: 'Plan', variable_name: 'plan', value: plan },
           ],
         },
         onSuccess: (transaction: { reference: string }) => {
@@ -138,6 +137,7 @@ export default function PaystackButton({
         },
         onClose: () => {
           onClose?.();
+          setIsLoading(false);
           toast.info('Payment window closed');
         },
       });
@@ -160,7 +160,7 @@ export default function PaystackButton({
       {isLoading || isVerifying ? (
         <>
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          {isVerifying ? 'Verifying...' : 'Loading...'}
+          {isVerifying ? 'Verifying payment...' : 'Loading...'}
         </>
       ) : (
         children || 'Pay Now'
