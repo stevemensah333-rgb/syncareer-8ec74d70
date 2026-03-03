@@ -210,8 +210,7 @@ export default function SubscriptionManager() {
             <p className="text-sm text-muted-foreground">
               3 portfolio uploads · 5 AI sessions/month · 3 mock interviews/month · 10 job applications
             </p>
-            <PaystackButton
-              amount={3000}
+           <PaystackButton
               plan="monthly"
               onSuccess={() => { refetch(); toast.success('Premium activated!'); }}
               className="w-full"

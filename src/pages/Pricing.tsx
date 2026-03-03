@@ -162,7 +162,6 @@ export default function PricingPage() {
               </Button>
             ) : (
               <PaystackButton
-                amount={pricing[selectedBilling].amount}
                 plan={selectedBilling}
                 onSuccess={() => navigate('/subscription-success')}
                 className="w-full bg-green-500 text-slate-900 hover:bg-green-600 font-semibold"
@@ -218,7 +217,6 @@ export default function PricingPage() {
           </p>
           {!isPremium && (
             <PaystackButton
-              amount={pricing[selectedBilling].amount}
               plan={selectedBilling}
               onSuccess={() => navigate('/subscription-success')}
               className="bg-green-500 text-slate-900 hover:bg-green-600 font-semibold px-8 py-3"
