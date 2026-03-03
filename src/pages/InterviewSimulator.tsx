@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Mic, CheckCircle, Phone, Clock, Zap, Target, Lock, Sparkles } from 'lucide-react';
+import { Mic, CheckCircle, Phone, Clock, Zap, Target, Lock, Sparkles, Trash2, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -17,6 +17,9 @@ import { useFeedbackModal } from '@/hooks/useFeedbackModal';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 import type { InterviewSetupConfig } from '@/types/interview';
 
@@ -59,6 +62,7 @@ const InterviewSimulator = () => {
   const { studentDetails } = useUserProfile();
   const { isPremium } = useSubscription();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<'setup' | 'interview'>('setup');
   const [sessionLength, setSessionLength] = useState<SessionLength>('standard');
   const feedbackModal = useFeedbackModal('interview_simulator');
@@ -79,6 +83,32 @@ const InterviewSimulator = () => {
       }
     }
   }, [studentDetails]);
+
+  const { data: interviewHistory, isLoading: historyLoading } = useQuery({
+    queryKey: ['mock_interviews_history'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('mock_interviews')
+        .select('id, job_role, industry, difficulty, overall_score, status, created_at, completed_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const deleteInterview = async (id: string) => {
+    const { error } = await supabase.from('mock_interviews').delete().eq('id', id);
+    if (error) {
+      toast.error('Failed to delete interview');
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['mock_interviews_history'] });
+    toast.success('Interview removed');
+  };
 
   const updateConfig = (field: keyof InterviewSetupConfig, value: string) => {
     setConfig(prev => ({ ...prev, [field]: value }));
@@ -278,6 +308,61 @@ const InterviewSimulator = () => {
                   </ul>
                 </CardContent>
               </Card>
+
+              {/* Interview History */}
+              {(interviewHistory && interviewHistory.length > 0) && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <History className="h-4 w-4 text-muted-foreground" />
+                      <CardTitle className="text-lg">Past Sessions</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {interviewHistory.map((interview) => {
+                      const score = interview.overall_score;
+                      const scoreColor = score === null ? 'text-muted-foreground' : score >= 75 ? 'text-green-600 dark:text-green-400' : score >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-destructive';
+                      const date = new Date(interview.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                      return (
+                        <div key={interview.id} className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2.5 text-sm">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium truncate">{interview.job_role}</p>
+                            <p className="text-xs text-muted-foreground">{date} · {interview.difficulty}</p>
+                          </div>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            {interview.status === 'completed' && score !== null ? (
+                              <span className={cn('font-semibold tabular-nums', scoreColor)}>{score}/100</span>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">{interview.status}</Badge>
+                            )}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete interview?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently remove the session for <strong>{interview.job_role}</strong>. This cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => deleteInterview(interview.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              )}
           </div>
         </div>
       )}
@@ -298,6 +383,7 @@ const InterviewSimulator = () => {
               sessionLength={sessionLength}
               onEnd={() => {
                 setStep('setup');
+                queryClient.invalidateQueries({ queryKey: ['mock_interviews_history'] });
                 feedbackModal.triggerFeedback();
               }}
             />
