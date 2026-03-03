@@ -186,7 +186,7 @@ const Performance = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Learning Streak</span>
                   <span className="text-lg font-bold text-primary">
-                    {learningStreak.current_streak} days 🔥
+                    {learningStreak.current_streak} days
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -200,14 +200,14 @@ const Performance = () => {
               <h3 className="font-medium text-sm">Insights</h3>
               {stats.applicationsThisMonth > 0 ? (
                 <div className="p-3 bg-primary/10 rounded-lg">
-                  <p className="text-sm font-medium mb-1">🎯 Active Job Seeker</p>
+                  <p className="text-sm font-medium mb-1">Active Job Seeker</p>
                   <p className="text-xs text-muted-foreground">
                     You've applied to {stats.applicationsThisMonth} job{stats.applicationsThisMonth !== 1 ? 's' : ''} this month. Keep it up!
                   </p>
                 </div>
               ) : (
                 <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-sm font-medium mb-1">💼 Start Applying</p>
+                  <p className="text-sm font-medium mb-1">Start Applying</p>
                   <p className="text-xs text-muted-foreground">
                     Check out the Opportunities tab to find jobs matching your skills.
                   </p>
@@ -215,17 +215,17 @@ const Performance = () => {
               )}
               {stats.interviewsScheduled > 0 && (
                 <div className="p-3 bg-primary/5 rounded-lg">
-                  <p className="text-sm font-medium mb-1 text-foreground">🎉 Interview Stage</p>
+                  <p className="text-sm font-medium mb-1 text-foreground">Interview Stage</p>
                   <p className="text-xs text-muted-foreground">
-                    You have {stats.interviewsScheduled} interview{stats.interviewsScheduled !== 1 ? 's' : ''} lined up!
+                    You have {stats.interviewsScheduled} interview{stats.interviewsScheduled !== 1 ? 's' : ''} lined up.
                   </p>
                 </div>
               )}
               {learningStreak && learningStreak.current_streak >= 7 && (
                 <div className="p-3 bg-accent/10 rounded-lg">
-                  <p className="text-sm font-medium mb-1 text-foreground">🔥 On Fire!</p>
+                  <p className="text-sm font-medium mb-1 text-foreground">Strong Streak</p>
                   <p className="text-xs text-muted-foreground">
-                    {learningStreak.current_streak}-day learning streak! Keep the momentum going.
+                    {learningStreak.current_streak}-day learning streak. Keep the momentum going.
                   </p>
                 </div>
               )}

@@ -119,14 +119,15 @@ const Learn = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user || !major) return;
-      await (supabase.from('user_course_progress' as any) as any).insert({
+      const { error } = await supabase.from('user_course_progress').upsert({
         user_id: session.user.id,
         skill_name: skillName,
         career_path: major,
         course_title: course.title,
         course_url: course.url,
         status: 'saved',
-      });
+      }, { onConflict: 'user_id,course_title,skill_name' });
+      if (error) throw error;
       toast.success('Course saved');
       readiness.refetch();
     } catch (e) {
@@ -139,16 +140,18 @@ const Learn = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
-      await (supabase.from('user_course_progress' as any) as any)
+      const { error } = await supabase
+        .from('user_course_progress')
         .delete()
         .eq('user_id', session.user.id)
         .eq('course_title', courseTitle)
         .eq('skill_name', skillName);
-      toast.success('Course unsaved');
+      if (error) throw error;
+      toast.success('Course removed');
       readiness.refetch();
     } catch (e) {
       console.error(e);
-      toast.error('Failed to unsave course');
+      toast.error('Failed to remove course');
     }
   };
 
@@ -236,7 +239,7 @@ const Learn = () => {
 
       // Mark course as completed
       if (activeCourse) {
-        await (supabase.from('user_course_progress' as any) as any).upsert({
+        await supabase.from('user_course_progress').upsert({
           user_id: session.user.id,
           skill_name: activeSkill,
           career_path: major,
