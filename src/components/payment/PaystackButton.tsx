@@ -4,8 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
+// Paystack plan codes from dashboard
+export const PAYSTACK_PLAN_CODES = {
+  monthly: 'PLN_bx3ss0zhrsafq2l',
+  yearly: 'PLN_x4w58kpc58bqlqg',
+} as const;
+
 interface PaystackButtonProps {
-  amount: number; // in pesewas
   plan: 'monthly' | 'yearly';
   onSuccess?: () => void;
   onClose?: () => void;
@@ -15,7 +20,6 @@ interface PaystackButtonProps {
 }
 
 export default function PaystackButton({
-  amount,
   plan,
   onSuccess,
   onClose,
@@ -27,16 +31,13 @@ export default function PaystackButton({
   const [isVerifying, setIsVerifying] = useState(false);
   const paystackKeyRef = useRef<string | null>(null);
 
-  // Fetch Paystack public key from edge function on mount
   useEffect(() => {
     const fetchKey = async () => {
       try {
         const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
         const res = await fetch(
           `https://${projectId}.supabase.co/functions/v1/get-paystack-key`,
-          {
-            headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-          }
+          { headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } }
         );
         if (res.ok) {
           const data = await res.json();
@@ -54,10 +55,7 @@ export default function PaystackButton({
       setIsVerifying(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          toast.error('Please log in to continue');
-          return;
-        }
+        if (!session) { toast.error('Please log in to continue'); return; }
 
         const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
         const response = await fetch(
@@ -121,7 +119,7 @@ export default function PaystackButton({
       const handler = (window as any).PaystackPop.setup({
         key: paystackKeyRef.current,
         email: user.email,
-        amount,
+        plan: PAYSTACK_PLAN_CODES[plan], // Use plan code for subscription billing
         currency: 'GHS',
         channels: ['card', 'mobile_money'],
         metadata: {
