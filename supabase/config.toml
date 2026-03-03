@@ -15,8 +15,6 @@ project_id = "fsorkxlcasekndigezlx"
     verify_jwt = false
   [functions.delete-account]
     verify_jwt = false
-  [functions.get-paystack-key]
-    verify_jwt = false
   [functions.interview-tts]
     verify_jwt = false
   [functions.mock-interview]
