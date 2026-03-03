@@ -41,10 +41,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { reference, plan } = await req.json();
+    const body = await req.json();
+    const { reference, plan } = body;
 
-    if (!reference) {
+    // Validate reference format
+    if (!reference || typeof reference !== "string") {
       return new Response(JSON.stringify({ error: "Missing reference" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const referencePattern = /^[a-zA-Z0-9_-]{1,100}$/;
+    if (!referencePattern.test(reference)) {
+      return new Response(JSON.stringify({ error: "Invalid reference format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate plan parameter
+    const validPlans = ["monthly", "yearly"] as const;
+    if (plan && !validPlans.includes(plan)) {
+      return new Response(JSON.stringify({ error: "Invalid plan type" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

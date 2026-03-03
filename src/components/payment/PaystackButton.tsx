@@ -29,26 +29,8 @@ export default function PaystackButton({
 }: PaystackButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const paystackKeyRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    const fetchKey = async () => {
-      try {
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const res = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/get-paystack-key`,
-          { headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } }
-        );
-        if (res.ok) {
-          const data = await res.json();
-          paystackKeyRef.current = data.key || null;
-        }
-      } catch (err) {
-        console.error('Failed to fetch Paystack key:', err);
-      }
-    };
-    fetchKey();
-  }, []);
+  // Use the public key directly from environment — VITE_ vars are intentionally bundled into client code
+  const paystackKeyRef = useRef<string | null>(import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || null);
 
   const verifyPayment = useCallback(
     async (reference: string) => {
