@@ -11,8 +11,8 @@ const ACTION_VERBS = [
 ];
 
 const PLACEHOLDER_PATTERNS = [
-  /lorem ipsum/i, /placeholder/i, /example/i, /xxx/i, /tbd/i,
-  /enter your/i, /your .* here/i, /n\/a/i,
+  /lorem ipsum/i, /placeholder/i, /xxx/i, /tbd/i,
+  /enter your/i, /your .* here/i,
 ];
 
 interface ScoreBreakdown {
@@ -75,25 +75,20 @@ function scoreContentQuality(cv: CVData) {
   const details: Record<string, { score: number; max: number }> = {};
   const bullets = getAllBullets(cv);
 
-  // Bullet points vs paragraphs
   const longBullets = bullets.filter(b => b.length > 200).length;
   details.bulletFormat = { score: bullets.length > 0 && longBullets === 0 ? 5 : bullets.length > 0 ? 3 : 0, max: 5 };
 
-  // Action verbs
   const actionCount = countActionVerbs(bullets);
   const actionRatio = bullets.length > 0 ? actionCount / bullets.length : 0;
   details.actionVerbs = { score: actionRatio >= 0.5 ? 5 : actionRatio >= 0.25 ? 3 : bullets.length > 0 ? 1 : 0, max: 5 };
 
-  // Quantifiable achievements
   const quantCount = countQuantifiable(bullets);
   const quantRatio = bullets.length > 0 ? quantCount / bullets.length : 0;
   details.quantifiable = { score: quantRatio >= 0.3 ? 5 : quantRatio >= 0.15 ? 3 : quantCount >= 1 ? 1 : 0, max: 5 };
 
-  // No placeholder text
   const allText = [cv.personal.firstName, cv.personal.lastName, ...bullets, ...cv.skills].join(' ');
   details.noPlaceholder = { score: hasPlaceholder(allText) ? 0 : 5, max: 5 };
 
-  // Proper formatting
   const hasSections = cv.experience.length > 0 || cv.projects.length > 0 || cv.activities.length > 0;
   details.formatting = { score: hasSections && cv.skills.length > 0 ? 5 : hasSections ? 3 : 0, max: 5 };
 
@@ -104,11 +99,21 @@ function scoreContentQuality(cv: CVData) {
 function scoreSkillsRelevance(cv: CVData) {
   const details: Record<string, { score: number; max: number }> = {};
 
-  details.skillCount = { score: cv.skills.length >= 5 ? 10 : Math.round((cv.skills.length / 5) * 10), max: 10 };
-  // Career alignment scored as partial by default (no assessment data in this hook)
-  details.careerAlignment = { score: cv.skills.length >= 3 ? 5 : 0, max: 10 };
+  // Skill count: full 10 pts at 8+ skills
+  const skillCountScore = cv.skills.length >= 8 ? 10
+    : cv.skills.length >= 5 ? 7
+    : cv.skills.length >= 3 ? 4
+    : cv.skills.length >= 1 ? 2 : 0;
+  details.skillCount = { score: skillCountScore, max: 10 };
 
-  const score = Object.values(details).reduce((s, d) => s + d.score, 0);
+  // Career alignment: score based on variety and depth of skills listed
+  const skillCoverageScore = cv.skills.length >= 6 ? 10
+    : cv.skills.length >= 4 ? 7
+    : cv.skills.length >= 2 ? 4
+    : cv.skills.length >= 1 ? 2 : 0;
+  details.careerAlignment = { score: skillCoverageScore, max: 10 };
+
+  const score = details.skillCount.score + details.careerAlignment.score;
   return { score, max: 20 as const, details };
 }
 
@@ -116,15 +121,12 @@ function scorePresentation(cv: CVData) {
   const details: Record<string, { score: number; max: number }> = {};
   const bullets = getAllBullets(cv);
 
-  // Basic spelling check (repeated chars, very short bullets)
   const suspectBullets = bullets.filter(b => /(.)\1{4,}/.test(b) || (b.trim().length > 0 && b.trim().length < 5));
   details.spelling = { score: suspectBullets.length === 0 ? 5 : 3, max: 5 };
 
-  // Section ordering (has personal + edu before experience)
   const hasBasics = cv.personal.firstName && cv.education.university;
   details.sectionOrder = { score: hasBasics ? 5 : 2, max: 5 };
 
-  // Clean layout
   const hasConsistentBullets = cv.experience.every(e => e.bullets.length <= 6);
   details.layout = { score: hasConsistentBullets ? 5 : 3, max: 5 };
 
@@ -137,20 +139,17 @@ function scoreCompetitiveness(cv: CVData) {
   const allBullets = getAllBullets(cv);
   const allText = allBullets.join(' ').toLowerCase();
 
-  // Leadership
   const leadershipKeywords = ['led', 'managed', 'supervised', 'mentored', 'president', 'captain', 'head', 'director', 'founder', 'co-founder', 'leader', 'chair'];
   const hasLeadership = leadershipKeywords.some(k => allText.includes(k)) ||
     cv.experience.some(e => /lead|manager|director|head|president/i.test(e.role)) ||
     cv.activities.some(a => /lead|president|captain|head|chair/i.test(a.role));
   details.leadership = { score: hasLeadership ? 5 : 0, max: 5 };
 
-  // Internship / practical experience
   const hasInternship = cv.experience.some(e =>
     /intern/i.test(e.role) || /intern/i.test(e.company)
   ) || cv.experience.length >= 2;
   details.practicalExp = { score: hasInternship ? 5 : cv.experience.length >= 1 ? 3 : 0, max: 5 };
 
-  // Certifications / courses
   const hasCerts = cv.achievements.length >= 1 || /certif|course|award/i.test(allText);
   details.certifications = { score: hasCerts ? 5 : 0, max: 5 };
 
@@ -176,7 +175,7 @@ function generateStrengths(breakdown: ScoreBreakdown, cv: CVData): string[] {
     strengths.push('Strong use of quantifiable achievements.');
   if (breakdown.competitiveness.details.leadership?.score >= 5)
     strengths.push('Clear demonstration of leadership experience.');
-  if (cv.skills.length >= 5)
+  if (cv.skills.length >= 6)
     strengths.push('Comprehensive skills section with good coverage.');
   if (breakdown.competitiveness.details.practicalExp?.score >= 5)
     strengths.push('Solid practical work experience included.');
@@ -227,7 +226,7 @@ export function useCVStrengthScore(cvData: CVData): CVStrengthResult {
       competitiveness,
     };
 
-    const totalScore = completeness.score + contentQuality.score + skillsRelevance.score + presentation.score + competitiveness.score;
+    const totalScore = Math.min(100, completeness.score + contentQuality.score + skillsRelevance.score + presentation.score + competitiveness.score);
     const label = getLabel(totalScore);
     const strengths = generateStrengths(breakdown, cvData);
     const suggestions = generateSuggestions(breakdown, cvData);

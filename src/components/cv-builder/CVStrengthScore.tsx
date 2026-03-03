@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertTriangle, TrendingUp, Target } from 'lucide-react';
@@ -29,13 +29,15 @@ export const CVStrengthScore: React.FC<CVStrengthScoreProps> = ({ result }) => {
   const { totalScore, label, breakdown, strengths, suggestions } = result;
   const config = LABEL_CONFIG[label];
   const feedbackModal = useFeedbackModal('cv_strength_score');
+  const feedbackTriggeredRef = useRef(false);
 
-  // Trigger feedback when user has a meaningful score
+  // Trigger feedback only once when user has a meaningful score
   useEffect(() => {
-    if (totalScore >= 30) {
+    if (totalScore >= 30 && !feedbackTriggeredRef.current) {
+      feedbackTriggeredRef.current = true;
       feedbackModal.triggerFeedback();
     }
-  }, [totalScore >= 30]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [totalScore]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const circumference = 2 * Math.PI * 54;
   const offset = circumference - (totalScore / 100) * circumference;

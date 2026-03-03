@@ -102,14 +102,14 @@ export const useCareerReadiness = (major: string | null | undefined) => {
         supabase.from('portfolio_projects').select('id').eq('user_id', userId),
         supabase.from('resumes').select('personal_info, education, experience, skills, projects').eq('user_id', userId).eq('is_primary', true).maybeSingle(),
         supabase.from('mock_interviews').select('overall_score').eq('user_id', userId).not('overall_score', 'is', null),
-        supabase.from('user_course_progress' as any).select('*').eq('user_id', userId).eq('career_path', major) as any,
+        supabase.from('user_course_progress').select('*').eq('user_id', userId).eq('career_path', major),
       ]);
 
       const userSkills = skillsRes.data || [];
       const portfolioCount = portfolioRes.data?.length || 0;
       const resume = resumeRes.data;
       const interviews = interviewsRes.data || [];
-      const courses = ((coursesRes as any).data || []) as CourseProgress[];
+      const courses = (coursesRes.data || []) as CourseProgress[];
 
       // === Technical Skills (50%) ===
       const skillGaps: SkillReadiness[] = careerSkills.map(skill => {
