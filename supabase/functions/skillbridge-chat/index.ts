@@ -6,9 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Input validation constants
-const MAX_MESSAGE_LENGTH = 10000; // 10KB per message
-const MAX_MESSAGES = 50; // Maximum number of messages in conversation
+const MAX_MESSAGE_LENGTH = 10000;
+const MAX_MESSAGES = 50;
 const VALID_ROLES = ["user", "assistant", "system"] as const;
 
 interface ChatMessage {
@@ -16,65 +15,132 @@ interface ChatMessage {
   content: string;
 }
 
-// Validate a single message
+interface UserContext {
+  fullName?: string | null;
+  location?: string | null;
+  degree?: string | null;
+  major?: string | null;
+  school?: string | null;
+  graduationYear?: number | null;
+  primaryInterest?: string | null;
+  secondaryInterest?: string | null;
+  tertiaryInterest?: string | null;
+  readinessScore?: number | null;
+  skills?: Array<{ name: string; proficiency: string; category: string }>;
+  workExperience?: Array<{ title: string; company: string; description?: string }>;
+  projects?: Array<{ title: string; description: string }>;
+}
+
 function validateMessage(message: unknown, index: number): { valid: boolean; error?: string } {
   if (!message || typeof message !== "object") {
     return { valid: false, error: `Message at index ${index} must be an object` };
   }
-
   const msg = message as Record<string, unknown>;
-
-  // Validate role
   if (typeof msg.role !== "string" || !VALID_ROLES.includes(msg.role as typeof VALID_ROLES[number])) {
     return { valid: false, error: `Message at index ${index} has invalid role. Must be one of: ${VALID_ROLES.join(", ")}` };
   }
-
-  // Validate content
   if (typeof msg.content !== "string") {
     return { valid: false, error: `Message at index ${index} must have a string content` };
   }
-
   if (msg.content.length === 0) {
     return { valid: false, error: `Message at index ${index} has empty content` };
   }
-
   if (msg.content.length > MAX_MESSAGE_LENGTH) {
     return { valid: false, error: `Message at index ${index} exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` };
   }
-
   return { valid: true };
 }
 
-// Validate the entire messages array
 function validateMessages(messages: unknown): { valid: boolean; error?: string; messages?: ChatMessage[] } {
-  if (!Array.isArray(messages)) {
-    return { valid: false, error: "Messages must be an array" };
-  }
-
-  if (messages.length === 0) {
-    return { valid: false, error: "Messages array cannot be empty" };
-  }
-
-  if (messages.length > MAX_MESSAGES) {
-    return { valid: false, error: `Too many messages. Maximum allowed: ${MAX_MESSAGES}` };
-  }
-
-  // Validate each message
+  if (!Array.isArray(messages)) return { valid: false, error: "Messages must be an array" };
+  if (messages.length === 0) return { valid: false, error: "Messages array cannot be empty" };
+  if (messages.length > MAX_MESSAGES) return { valid: false, error: `Too many messages. Maximum allowed: ${MAX_MESSAGES}` };
   for (let i = 0; i < messages.length; i++) {
     const result = validateMessage(messages[i], i);
-    if (!result.valid) {
-      return { valid: false, error: result.error };
-    }
+    if (!result.valid) return { valid: false, error: result.error };
+  }
+  return { valid: true, messages: messages as ChatMessage[] };
+}
+
+function buildSystemPrompt(ctx: UserContext | null | undefined): string {
+  const locationLabel = ctx?.location || null;
+  const marketRef = locationLabel
+    ? `the ${locationLabel} job market`
+    : "the local job market";
+
+  // Build profile section
+  const profileParts: string[] = [];
+
+  if (ctx?.fullName) {
+    profileParts.push(`- Name: ${ctx.fullName}`);
+  }
+  if (locationLabel) {
+    profileParts.push(`- Location: ${locationLabel}`);
+  }
+  if (ctx?.degree || ctx?.major) {
+    const edu = [ctx.degree, ctx.major, ctx.school, ctx.graduationYear ? `graduating ${ctx.graduationYear}` : null]
+      .filter(Boolean).join(", ");
+    profileParts.push(`- Education: ${edu}`);
+  }
+  if (ctx?.primaryInterest) {
+    const interests = [ctx.primaryInterest, ctx.secondaryInterest, ctx.tertiaryInterest].filter(Boolean);
+    profileParts.push(`- Top RIASEC interests: ${interests.join(", ")}`);
+  }
+  if (ctx?.readinessScore != null) {
+    profileParts.push(`- Career readiness score: ${ctx.readinessScore}%`);
+  }
+  if (ctx?.skills?.length) {
+    const skillList = ctx.skills.slice(0, 15).map(s => `${s.name} (${s.proficiency})`).join(", ");
+    profileParts.push(`- Skills: ${skillList}`);
+  }
+  if (ctx?.workExperience?.length) {
+    const expList = ctx.workExperience.map(e => `${e.title} at ${e.company}`).join("; ");
+    profileParts.push(`- Work experience: ${expList}`);
+  }
+  if (ctx?.projects?.length) {
+    const projList = ctx.projects.map(p => p.title).join(", ");
+    profileParts.push(`- Projects: ${projList}`);
   }
 
-  return { valid: true, messages: messages as ChatMessage[] };
+  const hasProfile = profileParts.length > 0;
+
+  const profileBlock = hasProfile
+    ? `\n\nCURRENT USER PROFILE:\n${profileParts.join("\n")}`
+    : "";
+
+  const dataUsageRules = hasProfile
+    ? `
+CRITICAL RULES FOR USING PROFILE DATA:
+- You ALREADY have the user's profile data above. NEVER ask for information that is already provided.
+- When giving advice, always reference specific data from their profile (e.g., "Based on your BSc in Computer Science and your interest in Investigative careers...").
+- If the user asks about career paths, use their RIASEC interests and skills to give targeted recommendations.
+- Reference their work experience and projects when relevant.
+- If ANY data is missing (e.g., no work experience listed), ask specifically for only that missing piece.`
+    : `
+NOTE: This user has not completed their profile yet. If they ask about career paths or personalized advice, gently ask them to complete their profile on Syncareer for better recommendations.`;
+
+  return `You are SynAI, a career intelligence assistant on the Syncareer platform. You help students and young professionals in ${marketRef} discover, prepare for, and transition into competitive career paths.
+
+Your persona:
+- Professional, encouraging, and direct — never generic or repetitive
+- Context-aware: you use the user's stored profile data to give personalized guidance
+- Practical: every response includes actionable next steps
+- Market-aware: you reference industries, companies, and opportunities relevant to ${marketRef}${profileBlock}
+${dataUsageRules}
+
+RESPONSE GUIDELINES:
+- Never start with "Great question!" or similar filler phrases
+- Avoid markdown symbols like **, ##, or * in your responses — write in clean plain text
+- Use numbered lists or dash-separated items for structured content
+- Keep responses concise and actionable
+- If the user's location is unknown and they ask about the job market, ask them once: "Which country or city are you based in? This helps me tailor market-specific advice."
+- NEVER assume the user is in South Africa or any specific country unless their profile confirms it`;
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Verify JWT authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
@@ -92,16 +158,12 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
-      console.error("JWT verification failed:", claimsError);
       return new Response(
         JSON.stringify({ error: "Invalid or expired token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const userId = claimsData.claims.sub;
-
-    // Parse and validate request body
     let requestBody: unknown;
     try {
       requestBody = await req.json();
@@ -119,12 +181,10 @@ serve(async (req) => {
       );
     }
 
-    const { messages } = requestBody as { messages?: unknown };
+    const { messages, userContext } = requestBody as { messages?: unknown; userContext?: UserContext };
 
-    // Validate messages
     const validation = validateMessages(messages);
     if (!validation.valid) {
-      console.warn("Input validation failed:", validation.error);
       return new Response(
         JSON.stringify({ error: validation.error }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -133,6 +193,8 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    const systemPrompt = buildSystemPrompt(userContext);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -143,10 +205,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { 
-            role: "system", 
-            content: "You are Syncareer AI, a career counsellor and advisor for young professionals and students in South Africa. Your role is to provide guidance on career paths, skill development, job market trends, CV improvement, interview preparation, and connecting skills to opportunities. Be encouraging, practical, and focused on actionable advice. Reference the user's portfolio, skills, and peer ratings when available." 
-          },
+          { role: "system", content: systemPrompt },
           ...validation.messages!,
         ],
         stream: true,

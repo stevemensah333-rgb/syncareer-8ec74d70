@@ -17,23 +17,51 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Sparkles, AlertCircle } from "lucide-react";
 import { FREE_AI_COACH_MONTHLY_LIMIT } from "@/lib/featureAccess";
+import { useUserContext } from "@/hooks/useUserContext";
 
 type Message = { role: "user" | "assistant"; content: string };
 
+function buildGreeting(context: ReturnType<typeof useUserContext>['context']): string {
+  if (!context) {
+    return "Hello! I'm SynAI, your career intelligence assistant. How can I help you today?";
+  }
+
+  const name = context.fullName ? `, ${context.fullName.split(' ')[0]}` : '';
+  const hasProfile = context.major || context.skills.length > 0 || context.primaryInterest;
+
+  if (hasProfile) {
+    const parts: string[] = [];
+    if (context.major) parts.push(`your ${context.degree || 'degree'} in ${context.major}`);
+    if (context.primaryInterest) parts.push(`your ${context.primaryInterest} interests`);
+    if (context.skills.length > 0) parts.push(`${context.skills.length} skills on your profile`);
+
+    const contextSummary = parts.length > 0
+      ? `I can see ${parts.join(', ')}. `
+      : '';
+
+    return `Hello${name}! I'm SynAI, your career intelligence assistant. ${contextSummary}Ask me about career paths, skill gaps, interview prep, or CV improvements and I'll give you advice tailored to your profile.`;
+  }
+
+  return `Hello${name}! I'm SynAI, your career intelligence assistant. Complete your profile to get personalized career guidance. How can I help you today?`;
+}
+
 export default function AICoach() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content:
-        "Hi! I'm SynAI, your career counsellor. I can help with career guidance, skill development, CV tips, interview prep, and connecting your skills to opportunities. How can I assist you today?",
-    },
-  ]);
+  const { context: userContext, loading: contextLoading } = useUserContext();
+
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { allowed, used, limit, loading: accessLoading, isPremium, refetchUsage } = useAICoachAccess();
+
+  // Set greeting once user context loads
+  useEffect(() => {
+    if (!contextLoading) {
+      setMessages([{ role: "assistant", content: buildGreeting(userContext) }]);
+    }
+  }, [contextLoading, userContext]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -60,7 +88,10 @@ export default function AICoach() {
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ messages: [...messages, { role: "user", content: userMessage }] }),
+        body: JSON.stringify({
+          messages: [...messages, { role: "user", content: userMessage }],
+          userContext: userContext ?? undefined,
+        }),
       });
 
       if (resp.status === 429) { toast({ title: "Rate limit exceeded", description: "Please try again in a moment.", variant: "destructive" }); return; }
