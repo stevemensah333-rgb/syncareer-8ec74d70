@@ -72,17 +72,6 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
       <header className={cn("bg-background/95 backdrop-blur-sm fixed top-0 left-0 right-0 z-30 border-b", className)}>
         <div className="container flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-2 lg:gap-6">
-            {/* Mobile Menu Button */}
-            {isMobile && onMobileMenuClick && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onMobileMenuClick}
-                className="md:hidden h-9 w-9"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            )}
             
             <div className="flex items-center gap-2">
               <img src={syncareerLogo} alt="Syncareer" className="h-8 w-auto object-contain" />
