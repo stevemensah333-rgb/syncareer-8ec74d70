@@ -29,6 +29,33 @@ import { SecuritySection } from '@/components/settings/SecuritySection';
 
 type SettingsSection = 'profile' | 'account' | 'notifications' | 'security' | 'regional' | 'preferences' | 'subscription';
 
+// All IANA timezones grouped for display
+const ALL_TIMEZONES: string[] = (Intl as any).supportedValuesOf ? (Intl as any).supportedValuesOf('timeZone') : [
+  'Africa/Johannesburg','Africa/Lagos','Africa/Nairobi','Africa/Cairo','Africa/Accra',
+  'America/New_York','America/Chicago','America/Denver','America/Los_Angeles','America/Sao_Paulo','America/Toronto','America/Mexico_City',
+  'Europe/London','Europe/Paris','Europe/Berlin','Europe/Moscow','Europe/Istanbul',
+  'Asia/Dubai','Asia/Kolkata','Asia/Singapore','Asia/Tokyo','Asia/Shanghai','Asia/Hong_Kong','Asia/Seoul',
+  'Australia/Sydney','Australia/Melbourne','Pacific/Auckland','UTC',
+];
+
+const detectUserLocale = async () => {
+  // Detect timezone from browser
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Detect country via a free geo-ip API (no key needed)
+  let countryName = '';
+  try {
+    const res = await fetch('https://ipapi.co/json/');
+    const data = await res.json();
+    countryName = data.country_name || '';
+  } catch {
+    // fallback: derive rough country from timezone
+    const tzParts = tz.split('/');
+    countryName = tzParts[tzParts.length - 1].replace(/_/g, ' ') || '';
+  }
+  return { timezone: tz, countryName };
+};
+
 const Settings = () => {
   const { toast } = useToast();
   const { t, i18n } = useTranslation();
@@ -49,9 +76,10 @@ const Settings = () => {
     return saved === 'true';
   });
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
-  const [selectedCountry, setSelectedCountry] = useState(() => localStorage.getItem('country') || 'ZA');
+  const [selectedCountry, setSelectedCountry] = useState(() => localStorage.getItem('userCountry') || '');
+  const [selectedTimezone, setSelectedTimezone] = useState(() => localStorage.getItem('userTimezone') || Intl.DateTimeFormat().resolvedOptions().timeZone);
 
-  // Fetch user email
+  // Fetch user email + auto-detect locale on first load
   useEffect(() => {
     const fetchUserData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -59,8 +87,23 @@ const Settings = () => {
         setUserEmail(session.user.email || '');
       }
     };
-    
     fetchUserData();
+
+    // Auto-detect country & timezone if not already saved
+    const savedCountry = localStorage.getItem('userCountry');
+    const savedTz = localStorage.getItem('userTimezone');
+    if (!savedCountry || !savedTz) {
+      detectUserLocale().then(({ timezone, countryName }) => {
+        if (!savedTz) {
+          setSelectedTimezone(timezone);
+          localStorage.setItem('userTimezone', timezone);
+        }
+        if (!savedCountry && countryName) {
+          setSelectedCountry(countryName);
+          localStorage.setItem('userCountry', countryName);
+        }
+      });
+    }
   }, []);
 
   const getUserTypeLabel = (userType: string | null) => {
@@ -93,15 +136,12 @@ const Settings = () => {
   }, [isCompactView]);
 
   const handleSave = () => {
-    // Save language change
     if (selectedLanguage !== i18n.language) {
       i18n.changeLanguage(selectedLanguage);
       localStorage.setItem('i18nextLng', selectedLanguage);
     }
-    
-    // Save country
-    localStorage.setItem('country', selectedCountry);
-    
+    localStorage.setItem('userCountry', selectedCountry);
+    localStorage.setItem('userTimezone', selectedTimezone);
     toast({
       title: t('settings.settingsSaved'),
       description: t('settings.settingsSavedDesc'),
@@ -437,57 +477,45 @@ const Settings = () => {
             {activeSection === 'regional' && (
               <>
                 <h2 className="text-xl font-semibold mb-6">{t('settings.regionalSettings')}</h2>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Your country and timezone are auto-detected when you sign in. You can adjust them below if needed.
+                </p>
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium mb-1">{t('settings.language')}</label>
-                    <select 
+                    <select
                       className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                       value={selectedLanguage}
                       onChange={(e) => setSelectedLanguage(e.target.value)}
                     >
                       {languages.map((lang) => (
-                        <option key={lang.code} value={lang.code}>
-                          {lang.name}
-                        </option>
+                        <option key={lang.code} value={lang.code}>{lang.name}</option>
                       ))}
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">{t('settings.country')}</label>
-                    <select 
+                    <input
+                      type="text"
                       className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                       value={selectedCountry}
                       onChange={(e) => setSelectedCountry(e.target.value)}
-                    >
-                      {countries.map((country) => (
-                        <option key={country.code} value={country.code}>
-                          {country.name}
-                        </option>
-                      ))}
-                    </select>
+                      placeholder="Auto-detected from your location"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Auto-detected from your IP address</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">{t('settings.timezone')}</label>
-                    <select className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground">
-                      <option>Africa/Johannesburg (SAST)</option>
-                      <option>UTC</option>
-                      <option>Europe/London (GMT)</option>
-                      <option>America/New_York (EST)</option>
-                      <option>Asia/Tokyo (JST)</option>
-                      <option>Australia/Sydney (AEDT)</option>
-                      <option>America/Los_Angeles (PST)</option>
-                      <option>Europe/Paris (CET)</option>
-                      <option>Asia/Dubai (GST)</option>
-                      <option>America/Sao_Paulo (BRT)</option>
+                    <select
+                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                      value={selectedTimezone}
+                      onChange={(e) => setSelectedTimezone(e.target.value)}
+                    >
+                      {ALL_TIMEZONES.map((tz) => (
+                        <option key={tz} value={tz}>{tz}</option>
+                      ))}
                     </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">{t('settings.dateFormat')}</label>
-                    <select className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground">
-                      <option>DD/MM/YYYY</option>
-                      <option>MM/DD/YYYY</option>
-                      <option>YYYY-MM-DD</option>
-                    </select>
+                    <p className="text-xs text-muted-foreground mt-1">Auto-detected from your browser</p>
                   </div>
                   <div className="pt-4 border-t">
                     <Button onClick={handleSave}>{t('settings.saveChanges')}</Button>
