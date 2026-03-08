@@ -17,6 +17,8 @@ project_id = "fsorkxlcasekndigezlx"
     verify_jwt = false
   [functions.interview-tts]
     verify_jwt = false
+  [functions.market-intelligence]
+    verify_jwt = false
   [functions.mock-interview]
     verify_jwt = false
   [functions.send-employee-invite]
