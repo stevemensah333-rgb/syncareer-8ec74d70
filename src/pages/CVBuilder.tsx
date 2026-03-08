@@ -170,11 +170,12 @@ const CVBuilder = () => {
         toast.error('Please sign in to save your CV');
         return;
       }
+      const userId = session.user.id;
 
       const { error } = await supabase
         .from('resumes')
         .upsert({
-          user_id: session.user.id,
+          user_id: userId,
           title: `${cvData.personal.firstName} ${cvData.personal.lastName} CV`,
           template: 'basic',
           personal_info: cvData.personal,
@@ -189,6 +190,27 @@ const CVBuilder = () => {
         });
 
       if (error) throw error;
+
+      // ── Write skills to user_skills so SynAI can see them ─────────
+      if (cvData.skills.length > 0) {
+        const skillRows = cvData.skills.map(skill => ({
+          user_id: userId,
+          skill_name: skill.trim(),
+          category: 'general',
+          proficiency: 'intermediate',
+          source: 'cv',
+        }));
+        // Upsert to avoid duplicates
+        await supabase
+          .from('user_skills')
+          .upsert(skillRows, { onConflict: 'user_id,skill_name' });
+      }
+
+      // ── Trigger intelligence recompute (fire-and-forget) ──────────
+      supabase.functions.invoke('compute-user-intelligence').catch(e =>
+        console.warn('[CVBuilder] Intelligence recompute failed:', e)
+      );
+
       toast.success('CV saved successfully!');
     } catch (error) {
       console.error('Save error:', error);
