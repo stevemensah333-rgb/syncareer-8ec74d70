@@ -5,7 +5,7 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import {
   ClipboardList, Star, GraduationCap, Sparkles, Settings,
   Building2, FileText, Users, TrendingUp, Calendar,
-  MoreHorizontal
+  MoreHorizontal, LineChart
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -33,6 +33,7 @@ const studentMoreItems: NavTab[] = [
   { title: 'CV Builder', icon: FileText, href: '/cv-builder' },
   { title: 'Applications', icon: ClipboardList, href: '/applications' },
   { title: 'Interview Prep', icon: ClipboardList, href: '/interview-simulator' },
+  { title: 'Market Analysis', icon: LineChart, href: '/analysis' },
   { title: 'Performance', icon: Star, href: '/performance' },
   { title: 'Settings', icon: Settings, href: '/settings' },
 ];
