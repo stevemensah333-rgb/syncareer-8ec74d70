@@ -287,6 +287,35 @@ serve(async (req) => {
       });
     }
 
+    // ── Increment usage (fire-and-forget, non-blocking) ──────────
+    if (!isPremium) {
+      (async () => {
+        try {
+          const now = new Date();
+          const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+          const { data: existing } = await serviceSupabase
+            .from("usage_logs")
+            .select("id, usage_count")
+            .eq("user_id", userId)
+            .eq("feature_key", "synai_chat")
+            .eq("month", month)
+            .maybeSingle();
+          if (existing) {
+            await serviceSupabase
+              .from("usage_logs")
+              .update({ usage_count: existing.usage_count + 1, updated_at: new Date().toISOString() })
+              .eq("id", existing.id);
+          } else {
+            await serviceSupabase
+              .from("usage_logs")
+              .insert({ user_id: userId, feature_key: "synai_chat", month, usage_count: 1 });
+          }
+        } catch (e) {
+          console.error("Failed to log synai_chat usage:", e);
+        }
+      })();
+    }
+
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
