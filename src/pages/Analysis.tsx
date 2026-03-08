@@ -47,8 +47,25 @@ const Analysis = () => {
   }
 
   return (
-    <PageLayout title="Market Analysis">
+    <PageLayout title="">
       <div className="space-y-6">
+        {/* Portfolio / Market Analysis tab strip */}
+        <div className="flex items-center gap-1 border-b border-border -mt-2 mb-2">
+          <Link
+            to="/portfolio"
+            className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-border transition-colors -mb-px"
+          >
+            Portfolio
+          </Link>
+          <Link
+            to="/analysis"
+            className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 border-primary text-primary -mb-px"
+          >
+            <LineChart className="h-3.5 w-3.5" />
+            Market Analysis
+          </Link>
+        </div>
+
         {/* Intelligence Header */}
         <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
           <CardContent className="pt-5 pb-5">
