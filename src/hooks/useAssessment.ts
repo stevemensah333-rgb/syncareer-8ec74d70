@@ -142,6 +142,12 @@ export function useAssessment() {
 
       toast.success('Assessment completed successfully!');
       await fetchResults();
+
+      // ── Trigger intelligence recompute so SynAI sees fresh RIASEC data ──
+      supabase.functions.invoke('compute-user-intelligence').catch(e =>
+        console.warn('[useAssessment] Intelligence recompute failed:', e)
+      );
+
       return true;
     } catch (err: any) {
       console.error('Error submitting assessment:', err);
