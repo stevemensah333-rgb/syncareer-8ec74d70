@@ -4,11 +4,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sparkles, GraduationCap, RefreshCw, AlertCircle, BarChart3, TrendingUp } from 'lucide-react';
+import { Sparkles, GraduationCap, RefreshCw, AlertCircle, BarChart3, TrendingUp, LineChart } from 'lucide-react';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useMarketIntelligence } from '@/hooks/useMarketIntelligence';
 import { MarketOverviewTab } from '@/components/analysis/MarketOverviewTab';
 import { CareerOutlookTab } from '@/components/analysis/CareerOutlookTab';
+import { Link } from 'react-router-dom';
 
 const Analysis = () => {
   const { studentDetails, loading: profileLoading } = useUserProfile();
