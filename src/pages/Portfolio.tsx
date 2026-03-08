@@ -3,11 +3,12 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, ExternalLink, Trash2, Linkedin, Save } from 'lucide-react';
+import { Upload, ExternalLink, Trash2, Linkedin, Save, LineChart } from 'lucide-react';
 import { UploadProjectDialog } from '@/components/portfolio/UploadProjectDialog';
 import ProfileSummaryCard from '@/components/portfolio/ProfileSummaryCard';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Link, useLocation } from 'react-router-dom';
 
 interface Project {
   id: string;
