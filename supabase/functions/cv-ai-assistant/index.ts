@@ -160,6 +160,35 @@ Please provide 3-5 specific, actionable suggestions. Format each suggestion as a
       .filter((line: string) => line.length > 10)
       .slice(0, 5);
 
+    // ── Increment usage (fire-and-forget) ─────────────────────────
+    if (!isPremium) {
+      (async () => {
+        try {
+          const now = new Date();
+          const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+          const { data: existing } = await serviceSupabase
+            .from("usage_logs")
+            .select("id, usage_count")
+            .eq("user_id", userId)
+            .eq("feature_key", "cv_ai_assist")
+            .eq("month", month)
+            .maybeSingle();
+          if (existing) {
+            await serviceSupabase
+              .from("usage_logs")
+              .update({ usage_count: existing.usage_count + 1, updated_at: new Date().toISOString() })
+              .eq("id", existing.id);
+          } else {
+            await serviceSupabase
+              .from("usage_logs")
+              .insert({ user_id: userId, feature_key: "cv_ai_assist", month, usage_count: 1 });
+          }
+        } catch (e) {
+          console.error("Failed to log cv_ai_assist usage:", e);
+        }
+      })();
+    }
+
     return new Response(
       JSON.stringify({ suggestions, rawContent: content }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
