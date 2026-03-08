@@ -3,11 +3,12 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, ExternalLink, Trash2, Linkedin, Save } from 'lucide-react';
+import { Upload, ExternalLink, Trash2, Linkedin, Save, LineChart } from 'lucide-react';
 import { UploadProjectDialog } from '@/components/portfolio/UploadProjectDialog';
 import ProfileSummaryCard from '@/components/portfolio/ProfileSummaryCard';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Link, useLocation } from 'react-router-dom';
 
 interface Project {
   id: string;
@@ -138,7 +139,26 @@ const Portfolio = () => {
   }
 
   return (
-    <PageLayout title="Portfolio">
+    <PageLayout title="">
+      {/* Custom header with Market Analysis tab — students only */}
+      <div className="flex items-center justify-between mb-6 -mt-2">
+        <div className="flex items-center gap-1 border-b border-border w-full pb-0">
+          <Link
+            to="/portfolio"
+            className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 border-primary text-primary -mb-px"
+          >
+            Portfolio
+          </Link>
+          <Link
+            to="/analysis"
+            className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-border transition-colors -mb-px"
+          >
+            <LineChart className="h-3.5 w-3.5" />
+            Market Analysis
+          </Link>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
