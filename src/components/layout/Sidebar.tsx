@@ -4,7 +4,7 @@ import {
   Users, Briefcase, GraduationCap, 
   BarChart, Settings, ChevronRight, ChevronLeft, Sparkles,
   Building2, TrendingUp, FileText, UserPlus, Star, Calendar,
-  ClipboardList, Mic, MessageSquare
+  ClipboardList, Mic, MessageSquare, LineChart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
