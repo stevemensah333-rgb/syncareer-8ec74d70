@@ -201,6 +201,50 @@ serve(async (req) => {
       );
     }
 
+    // ── Rate limiting ─────────────────────────────────────────────
+    const userId = claimsData.claims.sub;
+    const serviceSupabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data: subscription } = await supabase
+      .from("subscriptions")
+      .select("tier, status, current_period_end")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const isPremium =
+      subscription?.tier === "premium" &&
+      subscription?.status === "active" &&
+      (!subscription.current_period_end || new Date(subscription.current_period_end) > new Date());
+
+    if (!isPremium) {
+      const now = new Date();
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const { data: usageRow } = await supabase
+        .from("usage_logs")
+        .select("usage_count")
+        .eq("user_id", userId)
+        .eq("feature_key", "synai_chat")
+        .eq("month", month)
+        .maybeSingle();
+
+      const used = usageRow?.usage_count ?? 0;
+      const limit = 30;
+      if (used >= limit) {
+        return new Response(
+          JSON.stringify({
+            error: "limit_reached",
+            message: `You have used all ${limit} SynAI messages for this month. Upgrade to Premium for unlimited access.`,
+            used,
+            limit,
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -241,6 +285,35 @@ serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // ── Increment usage (fire-and-forget, non-blocking) ──────────
+    if (!isPremium) {
+      (async () => {
+        try {
+          const now = new Date();
+          const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+          const { data: existing } = await serviceSupabase
+            .from("usage_logs")
+            .select("id, usage_count")
+            .eq("user_id", userId)
+            .eq("feature_key", "synai_chat")
+            .eq("month", month)
+            .maybeSingle();
+          if (existing) {
+            await serviceSupabase
+              .from("usage_logs")
+              .update({ usage_count: existing.usage_count + 1, updated_at: new Date().toISOString() })
+              .eq("id", existing.id);
+          } else {
+            await serviceSupabase
+              .from("usage_logs")
+              .insert({ user_id: userId, feature_key: "synai_chat", month, usage_count: 1 });
+          }
+        } catch (e) {
+          console.error("Failed to log synai_chat usage:", e);
+        }
+      })();
     }
 
     return new Response(response.body, {

@@ -91,15 +91,7 @@ export function useUserContext() {
       }
       const userId = session.user.id;
 
-      const [
-        profileRes,
-        studentRes,
-        assessmentRes,
-        skillsRes,
-        resumeRes,
-        portfolioRes,
-        interviewsRes,
-      ] = await Promise.all([
+      const settled = await Promise.allSettled([
         supabase.from('profiles').select('full_name, bio').eq('id', userId).single(),
         supabase.from('student_details').select('major, school, degree_type, expected_completion').eq('user_id', userId).maybeSingle(),
         supabase.from('assessments').select('primary_interest, secondary_interest, tertiary_interest').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
@@ -109,21 +101,41 @@ export function useUserContext() {
         supabase.from('mock_interviews').select('overall_score').eq('user_id', userId).not('overall_score', 'is', null),
       ]);
 
+      const getResult = <T>(idx: number, fallback: T): T => {
+        const s = settled[idx];
+        return s.status === 'fulfilled' ? ((s.value as any)?.data ?? fallback) : fallback;
+      };
+
+      const profileData = getResult<{ full_name?: string; bio?: string } | null>(0, null);
+      const studentData = getResult<{ major?: string; school?: string; degree_type?: string; expected_completion?: number } | null>(1, null);
+      const assessmentData = getResult<{ primary_interest?: string; secondary_interest?: string; tertiary_interest?: string } | null>(2, null);
+      const skillsData = getResult<Array<{ skill_name: string; proficiency: string; category: string }>>(3, []);
+      const resumeData = getResult<any>(4, null);
+      const portfolioData = getResult<Array<{ id: string }>>(5, []);
+      const interviewsData = getResult<Array<{ overall_score: number | null }>>(6, []);
+
+      // Log any individual failures without crashing the whole context
+      settled.forEach((s, i) => {
+        if (s.status === 'rejected') {
+          console.warn(`[useUserContext] Query ${i} failed:`, s.reason);
+        }
+      });
+
       // Extract location from resume personal_info, then fallback to bio
       let location: string | null = null;
-      if (resumeRes.data?.personal_info) {
-        const pi = resumeRes.data.personal_info as Record<string, string>;
+      if (resumeData?.personal_info) {
+        const pi = resumeData.personal_info as Record<string, string>;
         location = pi.location || pi.country || pi.city || null;
       }
-      if (!location && profileRes.data?.bio) {
-        const match = profileRes.data.bio.match(/(?:based in|from|located in|in)\s+([^,.]+(?:,\s*[^,.]+)?)/i);
+      if (!location && profileData?.bio) {
+        const match = profileData.bio.match(/(?:based in|from|located in|in)\s+([^,.]+(?:,\s*[^,.]+)?)/i);
         if (match) location = match[1].trim();
       }
 
       // Parse work experience from resume
       let workExperience: UserContext['workExperience'] = [];
-      if (resumeRes.data?.experience) {
-        const exp = resumeRes.data.experience as Array<{ title?: string; company?: string; description?: string }>;
+      if (resumeData?.experience) {
+        const exp = resumeData.experience as Array<{ title?: string; company?: string; description?: string }>;
         if (Array.isArray(exp)) {
           workExperience = exp.slice(0, 5).map(e => ({
             title: e.title || 'Unknown Role',
@@ -135,8 +147,8 @@ export function useUserContext() {
 
       // Parse projects from resume
       let projects: UserContext['projects'] = [];
-      if (resumeRes.data?.projects) {
-        const proj = resumeRes.data.projects as Array<{ title?: string; projectName?: string; description?: string }>;
+      if (resumeData?.projects) {
+        const proj = resumeData.projects as Array<{ title?: string; projectName?: string; description?: string }>;
         if (Array.isArray(proj)) {
           projects = proj.slice(0, 4).map(p => ({
             title: p.title || p.projectName || 'Untitled Project',
@@ -146,30 +158,30 @@ export function useUserContext() {
       }
 
       // Compute readiness score if major is known
-      const major = studentRes.data?.major || null;
+      const major = studentData?.major || null;
       let readinessScore: number | null = null;
       if (major) {
         readinessScore = computeReadinessScore(
           major,
-          (skillsRes.data || []) as Array<{ skill_name: string; proficiency: string }>,
-          portfolioRes.data?.length || 0,
-          resumeRes.data,
-          (interviewsRes.data || []) as Array<{ overall_score: number | null }>,
+          skillsData as Array<{ skill_name: string; proficiency: string }>,
+          portfolioData?.length || 0,
+          resumeData,
+          interviewsData as Array<{ overall_score: number | null }>,
         );
       }
 
       setContext({
-        fullName: profileRes.data?.full_name || null,
+        fullName: profileData?.full_name || null,
         location,
-        degree: studentRes.data?.degree_type || null,
+        degree: studentData?.degree_type || null,
         major,
-        school: studentRes.data?.school || null,
-        graduationYear: studentRes.data?.expected_completion || null,
-        primaryInterest: assessmentRes.data?.primary_interest || null,
-        secondaryInterest: assessmentRes.data?.secondary_interest || null,
-        tertiaryInterest: assessmentRes.data?.tertiary_interest || null,
+        school: studentData?.school || null,
+        graduationYear: studentData?.expected_completion || null,
+        primaryInterest: assessmentData?.primary_interest || null,
+        secondaryInterest: assessmentData?.secondary_interest || null,
+        tertiaryInterest: assessmentData?.tertiary_interest || null,
         readinessScore,
-        skills: (skillsRes.data || []).map(s => ({
+        skills: skillsData.map(s => ({
           name: s.skill_name,
           proficiency: s.proficiency,
           category: s.category,
