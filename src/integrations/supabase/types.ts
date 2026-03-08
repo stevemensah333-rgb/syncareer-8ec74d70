@@ -929,6 +929,60 @@ export type Database = {
         }
         Relationships: []
       }
+      market_intelligence_cache: {
+        Row: {
+          career_outlook: Json
+          created_at: string
+          data_confidence: string | null
+          demand_forecast: Json
+          expires_at: string
+          generated_at: string
+          hard_skills: Json
+          id: string
+          major: string
+          market_insights: Json
+          region: string
+          region_summary: string | null
+          salary_data: Json
+          soft_skills: Json
+          updated_at: string
+        }
+        Insert: {
+          career_outlook?: Json
+          created_at?: string
+          data_confidence?: string | null
+          demand_forecast?: Json
+          expires_at?: string
+          generated_at?: string
+          hard_skills?: Json
+          id?: string
+          major: string
+          market_insights?: Json
+          region?: string
+          region_summary?: string | null
+          salary_data?: Json
+          soft_skills?: Json
+          updated_at?: string
+        }
+        Update: {
+          career_outlook?: Json
+          created_at?: string
+          data_confidence?: string | null
+          demand_forecast?: Json
+          expires_at?: string
+          generated_at?: string
+          hard_skills?: Json
+          id?: string
+          major?: string
+          market_insights?: Json
+          region?: string
+          region_summary?: string | null
+          salary_data?: Json
+          soft_skills?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mock_interviews: {
         Row: {
           answers: Json
