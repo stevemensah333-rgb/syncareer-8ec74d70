@@ -4,7 +4,7 @@ import {
   Users, Briefcase, GraduationCap, 
   BarChart, Settings, ChevronRight, ChevronLeft, Sparkles,
   Building2, TrendingUp, FileText, UserPlus, Star, Calendar,
-  ClipboardList, Mic, MessageSquare
+  ClipboardList, Mic, MessageSquare, LineChart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -89,6 +89,11 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       title: 'Interview Prep',
       icon: Mic,
       href: '/interview-simulator',
+    },
+    {
+      title: 'Market Analysis',
+      icon: LineChart,
+      href: '/analysis',
     },
     {
       title: 'Performance',
