@@ -39,6 +39,49 @@ serve(async (req) => {
     const userId = claimsData.claims.sub;
     console.log("CV AI request from user:", userId);
 
+    // ── Rate limiting ─────────────────────────────────────────────
+    const serviceSupabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data: subscription } = await supabase
+      .from("subscriptions")
+      .select("tier, status, current_period_end")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const isPremium =
+      subscription?.tier === "premium" &&
+      subscription?.status === "active" &&
+      (!subscription.current_period_end || new Date(subscription.current_period_end) > new Date());
+
+    if (!isPremium) {
+      const now = new Date();
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const { data: usageRow } = await supabase
+        .from("usage_logs")
+        .select("usage_count")
+        .eq("user_id", userId)
+        .eq("feature_key", "cv_ai_assist")
+        .eq("month", month)
+        .maybeSingle();
+
+      const used = usageRow?.usage_count ?? 0;
+      const limit = 20;
+      if (used >= limit) {
+        return new Response(
+          JSON.stringify({
+            error: "limit_reached",
+            message: `You have used all ${limit} CV AI suggestions for this month. Upgrade to Premium for unlimited access.`,
+            used,
+            limit,
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const { prompt, cvData, section } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
@@ -46,7 +89,11 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a professional CV/resume writing assistant. Your job is to help students create compelling, professional CVs that follow best practices.
+    const systemPrompt = `You are a professional CV/resume writing assistant on the Syncareer platform. Your job is to help students create compelling, professional CVs that follow best practices.
+
+SCOPE ENFORCEMENT — CRITICAL:
+You are strictly scoped to CV and resume writing assistance only. If the user asks anything unrelated to CV writing, resume improvement, or professional profile content, respond with:
+"I'm only able to assist with CV and resume writing. That's outside my scope. I'm here to help you craft compelling professional content for your resume."
 
 Current section being edited: ${section}
 
