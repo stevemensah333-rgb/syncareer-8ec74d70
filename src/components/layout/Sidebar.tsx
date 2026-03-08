@@ -91,6 +91,11 @@ export function Sidebar({ isCollapsed, onToggle, className }: SidebarProps) {
       href: '/interview-simulator',
     },
     {
+      title: 'Market Analysis',
+      icon: LineChart,
+      href: '/analysis',
+    },
+    {
       title: 'Performance',
       icon: BarChart,
       href: '/performance',
