@@ -786,6 +786,17 @@ serve(async (req) => {
         console.error(`[mock-interview][${requestId}] Final update error:`, updateErr);
       }
 
+      // ── Trigger intelligence recompute so SynAI sees latest interview data ──
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      fetch(`${supabaseUrl}/functions/v1/compute-user-intelligence`, {
+        method: 'POST',
+        headers: {
+          Authorization: authHeader,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      }).catch(e => console.warn(`[mock-interview][${requestId}] Intelligence recompute failed:`, e));
+
       console.log(`[mock-interview][${requestId}] Feedback complete: score=${overallFeedback.overallScore}, verdict=${overallFeedback.overallVerdict} in ${Date.now() - startTime}ms`);
 
       return successResponse({ overallFeedback, answers });
