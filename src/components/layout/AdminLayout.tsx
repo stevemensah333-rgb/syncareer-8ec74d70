@@ -23,8 +23,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-              <img src={syncareerLogo} alt="Syncareer" className="h-8 w-auto object-contain" />
-              <span className="text-sm font-semibold text-foreground">Syncareer</span>
+              <img src={syncareerLogo} alt="Syncareer" className="h-12 w-auto object-contain" />
             <span className="text-muted-foreground mx-1">·</span>
             <span className="text-sm text-muted-foreground">Admin Dashboard</span>
           </div>
