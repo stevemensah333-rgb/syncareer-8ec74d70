@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import syncareerLogo from "@/assets/syncareer-logo.png";
+import syncareerLogo from "@/assets/syncareer-logo-new.png";
 
 interface LandingHeaderProps {
   onSignIn: () => void;
