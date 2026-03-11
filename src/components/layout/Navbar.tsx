@@ -74,7 +74,7 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
           <div className="flex items-center gap-2 lg:gap-6">
             
             <div className="flex items-center">
-              <img src={syncareerLogo} alt="Syncareer" className="h-14 w-auto object-contain" />
+              <img src={syncareerLogo} alt="Syncareer" className="h-24 w-auto object-contain" />
             </div>
             
 
