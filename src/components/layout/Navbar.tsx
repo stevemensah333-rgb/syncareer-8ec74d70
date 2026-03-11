@@ -70,11 +70,11 @@ export function Navbar({ className, onMobileMenuClick }: NavbarProps) {
   return (
     <>
       <header className={cn("bg-background/95 backdrop-blur-sm fixed top-0 left-0 right-0 z-30 border-b", className)}>
-        <div className="container flex items-center justify-between h-16 px-4">
+        <div className="container flex items-center justify-between h-20 px-4">
           <div className="flex items-center gap-2 lg:gap-6">
             
             <div className="flex items-center">
-              <img src={syncareerLogo} alt="Syncareer" className="h-16 w-auto object-contain" />
+              <img src={syncareerLogo} alt="Syncareer" className="h-14 w-auto object-contain" />
             </div>
             
 
