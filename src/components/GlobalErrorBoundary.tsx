@@ -49,7 +49,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
               Reload Page
             </button>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <details className="text-left mt-4 p-4 rounded-lg bg-muted text-sm">
                 <summary className="cursor-pointer font-medium text-muted-foreground">
                   Error Details
