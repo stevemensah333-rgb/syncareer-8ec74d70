@@ -36,6 +36,7 @@ const CVBuilder = lazy(() => import("./pages/CVBuilder"));
 
 // Admin pages
 const FeedbackDashboard = lazy(() => import("./pages/admin/FeedbackDashboard"));
+const UsersDashboard = lazy(() => import("./pages/admin/UsersDashboard"));
 
 // Shared pages (accessible by all authenticated roles)
 const Settings = lazy(() => import("./pages/Settings"));
@@ -158,6 +159,7 @@ const App = () => (
 
                 {/* ============ ADMIN ROUTES ============ */}
                 <Route path="/admin/feedback" element={<FeedbackDashboard />} />
+                <Route path="/admin/users" element={<UsersDashboard />} />
 
                 {/* Catch-all */}
                 <Route path="*" element={<NotFound />} />
