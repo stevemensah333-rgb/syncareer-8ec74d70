@@ -290,7 +290,7 @@ const UsersDashboard = () => {
                           </TableCell>
                           <TableCell>
                             {isPremium ? (
-                              <Badge className="bg-yellow-500/15 text-yellow-700 border-yellow-300 text-xs gap-1">
+                              <Badge className="bg-primary/10 text-primary border-primary/30 text-xs gap-1">
                                 <Crown className="h-3 w-3" />
                                 Premium
                               </Badge>
