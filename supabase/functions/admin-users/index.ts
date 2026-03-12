@@ -1,0 +1,132 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const body = await req.json();
+    const { passphrase, action, user_id, tier } = body;
+
+    // Validate passphrase
+    const adminPassphrase = Deno.env.get('ADMIN_PASSPHRASE');
+    if (!adminPassphrase || passphrase !== adminPassphrase) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Use service role to bypass RLS
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
+
+    // ── LIST USERS ───────────────────────────────────────────────────────────
+    if (!action || action === 'list') {
+      // Fetch all profiles
+      const { data: profiles, error: profilesError } = await supabaseAdmin
+        .from('profiles')
+        .select('id, full_name, username, user_type, created_at')
+        .order('created_at', { ascending: false });
+
+      if (profilesError) throw profilesError;
+
+      // Fetch all subscriptions
+      const { data: subscriptions, error: subsError } = await supabaseAdmin
+        .from('subscriptions')
+        .select('user_id, tier, status, current_period_end, updated_at');
+
+      if (subsError) throw subsError;
+
+      // Fetch auth users for emails
+      const { data: { users: authUsers }, error: authError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+
+      if (authError) throw authError;
+
+      const emailMap: Record<string, string> = {};
+      authUsers.forEach((u: any) => {
+        emailMap[u.id] = u.email ?? '';
+      });
+
+      const subMap: Record<string, any> = {};
+      (subscriptions ?? []).forEach((s: any) => {
+        subMap[s.user_id] = s;
+      });
+
+      const users = (profiles ?? []).map((p: any) => ({
+        id: p.id,
+        full_name: p.full_name,
+        username: p.username,
+        user_type: p.user_type,
+        email: emailMap[p.id] ?? '',
+        created_at: p.created_at,
+        subscription: subMap[p.id] ?? null,
+      }));
+
+      return new Response(JSON.stringify({ users }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── UPDATE SUBSCRIPTION ──────────────────────────────────────────────────
+    if (action === 'set_tier') {
+      if (!user_id || !tier) {
+        return new Response(JSON.stringify({ error: 'Missing user_id or tier' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (!['free', 'premium'].includes(tier)) {
+        return new Response(JSON.stringify({ error: 'Invalid tier' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const now = new Date();
+      const periodEnd = tier === 'premium'
+        ? new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()).toISOString()
+        : null;
+
+      const { data, error } = await supabaseAdmin
+        .from('subscriptions')
+        .upsert({
+          user_id,
+          tier,
+          status: 'active',
+          current_period_start: tier === 'premium' ? now.toISOString() : null,
+          current_period_end: periodEnd,
+          updated_at: now.toISOString(),
+        }, { onConflict: 'user_id' })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true, subscription: data }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({ error: 'Unknown action' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (err: any) {
+    console.error('[admin-users]', err);
+    return new Response(JSON.stringify({ error: err.message ?? 'Internal error' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
