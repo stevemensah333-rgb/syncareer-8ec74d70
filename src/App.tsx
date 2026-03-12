@@ -159,6 +159,7 @@ const App = () => (
 
                 {/* ============ ADMIN ROUTES ============ */}
                 <Route path="/admin/feedback" element={<FeedbackDashboard />} />
+                <Route path="/admin/users" element={<UsersDashboard />} />
 
                 {/* Catch-all */}
                 <Route path="*" element={<NotFound />} />
