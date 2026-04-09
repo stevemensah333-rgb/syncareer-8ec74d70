@@ -48,14 +48,14 @@ const plans = [
 
 export default function PricingSection({ onSignUp, onNavigatePricing }: PricingSectionProps) {
   return (
-    <section id="pricing" className="py-24 bg-muted/30">
+    <section id="pricing" className="py-24">
       <div className="container mx-auto px-6">
         <AnimatedSection className="text-center mb-16 max-w-2xl mx-auto">
-          <p className="text-sm font-medium text-primary mb-3 uppercase tracking-wider">Pricing</p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+          <p className="text-sm font-medium text-primary mb-3 uppercase tracking-[0.2em]">Pricing</p>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
             Simple, transparent pricing
           </h2>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-white/50 text-lg">
             Start free, upgrade when you're ready to accelerate.
           </p>
         </AnimatedSection>
@@ -66,25 +66,25 @@ export default function PricingSection({ onSignUp, onNavigatePricing }: PricingS
               <div
                 className={`rounded-2xl p-7 h-full flex flex-col border ${
                   plan.highlighted
-                    ? "border-primary bg-card shadow-xl shadow-primary/5 ring-1 ring-primary/20"
-                    : "border-border bg-card"
-                }`}
+                    ? "border-primary/40 bg-white/[0.05] shadow-xl shadow-primary/5 ring-1 ring-primary/20"
+                    : "border-white/10 bg-white/[0.03]"
+                } backdrop-blur-sm`}
               >
                 {plan.highlighted && (
                   <span className="inline-block self-start text-[10px] font-semibold uppercase tracking-widest bg-primary text-primary-foreground px-2.5 py-0.5 rounded-full mb-4">
                     Most Popular
                   </span>
                 )}
-                <h3 className="text-lg font-semibold text-foreground">{plan.name}</h3>
+                <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
                 <div className="flex items-baseline gap-1 mt-2 mb-1">
-                  <span className="text-3xl font-bold text-foreground">{plan.price}</span>
-                  <span className="text-sm text-muted-foreground">{plan.period}</span>
+                  <span className="text-3xl font-bold text-white">{plan.price}</span>
+                  <span className="text-sm text-white/40">{plan.period}</span>
                 </div>
-                <p className="text-sm text-muted-foreground mb-6">{plan.description}</p>
+                <p className="text-sm text-white/50 mb-6">{plan.description}</p>
                 <ul className="space-y-3 mb-8 flex-1">
                   {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-sm text-foreground">
-                      <Check className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-white/70">
+                      <Check className="h-4 w-4 text-green-400 mt-0.5 shrink-0" />
                       {f}
                     </li>
                   ))}
@@ -92,7 +92,9 @@ export default function PricingSection({ onSignUp, onNavigatePricing }: PricingS
                 <Button
                   onClick={plan.highlighted ? onNavigatePricing : onSignUp}
                   variant={plan.highlighted ? "default" : "outline"}
-                  className="w-full rounded-full h-11"
+                  className={`w-full rounded-full h-11 ${
+                    !plan.highlighted ? "border-white/20 text-white hover:bg-white/10 hover:text-white" : ""
+                  }`}
                 >
                   {plan.cta}
                 </Button>

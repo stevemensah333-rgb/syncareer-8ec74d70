@@ -24,28 +24,28 @@ const steps = [
 
 export default function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="py-24 bg-muted/30">
+    <section id="how-it-works" className="py-24">
       <div className="container mx-auto px-6">
         <AnimatedSection className="text-center mb-16 max-w-2xl mx-auto">
-          <p className="text-sm font-medium text-primary mb-3 uppercase tracking-wider">How It Works</p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+          <p className="text-sm font-medium text-primary mb-3 uppercase tracking-[0.2em]">How It Works</p>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
             Three steps to career clarity
           </h2>
         </AnimatedSection>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto relative">
-          {/* Connector line - desktop only */}
-          <div className="hidden md:block absolute top-16 left-[16.5%] right-[16.5%] h-px bg-border" />
+          {/* Connector line */}
+          <div className="hidden md:block absolute top-16 left-[16.5%] right-[16.5%] h-px bg-white/10" />
 
           {steps.map((item, i) => (
             <AnimatedSection key={item.step} delay={i * 0.15}>
               <div className="text-center relative">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 border-2 border-primary/20 flex items-center justify-center mx-auto mb-5 relative z-10 bg-card">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 border-2 border-primary/20 flex items-center justify-center mx-auto mb-5 relative z-10" style={{ backgroundColor: "hsl(220, 20%, 12%)" }}>
                   <item.icon className="h-6 w-6 text-primary" />
                 </div>
                 <span className="text-xs font-bold text-primary/60 uppercase tracking-widest mb-2 block">{item.step}</span>
-                <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">{item.description}</p>
+                <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
+                <p className="text-sm text-white/50 leading-relaxed max-w-xs mx-auto">{item.description}</p>
               </div>
             </AnimatedSection>
           ))}
