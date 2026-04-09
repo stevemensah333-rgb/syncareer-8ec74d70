@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { getHomeRouteForRole } from "@/components/auth/RoleRoute";
 import AuthDialog from "@/components/auth/AuthDialog";
 import VideoModal from "@/components/landing/VideoModal";
+import LandingBackground from "@/components/landing/LandingBackground";
 import LandingHeader from "@/components/landing/LandingHeader";
 import HeroSection from "@/components/landing/HeroSection";
 import ProblemSection from "@/components/landing/ProblemSection";
 import SolutionSection from "@/components/landing/SolutionSection";
 import HowItWorksSection from "@/components/landing/HowItWorksSection";
+import VideoDemoSection from "@/components/landing/VideoDemoSection";
 import SocialProofSection from "@/components/landing/SocialProofSection";
 import PricingSection from "@/components/landing/PricingSection";
 import FinalCTASection from "@/components/landing/FinalCTASection";
@@ -20,10 +22,8 @@ export default function Landing() {
   const [videoOpen, setVideoOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Auto-redirect authenticated users to their role-appropriate dashboard
   useEffect(() => {
     const checkAuth = async () => {
-      // Don't redirect during a password recovery flow
       const hash = window.location.hash;
       if (hash.includes('type=recovery')) return;
 
@@ -35,7 +35,6 @@ export default function Landing() {
           .eq('id', session.user.id)
           .maybeSingle();
         
-        // Only redirect if we actually found a profile
         if (profile) {
           if (!profile.onboarding_completed) {
             navigate('/onboarding');
@@ -43,8 +42,6 @@ export default function Landing() {
             navigate(getHomeRouteForRole(profile.user_type || null));
           }
         }
-        // If no profile found (e.g. new Google user), stay on landing — 
-        // they'll be directed to onboarding after next auth flow
       }
     };
     checkAuth();
@@ -54,16 +51,20 @@ export default function Landing() {
   const openSignUp = () => { setAuthMode('signup'); setAuthOpen(true); };
 
   return (
-    <div className="min-h-screen bg-background">
-      <LandingHeader onSignIn={openSignIn} onSignUp={openSignUp} />
-      <HeroSection onSignUp={openSignUp} onWatchVideo={() => setVideoOpen(true)} />
-      <ProblemSection />
-      <SolutionSection />
-      <HowItWorksSection />
-      <SocialProofSection />
-      <PricingSection onSignUp={openSignUp} onNavigatePricing={() => navigate('/pricing')} />
-      <FinalCTASection onSignUp={openSignUp} />
-      <LandingFooter />
+    <div className="min-h-screen relative">
+      <LandingBackground />
+      <div className="relative z-10">
+        <LandingHeader onSignIn={openSignIn} onSignUp={openSignUp} />
+        <HeroSection onSignUp={openSignUp} onWatchVideo={() => setVideoOpen(true)} />
+        <ProblemSection />
+        <SolutionSection />
+        <HowItWorksSection />
+        <VideoDemoSection />
+        <SocialProofSection />
+        <PricingSection onSignUp={openSignUp} onNavigatePricing={() => navigate('/pricing')} />
+        <FinalCTASection onSignUp={openSignUp} />
+        <LandingFooter />
+      </div>
 
       <AuthDialog open={authOpen} onOpenChange={setAuthOpen} defaultMode={authMode} />
       <VideoModal open={videoOpen} onOpenChange={setVideoOpen} />
