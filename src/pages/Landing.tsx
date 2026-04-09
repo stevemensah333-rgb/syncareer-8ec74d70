@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getHomeRouteForRole } from "@/components/auth/RoleRoute";
 import AuthDialog from "@/components/auth/AuthDialog";
-import VideoModal from "@/components/landing/VideoModal";
 import LandingBackground from "@/components/landing/LandingBackground";
 import LandingHeader from "@/components/landing/LandingHeader";
 import HeroSection from "@/components/landing/HeroSection";
@@ -19,7 +18,6 @@ import LandingFooter from "@/components/landing/LandingFooter";
 export default function Landing() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
-  const [videoOpen, setVideoOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -52,10 +50,11 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen relative">
+      {/* Background image only behind hero */}
       <LandingBackground />
       <div className="relative z-10">
         <LandingHeader onSignIn={openSignIn} onSignUp={openSignUp} />
-        <HeroSection onSignUp={openSignUp} onWatchVideo={() => setVideoOpen(true)} />
+        <HeroSection onSignUp={openSignUp} />
         <ProblemSection />
         <SolutionSection />
         <HowItWorksSection />
@@ -67,7 +66,6 @@ export default function Landing() {
       </div>
 
       <AuthDialog open={authOpen} onOpenChange={setAuthOpen} defaultMode={authMode} />
-      <VideoModal open={videoOpen} onOpenChange={setVideoOpen} />
     </div>
   );
 }
