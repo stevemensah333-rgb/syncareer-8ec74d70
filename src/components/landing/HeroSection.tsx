@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface HeroSectionProps {
   onSignUp: () => void;
+  onWatchVideo: () => void;
 }
 
-export default function HeroSection({ onSignUp }: HeroSectionProps) {
+export default function HeroSection({ onSignUp, onWatchVideo }: HeroSectionProps) {
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-20">
       <div className="container mx-auto px-6 relative z-10 text-center max-w-4xl">
@@ -42,6 +43,15 @@ export default function HeroSection({ onSignUp }: HeroSectionProps) {
             >
               Get Started Free
               <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={onWatchVideo}
+              className="rounded-full px-8 h-12 text-base gap-2 border-white/20 text-white hover:bg-white/10 hover:text-white bg-transparent"
+            >
+              <Sparkles className="h-4 w-4" />
+              See How It Works
             </Button>
           </div>
         </motion.div>
