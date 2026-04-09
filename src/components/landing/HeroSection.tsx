@@ -1,13 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface HeroSectionProps {
   onSignUp: () => void;
-  onWatchVideo: () => void;
 }
 
-export default function HeroSection({ onSignUp, onWatchVideo }: HeroSectionProps) {
+export default function HeroSection({ onSignUp }: HeroSectionProps) {
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-20">
       <div className="container mx-auto px-6 relative z-10 text-center max-w-4xl">
