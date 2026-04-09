@@ -4,36 +4,33 @@ const DEMO_VIDEO_URL = "https://fsorkxlcasekndigezlx.supabase.co/storage/v1/obje
 
 export default function VideoDemoSection() {
   return (
-    <section className="py-24 relative">
+    <section className="py-24 bg-muted/50">
       <div className="container mx-auto px-6">
         <AnimatedSection className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
             See Syncareer in Action
           </h2>
-          <p className="text-white/50 text-lg max-w-xl mx-auto">
+          <p className="text-muted-foreground text-lg max-w-xl mx-auto">
             From career assessment to interview practice in under 5 minutes
           </p>
         </AnimatedSection>
 
         <AnimatedSection delay={0.2}>
           <div className="max-w-5xl mx-auto">
-            {/* Browser mockup frame */}
-            <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 shadow-2xl shadow-black/40">
-              {/* Browser chrome */}
-              <div className="flex items-center gap-2 px-4 py-3 bg-white/5 border-b border-white/10">
+            <div className="rounded-xl overflow-hidden border border-border bg-card shadow-2xl shadow-black/10">
+              <div className="flex items-center gap-2 px-4 py-3 bg-muted border-b border-border">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-500/60" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/60" />
+                  <div className="w-3 h-3 rounded-full bg-destructive/60" />
+                  <div className="w-3 h-3 rounded-full bg-warning/60" />
+                  <div className="w-3 h-3 rounded-full bg-success/60" />
                 </div>
                 <div className="flex-1 mx-4">
-                  <div className="bg-white/5 rounded-md px-3 py-1.5 text-xs text-white/40 max-w-md mx-auto text-center">
+                  <div className="bg-background rounded-md px-3 py-1.5 text-xs text-muted-foreground max-w-md mx-auto text-center">
                     syncareer.lovable.app
                   </div>
                 </div>
               </div>
-              {/* Video */}
-              <div className="relative aspect-video bg-black">
+              <div className="relative aspect-video bg-foreground/5">
                 <video
                   autoPlay
                   loop

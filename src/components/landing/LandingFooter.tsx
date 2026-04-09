@@ -2,54 +2,54 @@ import syncareerLogo from "@/assets/syncareer-logo.png";
 
 export default function LandingFooter() {
   return (
-    <footer className="py-14 border-t border-white/10">
+    <footer className="py-14 border-t border-border bg-background">
       <div className="container mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-10 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-3">
               <img src={syncareerLogo} alt="Syncareer" className="h-7 w-auto object-contain" />
-              <span className="text-lg font-semibold text-white">Syncareer</span>
+              <span className="text-lg font-semibold text-foreground">Syncareer</span>
             </div>
-            <p className="text-sm text-white/40 leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               AI-powered career intelligence for students and early professionals.
             </p>
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-white mb-4">For Students</h4>
-            <ul className="space-y-2.5 text-sm text-white/40">
-              <li><a href="#features" className="hover:text-white transition-colors">Career Assessment</a></li>
-              <li><a href="#features" className="hover:text-white transition-colors">CV Builder</a></li>
-              <li><a href="#features" className="hover:text-white transition-colors">Interview Practice</a></li>
+            <h4 className="text-sm font-semibold text-foreground mb-4">For Students</h4>
+            <ul className="space-y-2.5 text-sm text-muted-foreground">
+              <li><a href="#features" className="hover:text-foreground transition-colors">Career Assessment</a></li>
+              <li><a href="#features" className="hover:text-foreground transition-colors">CV Builder</a></li>
+              <li><a href="#features" className="hover:text-foreground transition-colors">Interview Practice</a></li>
             </ul>
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-white mb-4">For Employers</h4>
-            <ul className="space-y-2.5 text-sm text-white/40">
-              <li><a href="#" className="hover:text-white transition-colors">Post a Job</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Browse Talent</a></li>
-              <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
+            <h4 className="text-sm font-semibold text-foreground mb-4">For Employers</h4>
+            <ul className="space-y-2.5 text-sm text-muted-foreground">
+              <li><a href="#" className="hover:text-foreground transition-colors">Post a Job</a></li>
+              <li><a href="#" className="hover:text-foreground transition-colors">Browse Talent</a></li>
+              <li><a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a></li>
             </ul>
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-white mb-4">Support</h4>
-            <ul className="space-y-2.5 text-sm text-white/40">
-              <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
-              <li><a href="/terms" className="hover:text-white transition-colors">Privacy Policy</a></li>
+            <h4 className="text-sm font-semibold text-foreground mb-4">Support</h4>
+            <ul className="space-y-2.5 text-sm text-muted-foreground">
+              <li><a href="#" className="hover:text-foreground transition-colors">Help Center</a></li>
+              <li><a href="#" className="hover:text-foreground transition-colors">Contact Us</a></li>
+              <li><a href="/terms" className="hover:text-foreground transition-colors">Privacy Policy</a></li>
             </ul>
           </div>
         </div>
-        <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-white/30">
+        <div className="border-t border-border pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Syncareer. All rights reserved.
           </p>
-          <div className="flex items-center gap-3 text-white/30">
-            <a href="/admin/feedback" className="text-xs hover:text-white transition-colors opacity-20">Admin?</a>
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <a href="/admin/feedback" className="text-xs hover:text-foreground transition-colors opacity-20">Admin?</a>
             <a
               href="https://www.tiktok.com/@syncareer?_r=1&_t=ZS-943Wv7vHgCT"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
+              className="hover:text-foreground transition-colors"
               aria-label="TikTok"
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
@@ -60,7 +60,7 @@ export default function LandingFooter() {
               href="https://www.instagram.com/syncareer?igsh=ZHRtc3Q2dzVxdnJs&utm_source=qr"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
+              className="hover:text-foreground transition-colors"
               aria-label="Instagram"
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
