@@ -45,8 +45,13 @@ Deno.serve(async (req) => {
     }
 
     // Strategy 1: Try to pull from structured question bank first
+    // Use service role client to bypass RLS (question bank is restricted to admins only)
     if (skillName && major) {
-      const { data: bankQuestions, error: bankError } = await supabaseClient
+      const serviceClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      const { data: bankQuestions, error: bankError } = await serviceClient
         .from('skill_question_bank')
         .select('question, options, correct_index, explanation, difficulty')
         .eq('career_path', major)
